@@ -1,6 +1,7 @@
 // Tipos de dados do app (o "formato" de cada informação).
 
-export type Sexo = 'M' | 'F';
+/** M, F, ou vazio quando não informado (ex.: veio em branco no CSV). */
+export type Sexo = 'M' | 'F' | '';
 
 export type SituacaoMorador = 'mora' | 'mudou' | 'nao_pertence' | 'faleceu' | 'recusa';
 
@@ -31,6 +32,8 @@ export interface Morador {
   /** Data de nascimento no formato aaaa-mm-dd, ou vazio se não souber. */
   nascimento: string;
   situacao: SituacaoMorador;
+  /** Desde quando está nessa situação (aaaa-mm-dd), ou vazio. */
+  situacaoDesde: string;
   grupos: Grupo[];
   obs: string;
 }
@@ -41,12 +44,26 @@ export interface Familia {
   /** Número da casa ou "S/N". */
   numero: string;
   complemento: string;
+  bairro: string;
   colmeia: string;
   /** Pode estar vazio ou incompleto (ex.: "04."). */
   prontuario: string;
   situacaoCasa: SituacaoCasa;
   obs: string;
+  /** Id do morador responsável pela família, ou vazio. */
+  responsavelId: string;
   moradores: Morador[];
+}
+
+/** Um registro do histórico: o que mudou, quando e em qual família/morador. Nada é apagado. */
+export interface Alteracao {
+  id: string;
+  /** Data e hora da alteração (ISO). */
+  quando: string;
+  familiaId: string;
+  moradorId?: string;
+  /** Texto para mostrar, ex.: "Ana: situação Mora aqui → Mudou-se (desde 03/11/2026)". */
+  texto: string;
 }
 
 export type Desfecho = 'realizada' | 'ausente_realizada' | 'ausencia_completa' | 'recusa';
