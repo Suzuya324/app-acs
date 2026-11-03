@@ -65,24 +65,35 @@
   {/if}
 
   <section class="cartao">
-    <h2>Como montar o arquivo</h2>
+    <h2>Copiar do Fast e colar aqui</h2>
     <ol class="passos">
-      <li>Numa planilha (Google Planilhas ou Excel), faça <strong>uma linha por morador</strong>, com estas colunas:<br />
-        <code>Casa · Rua · Numero · Complemento · Bairro · Prontuario · Nome · Sexo · Data de nascimento</code></li>
-      <li><strong>Casa</strong> é um código que junta a família: C001, C002… (todos os moradores da mesma casa com o mesmo código). O primeiro de cada casa vira o responsável.</li>
-      <li><strong>Sexo</strong>: M ou F. <strong>Data</strong>: dd/mm/aaaa. Prontuário e data podem ficar em branco.</li>
-      <li>Salve como <strong>CSV</strong> (Arquivo → Fazer download → CSV, ou Salvar como → CSV UTF-8).</li>
+      <li>No <strong>navegador do celular</strong>, abra a lista de moradores da sua área no Fast.</li>
+      <li>Selecione a lista <strong>incluindo a linha dos títulos</strong> (ex.: Nome da rua, Número da casa, Nome do paciente). Pode copiar uma página de cada vez.</li>
+      <li>Toque em <strong>Copiar</strong>, volte para cá, segure o dedo na caixa abaixo e toque em <strong>Colar</strong>.</li>
+      <li>Toque em <strong>Conferir</strong>. Nada é salvo antes de você confirmar, e o texto não sai do celular.</li>
     </ol>
-    <button class="botao secundario largo" onclick={baixarModelo}>Baixar planilha modelo (dados inventados)</button>
+    <textarea rows="5" bind:value={colado} placeholder="Cole aqui a lista copiada"></textarea>
+    <button class="botao largo" onclick={() => analisar(colado)} disabled={!colado.trim()}>Conferir o texto colado</button>
+    <p class="suave pequeno dica">
+      Colunas obrigatórias: <strong>rua</strong> e <strong>nome</strong>. As outras ajudam (número, complemento,
+      prontuário, sexo, data de nascimento). Sem a coluna “Casa”, o app junta os moradores pelo prontuário ou,
+      sem prontuário, pelo endereço.
+    </p>
   </section>
 
   <section class="cartao">
-    <h2>1. Escolha o arquivo</h2>
-    <input type="file" accept=".csv,.txt,text/csv,text/plain" onchange={(e) => lerArquivo(e.currentTarget.files?.[0])} />
-    <h2 class="ou">ou 2. Cole o conteúdo</h2>
-    <p class="suave pequeno">Dá para selecionar as células na planilha (com o cabeçalho), copiar e colar aqui.</p>
-    <textarea rows="5" bind:value={colado} placeholder="Casa;Rua;Numero;…"></textarea>
-    <button class="botao largo" onclick={() => analisar(colado)} disabled={!colado.trim()}>Conferir o texto colado</button>
+    <details>
+      <summary>Ou importar um arquivo de planilha (CSV)</summary>
+      <ol class="passos">
+        <li>Numa planilha, faça <strong>uma linha por morador</strong>, com as colunas:<br />
+          <code>Casa · Rua · Numero · Complemento · Bairro · Prontuario · Nome · Sexo · Data de nascimento</code></li>
+        <li><strong>Casa</strong> (opcional) junta a família: C001, C002… O primeiro de cada casa vira o responsável.</li>
+        <li><strong>Sexo</strong>: M ou F. <strong>Data</strong>: dd/mm/aaaa.</li>
+        <li>Salve como <strong>CSV</strong> e escolha o arquivo abaixo.</li>
+      </ol>
+      <input type="file" accept=".csv,.txt,text/csv,text/plain" onchange={(e) => lerArquivo(e.currentTarget.files?.[0])} />
+      <button class="botao secundario largo espaco" onclick={baixarModelo}>Baixar planilha modelo (dados inventados)</button>
+    </details>
   </section>
 {:else if passo === 'previa' && resultado}
   {#if resultado.erros.length}
@@ -105,7 +116,7 @@
         <details>
           <summary>⚠️ {resultado.avisos.length} {resultado.avisos.length === 1 ? 'aviso' : 'avisos'} (toque para ver)</summary>
           <ul class="lista avisos">
-            {#each resultado.avisos.slice(0, 100) as a, i (i)}<li><strong>Linha {a.linha}:</strong> {a.texto}</li>{/each}
+            {#each resultado.avisos.slice(0, 100) as a, i (i)}<li>{#if a.linha > 0}<strong>Linha {a.linha}:</strong> {/if}{a.texto}</li>{/each}
           </ul>
           {#if resultado.avisos.length > 100}<p class="suave pequeno">…e mais {resultado.avisos.length - 100}.</p>{/if}
         </details>
@@ -163,8 +174,8 @@
     font-size: 0.85rem;
     word-break: break-word;
   }
-  .ou {
-    margin-top: 18px;
+  .dica {
+    margin-top: 10px;
   }
   textarea {
     margin-bottom: 10px;

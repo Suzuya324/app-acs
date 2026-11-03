@@ -291,11 +291,12 @@ details > summary::after {
   margin-right: 4px;
   border-right: 3px solid currentColor;
   border-bottom: 3px solid currentColor;
-  transform: rotate(45deg) translateY(-3px);
-  transition: transform 0.15s;
+  transform: rotate(45deg);
+  margin-top: -6px;
 }
 details[open] > summary::after {
-  transform: rotate(225deg) translateY(-3px);
+  transform: rotate(-135deg);
+  margin-top: 6px;
 }
 
 .botao.perigo {

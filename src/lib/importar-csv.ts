@@ -7,8 +7,16 @@
 // O importador é "tolerante": aceita ; , ou TAB como separador, com ou sem BOM, em UTF-8 ou
 // no formato antigo do Excel (Windows-1252), conserta acentos quebrados ("JosÃ©" → "José"),
 // aceita colunas fora de ordem e nomes de coluna com ou sem acento.
+//
+// Também aceita a lista COPIADA DO FAST e colada no app:
+// - a coluna Casa é opcional: sem ela, os moradores são juntados pelo prontuário ou,
+//   sem prontuário, pelo endereço (rua + número + complemento);
+// - títulos como "Nome da rua", "Número da casa", "Nome do paciente";
+// - cabeçalho repetido (quando copia várias páginas) é ignorado;
+// - texto com uma informação por linha (jeito comum de o celular copiar tabelas).
 
 import { novoId } from './ids';
+import { prontuarioIncompleto } from './pendencias';
 import type { Familia, Morador, Sexo } from './tipos';
 
 export interface Aviso {
@@ -22,6 +30,8 @@ export interface ResultadoImportacao {
   avisos: Aviso[];
   /** Problemas que impedem a importação (ex.: falta a coluna Nome). */
   erros: string[];
+  /** Como os moradores foram juntados em famílias. */
+  agrupamento: 'casa' | 'automatico';
   resumo: { ruas: { rua: string; familias: number }[]; familias: number; moradores: number };
 }
 
@@ -100,25 +110,35 @@ export function lerLinhas(texto: string, sep: string): string[][] {
 type Coluna = 'casa' | 'rua' | 'numero' | 'complemento' | 'bairro' | 'prontuario' | 'nome' | 'sexo' | 'nascimento';
 
 const SINONIMOS: Record<Coluna, string[]> = {
-  casa: ['casa', 'familia', 'domicilio', 'cod casa', 'codigo casa'],
-  rua: ['rua', 'logradouro', 'endereco'],
-  numero: ['numero', 'n', 'no', 'num', 'nº'],
+  casa: ['casa', 'familia', 'domicilio', 'cod casa', 'codigo casa', 'codigo da casa', 'codigo familia'],
+  rua: ['rua', 'logradouro', 'endereco', 'nome da rua', 'nome do logradouro', 'rua logradouro'],
+  numero: [
+    'numero', 'n', 'no', 'num', 'numero da casa', 'n da casa', 'no da casa', 'num da casa', 'numero casa',
+    'numero do domicilio', 'n do domicilio', 'numero residencial', 'numero do imovel',
+  ],
   complemento: ['complemento', 'compl', 'comp'],
   bairro: ['bairro'],
-  prontuario: ['prontuario', 'pront', 'prontuario familiar', 'n prontuario'],
-  nome: ['nome', 'nome completo', 'morador', 'nome do morador'],
+  prontuario: ['prontuario', 'pront', 'prontuario familiar', 'n prontuario', 'n do prontuario', 'numero do prontuario'],
+  nome: ['nome', 'nome completo', 'morador', 'nome do morador', 'nome do paciente', 'paciente', 'nome do cidadao', 'cidadao', 'usuario', 'nome do usuario'],
   sexo: ['sexo', 'genero'],
-  nascimento: ['data de nascimento', 'nascimento', 'data nascimento', 'dt nascimento', 'dn', 'data de nasc', 'dt nasc'],
+  nascimento: [
+    'data de nascimento', 'nascimento', 'data nascimento', 'dt nascimento', 'dn', 'data de nasc', 'dt nasc',
+    'data nasc', 'nasc', 'dt de nascimento',
+  ],
 };
 
-const OBRIGATORIAS: Coluna[] = ['casa', 'rua', 'nome'];
+const OBRIGATORIAS: Coluna[] = ['rua', 'nome'];
+
+/** Famílias juntadas automaticamente com mais moradores que isso recebem um aviso para conferir. */
+const FAMILIA_GRANDE = 7;
 
 function normalizarCabecalho(t: string): string {
   return t
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[._:/-]/g, ' ')
+    .replace(/[º°ª]/g, '')
+    .replace(/[._:/()-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -195,54 +215,102 @@ export function arrumarNome(t: string): string {
 export function importarCSV(texto: string, hoje: string): ResultadoImportacao {
   const avisos: Aviso[] = [];
   const erros: string[] = [];
-  const vazio: ResultadoImportacao = { familias: [], avisos, erros, resumo: { ruas: [], familias: 0, moradores: 0 } };
+  const vazio: ResultadoImportacao = {
+    familias: [],
+    avisos,
+    erros,
+    agrupamento: 'casa',
+    resumo: { ruas: [], familias: 0, moradores: 0 },
+  };
 
-  const limpo = consertarAcentos(texto.replace(/^\uFEFF/, ''));
+  let limpo = consertarAcentos(texto.replace(/^\uFEFF/, ''));
   const primeira = limpo.split(/\r?\n/).find((l) => l.trim()) ?? '';
   if (!primeira) {
     erros.push('O arquivo está vazio.');
     return vazio;
   }
-  const sep = descobrirSeparador(primeira);
+
+  // Texto com uma informação por linha (sem separador): tenta remontar a tabela.
+  if (![';', '\t', ','].some((c) => primeira.includes(c))) {
+    const remontado = remontarUmaPorLinha(limpo);
+    if (remontado === null) {
+      erros.push(
+        'Não consegui entender o texto colado. Copie a lista incluindo a linha com os títulos das colunas ' +
+          '(por exemplo: Nome da rua, Número da casa, Nome do paciente).',
+      );
+      return vazio;
+    }
+    if (remontado === 'desalinhado') {
+      erros.push(
+        'O texto colado veio com uma informação por linha, mas algumas células parecem vazias e as colunas ficaram ' +
+          'desalinhadas. Tente copiar de novo, ou salve a lista numa planilha e importe o arquivo.',
+      );
+      return vazio;
+    }
+    limpo = remontado;
+  }
+
+  const sep = descobrirSeparador(limpo.split(/\r?\n/).find((l) => l.trim()) ?? '');
   const linhas = lerLinhas(limpo, sep);
   const iCab = linhas.findIndex((l) => l.some((c) => c.trim()));
   const { mapa, faltando } = mapearColunas(linhas[iCab]);
   if (faltando.length) {
     erros.push(
       `Faltam as colunas: ${faltando.map((c) => NOME_COLUNA[c]).join(', ')}. ` +
-        `O cabeçalho precisa ser: Casa;Rua;Numero;Complemento;Bairro;Prontuario;Nome;Sexo;Data de nascimento`,
+        'Copie a lista incluindo a linha com os títulos das colunas. As colunas Rua e Nome são obrigatórias.',
     );
     return vazio;
   }
+  const temCasa = mapa.casa !== undefined;
+  const cabecalhoNormalizado = linhas[iCab].map(normalizarCabecalho).join('|');
 
   const pegar = (l: string[], c: Coluna) => (mapa[c] === undefined ? '' : (l[mapa[c]!] ?? '').trim());
   const porCasa = new Map<string, Familia>();
   const ordem: Familia[] = [];
+  const chaveNorm = (t: string) => normalizarCabecalho(t).replace(/\s/g, '');
 
   for (let i = iCab + 1; i < linhas.length; i++) {
     const l = linhas[i];
     const n = i + 1; // número da linha como aparece na planilha
     if (!l.some((c) => c.trim())) continue;
+    // Cabeçalho repetido (copiou mais de uma página): ignora.
+    if (l.map(normalizarCabecalho).join('|') === cabecalhoNormalizado) continue;
 
     const nome = arrumarNome(pegar(l, 'nome'));
-    const casa = pegar(l, 'casa').toUpperCase();
-    if (!nome) {
-      avisos.push({ linha: n, texto: 'Linha sem nome: ignorada.' });
-      continue;
-    }
-    if (!casa) {
-      avisos.push({ linha: n, texto: `${nome}: sem código da Casa: ignorado.` });
-      continue;
-    }
-
     const rua = arrumarNome(pegar(l, 'rua'));
     const numero = lerNumero(pegar(l, 'numero'));
     const complemento = pegar(l, 'complemento');
     const prontuario = pegar(l, 'prontuario');
+    if (!nome) {
+      avisos.push({ linha: n, texto: 'Linha sem nome: ignorada.' });
+      continue;
+    }
+
+    // Qual família? Pela coluna Casa; sem ela, pelo prontuário (completo) ou pelo endereço.
+    let casa: string;
+    let rotuloCasa: string;
+    if (temCasa) {
+      casa = pegar(l, 'casa').toUpperCase();
+      rotuloCasa = `Casa ${casa}`;
+      if (!casa) {
+        avisos.push({ linha: n, texto: `${nome}: sem código da Casa: ignorado.` });
+        continue;
+      }
+    } else if (prontuario && !prontuarioIncompleto(prontuario)) {
+      casa = `P:${chaveNorm(prontuario)}`;
+      rotuloCasa = `Prontuário ${prontuario}`;
+    } else {
+      if (!rua) {
+        avisos.push({ linha: n, texto: `${nome}: sem rua e sem prontuário: ignorado.` });
+        continue;
+      }
+      casa = `E:${chaveNorm(rua)}|${chaveNorm(numero)}|${chaveNorm(complemento)}`;
+      rotuloCasa = `${rua}, ${numero}${complemento ? ` – ${complemento}` : ''}`;
+    }
 
     let fam = porCasa.get(casa);
     if (!fam) {
-      if (!rua) avisos.push({ linha: n, texto: `Casa ${casa}: sem rua.` });
+      if (!rua) avisos.push({ linha: n, texto: `${rotuloCasa}: sem rua.` });
       fam = {
         id: novoId('f'),
         rua,
@@ -260,11 +328,11 @@ export function importarCSV(texto: string, hoje: string): ResultadoImportacao {
       ordem.push(fam);
     } else {
       if ((rua && rua !== fam.rua) || numero !== fam.numero) {
-        avisos.push({ linha: n, texto: `Casa ${casa}: endereço diferente das outras linhas da mesma casa (ficou ${fam.rua}, ${fam.numero}).` });
+        avisos.push({ linha: n, texto: `${rotuloCasa}: endereço diferente das outras linhas da mesma família (ficou ${fam.rua}, ${fam.numero}).` });
       }
       if (prontuario && !fam.prontuario) fam.prontuario = prontuario;
       else if (prontuario && prontuario !== fam.prontuario) {
-        avisos.push({ linha: n, texto: `Casa ${casa}: prontuário diferente (${prontuario}); ficou ${fam.prontuario}.` });
+        avisos.push({ linha: n, texto: `${rotuloCasa}: prontuário diferente (${prontuario}); ficou ${fam.prontuario}.` });
       }
     }
 
@@ -283,7 +351,7 @@ export function importarCSV(texto: string, hoje: string): ResultadoImportacao {
     }
 
     if (fam.moradores.some((m) => m.nome === nome && m.nascimento === nascimento)) {
-      avisos.push({ linha: n, texto: `${nome}: aparece repetido na casa ${casa}. A repetição foi ignorada.` });
+      avisos.push({ linha: n, texto: `${nome}: aparece repetido (${rotuloCasa}). A repetição foi ignorada.` });
       continue;
     }
 
@@ -304,6 +372,23 @@ export function importarCSV(texto: string, hoje: string): ResultadoImportacao {
 
   if (!ordem.length) erros.push('Nenhum morador encontrado no arquivo.');
 
+  if (!temCasa && ordem.length) {
+    avisos.unshift({
+      linha: 0,
+      texto:
+        'Sem a coluna Casa: os moradores foram juntados em famílias pelo prontuário ou, sem prontuário, ' +
+        'pelo endereço. Famílias diferentes no mesmo endereço podem ter ficado juntas; dá para separar depois no app.',
+    });
+    for (const f of ordem) {
+      if (f.moradores.length >= FAMILIA_GRANDE) {
+        avisos.push({
+          linha: 0,
+          texto: `${f.rua}, ${f.numero}${f.complemento ? ` – ${f.complemento}` : ''}: ${f.moradores.length} moradores juntos. Confira se é uma família só.`,
+        });
+      }
+    }
+  }
+
   const contagemRuas = new Map<string, number>();
   for (const f of ordem) contagemRuas.set(f.rua, (contagemRuas.get(f.rua) ?? 0) + 1);
 
@@ -311,12 +396,42 @@ export function importarCSV(texto: string, hoje: string): ResultadoImportacao {
     familias: ordem,
     avisos,
     erros,
+    agrupamento: temCasa ? 'casa' : 'automatico',
     resumo: {
       ruas: [...contagemRuas.entries()].map(([rua, familias]) => ({ rua, familias })),
       familias: ordem.length,
       moradores: ordem.reduce((s, f) => s + f.moradores.length, 0),
     },
   };
+}
+
+/**
+ * Remonta uma tabela copiada com "uma informação por linha" (como o celular às vezes copia):
+ * as primeiras linhas são os títulos das colunas; depois vêm os valores na mesma ordem.
+ * Retorna o texto separado por TAB, null se não achou títulos, ou 'desalinhado' se a conta não fecha.
+ */
+export function remontarUmaPorLinha(texto: string): string | null | 'desalinhado' {
+  const linhas = texto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const conhecidos = new Set(Object.values(SINONIMOS).flat());
+  let n = 0;
+  while (n < linhas.length && conhecidos.has(normalizarCabecalho(linhas[n]))) n++;
+  const titulos = linhas.slice(0, n);
+  const { faltando } = mapearColunas(titulos);
+  if (n < 2 || faltando.length) return null;
+  // Tira títulos repetidos no meio (copiou várias páginas).
+  const valores: string[] = [];
+  for (let i = n; i < linhas.length; i++) {
+    const bloco = linhas.slice(i, i + n).map(normalizarCabecalho).join('|');
+    if (bloco === titulos.map(normalizarCabecalho).join('|')) {
+      i += n - 1;
+      continue;
+    }
+    valores.push(linhas[i]);
+  }
+  if (!valores.length || valores.length % n !== 0) return 'desalinhado';
+  const saida = [titulos.join('\t')];
+  for (let i = 0; i < valores.length; i += n) saida.push(valores.slice(i, i + n).join('\t'));
+  return saida.join('\n');
 }
 
 /** "2 ruas, 198 famílias, 542 moradores" */
