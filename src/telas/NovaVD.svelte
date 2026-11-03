@@ -60,7 +60,7 @@
       sinais: sinaisPreenchidos(),
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
-      contador: app.contadorRelato,
+      contador: app.visitas.length,
     }),
   );
   const relato = $derived(relatoEditado ?? relatoGerado);

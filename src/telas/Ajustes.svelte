@@ -1,0 +1,280 @@
+<script lang="ts">
+  import { entregarArquivo } from '../lib/arquivo';
+  import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
+  import { problemaNoPin } from '../lib/cripto';
+  import { diferencaDias, formatarData, hojeISO } from '../lib/datas';
+  import {
+    apagarTudo,
+    app,
+    cofre,
+    dadosParaBackup,
+    mostrarAviso,
+    pedirPersistencia,
+    registrarBackupFeito,
+    restaurarSobre,
+    salvarConfig,
+    trocarPin,
+  } from '../lib/estado.svelte';
+  import type { Desfecho } from '../lib/tipos';
+
+  const hoje = hojeISO();
+
+  // ---- Backup ----
+  let senhaB = $state('');
+  let senhaB2 = $state('');
+  let gerando = $state(false);
+  async function fazerBackup() {
+    if (senhaB.length < 6) return mostrarAviso('A senha do backup precisa ter pelo menos 6 caracteres.', 4000);
+    if (senhaB !== senhaB2) return mostrarAviso('As duas senhas não são iguais.', 4000);
+    gerando = true;
+    try {
+      const texto = await criarBackup(dadosParaBackup(), senhaB);
+      const ok = await entregarArquivo(nomeArquivoBackup(hoje), texto);
+      if (ok) {
+        await registrarBackupFeito();
+        senhaB = senhaB2 = '';
+        mostrarAviso('Backup criado ✓ Guarde o arquivo e a senha em lugares diferentes.', 5000);
+      }
+    } finally {
+      gerando = false;
+    }
+  }
+
+  let arquivoR = $state<File | null>(null);
+  let senhaR = $state('');
+  let confirmaR = $state(false);
+  async function restaurar() {
+    if (!arquivoR) return mostrarAviso('Escolha o arquivo do backup.');
+    try {
+      await restaurarSobre(await arquivoR.text(), senhaR);
+      senhaR = '';
+      confirmaR = false;
+      mostrarAviso('Backup restaurado ✓', 4000);
+    } catch (e) {
+      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui restaurar.', 5000);
+    }
+  }
+
+  const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
+
+  // ---- Dados do ACS ----
+  let novaRua = $state('');
+  function addRua() {
+    const r = novaRua.trim();
+    if (r && !app.config.ruas.includes(r)) app.config.ruas.push(r);
+    novaRua = '';
+  }
+  async function salvar() {
+    if (!(app.config.metaMensal > 0)) return mostrarAviso('A meta precisa ser maior que zero.');
+    app.config.metaMensal = Math.round(app.config.metaMensal);
+    await salvarConfig();
+    mostrarAviso('Salvo ✓');
+  }
+
+  // ---- Nomes do Fast ----
+  const ordem: Desfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
+  let motivosTexto = $state(app.config.motivos.join('\n'));
+  async function salvarNomes() {
+    const lista = motivosTexto.split('\n').map((m) => m.trim()).filter(Boolean);
+    if (!lista.length) return mostrarAviso('Deixe pelo menos um motivo.');
+    app.config.motivos = lista;
+    if (!lista.includes(app.config.motivoPadrao)) app.config.motivoPadrao = lista[0];
+    await salvar();
+  }
+
+  // ---- PIN ----
+  let pinAtual = $state('');
+  let pinNovo = $state('');
+  let pinNovo2 = $state('');
+  let trocando = $state(false);
+  async function mudarPin() {
+    const p = problemaNoPin(pinNovo);
+    if (p) return mostrarAviso(p, 4000);
+    if (pinNovo !== pinNovo2) return mostrarAviso('Os PINs novos não são iguais.', 4000);
+    trocando = true;
+    try {
+      if (!(await cofre.conferirPin(pinAtual))) return mostrarAviso('O PIN atual está errado.', 4000);
+      await trocarPin(pinNovo);
+      pinAtual = pinNovo = pinNovo2 = '';
+      mostrarAviso('PIN trocado ✓', 4000);
+    } finally {
+      trocando = false;
+    }
+  }
+
+  // ---- Apagar ----
+  let confirmaApagar = $state('');
+</script>
+
+<h1>Ajustes</h1>
+
+<!-- BACKUP -->
+<section class="cartao" id="backup">
+  <h2>Backup</h2>
+  <p>
+    Último backup:
+    <strong>{app.config.ultimoBackup ? `${formatarData(app.config.ultimoBackup)} (${diasSemBackup === 0 ? 'hoje' : `há ${diasSemBackup} dia${diasSemBackup === 1 ? '' : 's'}`})` : 'nunca'}</strong>
+  </p>
+  <p class="suave pequeno">
+    O backup é um arquivo com todos os seus dados, embaralhado com uma senha. Salve no Google Drive, mande para
+    você mesmo no WhatsApp etc. <strong>Nunca mande a senha junto com o arquivo.</strong> Se esquecer a senha, o
+    backup não abre.
+  </p>
+  <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaB} autocomplete="new-password" /></label>
+  <label class="campo"><span>Repita a senha</span><input type="password" bind:value={senhaB2} autocomplete="new-password" /></label>
+  <p class="suave pequeno">Dica: use uma frase longa, com letras e números (ex.: uma frase só sua). Pode ser diferente do PIN.</p>
+  <button class="botao largo" onclick={fazerBackup} disabled={gerando}>{gerando ? 'Gerando…' : 'Fazer backup agora'}</button>
+
+  <details class="restaurar">
+    <summary>Restaurar um backup</summary>
+    <p class="alerta">Isso <strong>substitui todos os dados atuais</strong> pelos do backup.</p>
+    <label class="campo">
+      <span>Arquivo do backup</span>
+      <input type="file" accept=".json,application/json" onchange={(e) => (arquivoR = e.currentTarget.files?.[0] ?? null)} />
+    </label>
+    <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaR} autocomplete="off" /></label>
+    <label class="opcao"><input type="checkbox" bind:checked={confirmaR} /> <span>Entendi que os dados atuais serão substituídos</span></label>
+    <button class="botao secundario largo" onclick={restaurar} disabled={!confirmaR}>Restaurar</button>
+  </details>
+</section>
+
+<!-- DADOS -->
+<section class="cartao">
+  <h2>Seus dados</h2>
+  <label class="campo"><span>Seu nome</span><input type="text" bind:value={app.config.nomeAcs} /></label>
+  <label class="campo"><span>Micro / equipe</span><input type="text" bind:value={app.config.micro} /></label>
+  <label class="campo"><span>Meta de famílias por mês</span><input type="number" inputmode="numeric" min="1" bind:value={app.config.metaMensal} /></label>
+  <h3>Ruas da área</h3>
+  <ul class="lista">
+    {#each app.config.ruas as r, i (r)}
+      <li class="rua"><span>{r}</span><button class="botao secundario pequeno" onclick={() => app.config.ruas.splice(i, 1)}>Tirar</button></li>
+    {/each}
+  </ul>
+  <div class="nova-rua">
+    <input type="text" bind:value={novaRua} placeholder="Nome da rua" onkeydown={(e) => e.key === 'Enter' && addRua()} />
+    <button class="botao pequeno" onclick={addRua}>Adicionar</button>
+  </div>
+  <button class="botao largo salvar" onclick={salvar}>Salvar</button>
+</section>
+
+<!-- SEGURANÇA -->
+<section class="cartao">
+  <h2>Bloqueio automático</h2>
+  <label class="campo">
+    <span>Trancar depois de ficar parado no app por</span>
+    <select bind:value={app.config.minutosParado} onchange={salvarConfig}>
+      {#each [1, 2, 3, 5, 10] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+    </select>
+  </label>
+  <label class="campo">
+    <span>Trancar ao sair do app (outro app ou tela apagada) por mais de</span>
+    <select bind:value={app.config.minutosFora} onchange={salvarConfig}>
+      <option value={0}>na hora (mais seguro)</option>
+      {#each [1, 2, 5] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+    </select>
+  </label>
+</section>
+
+<section class="cartao">
+  <details>
+    <summary>Trocar o PIN</summary>
+    <label class="campo"><span>PIN atual</span><input type="password" inputmode="numeric" bind:value={pinAtual} autocomplete="off" /></label>
+    <label class="campo"><span>PIN novo (6 números ou mais)</span><input type="password" inputmode="numeric" bind:value={pinNovo} autocomplete="off" /></label>
+    <label class="campo"><span>Repita o PIN novo</span><input type="password" inputmode="numeric" bind:value={pinNovo2} autocomplete="off" /></label>
+    <button class="botao largo" onclick={mudarPin} disabled={trocando}>{trocando ? 'Trocando…' : 'Trocar PIN'}</button>
+  </details>
+</section>
+
+<!-- NOMES DO FAST -->
+<section class="cartao">
+  <details>
+    <summary>Nomes iguais aos do Fast</summary>
+    <p class="suave pequeno">Ajuste para ficar igual ao Fast da sua unidade.</p>
+    <h3>Desfechos</h3>
+    {#each ordem as d (d)}
+      <label class="campo"><span class="suave pequeno">{d === 'realizada' ? 'Todos/conversou' : d === 'ausente_realizada' ? 'Só alguns em casa' : d === 'ausencia_completa' ? 'Ninguém em casa' : 'Não quis receber'}</span>
+        <input type="text" bind:value={app.config.nomesDesfecho[d]} /></label>
+    {/each}
+    <h3>Motivos (um por linha)</h3>
+    <textarea rows="6" bind:value={motivosTexto}></textarea>
+    <label class="campo motivo-padrao">
+      <span>Motivo que já vem marcado</span>
+      <select bind:value={app.config.motivoPadrao}>
+        {#each motivosTexto.split('\n').map((m) => m.trim()).filter(Boolean) as m (m)}<option value={m}>{m}</option>{/each}
+      </select>
+    </label>
+    <button class="botao largo" onclick={salvarNomes}>Salvar nomes</button>
+  </details>
+</section>
+
+<!-- ARMAZENAMENTO -->
+<section class="cartao">
+  <h2>Proteção dos dados no celular</h2>
+  {#if app.armazenamentoPersistente}
+    <p class="ok">✓ O navegador prometeu não apagar os dados sozinho.</p>
+  {:else}
+    <p class="alerta">O navegador ainda pode apagar os dados se o celular ficar sem espaço ou (no iPhone) se o app ficar dias sem uso.</p>
+    <p class="pequeno">
+      <strong>Instale o app na tela inicial:</strong><br />
+      Android (Chrome): menu ⋮ → <em>Instalar app</em> ou <em>Adicionar à tela inicial</em>.<br />
+      iPhone (Safari): botão Compartilhar → <em>Adicionar à Tela de Início</em>.
+    </p>
+    <button class="botao secundario largo" onclick={pedirPersistencia}>Pedir proteção de novo</button>
+  {/if}
+  <p class="suave pequeno">Mesmo assim, faça backup toda semana.</p>
+</section>
+
+<!-- APAGAR -->
+<section class="cartao perigo-zona">
+  <details>
+    <summary>Apagar tudo deste celular</summary>
+    <p>Apaga todos os dados e o PIN. <strong>Não tem volta</strong> (só com backup).</p>
+    <label class="campo"><span>Digite APAGAR para confirmar</span><input type="text" bind:value={confirmaApagar} autocapitalize="characters" /></label>
+    <button class="botao perigo largo" disabled={confirmaApagar.trim().toUpperCase() !== 'APAGAR'} onclick={apagarTudo}>Apagar tudo</button>
+  </details>
+</section>
+
+<style>
+  .restaurar {
+    margin-top: 16px;
+  }
+  .rua {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .nova-rua {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .salvar {
+    margin-top: 14px;
+  }
+  .opcao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    margin-bottom: 8px;
+  }
+  .opcao input {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    accent-color: var(--primaria);
+  }
+  .motivo-padrao {
+    margin-top: 12px;
+  }
+  .ok {
+    color: var(--realizada);
+    font-weight: 700;
+  }
+  .perigo-zona summary {
+    color: var(--perigo);
+  }
+</style>

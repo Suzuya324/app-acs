@@ -10,6 +10,8 @@
   const hoje = hojeISO();
   const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal));
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
+  const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
+  const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function haQuanto(data: string | null): string {
@@ -20,6 +22,13 @@
 </script>
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
+
+{#if lembrarBackup}
+  <div class="alerta lembrete">
+    <span>{diasSemBackup === null ? 'Você ainda não fez nenhum backup.' : `Último backup há ${diasSemBackup} dias.`} Faça um agora para não perder nada.</span>
+    <button class="botao pequeno" onclick={() => ir('ajustes')}>Fazer backup</button>
+  </div>
+{/if}
 
 <section class="cartao" aria-labelledby="t-meta">
   <h2 id="t-meta">Meta de {nomeMes(hoje)}</h2>
@@ -104,6 +113,12 @@
 </section>
 
 <style>
+  .lembrete {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
   .saudacao {
     margin: 4px 0 12px;
   }

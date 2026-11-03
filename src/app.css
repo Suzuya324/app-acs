@@ -167,6 +167,8 @@ input[type='text'],
 input[type='search'],
 input[type='date'],
 input[type='number'],
+input[type='password'],
+input[type='file'],
 input:not([type]),
 select,
 textarea {
@@ -273,4 +275,14 @@ details > summary {
   min-height: 44px;
   display: flex;
   align-items: center;
+}
+
+.botao.perigo {
+  background: var(--perigo);
+  border-color: var(--perigo);
+  color: #fff;
+}
+.botao.perigo.secundario {
+  background: transparent;
+  color: var(--perigo);
 }
