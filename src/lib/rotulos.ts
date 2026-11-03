@@ -24,6 +24,9 @@ export const CONFIG_PADRAO: Config = {
   minutosFora: 1,
   ultimoBackup: '',
   usandoExemplo: false,
+  diaInicioPeriodo: 1,
+  feriadosIgnorados: [],
+  diasSemCampo: [],
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

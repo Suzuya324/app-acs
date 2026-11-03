@@ -11,7 +11,9 @@
   import EditarFamilia from './telas/EditarFamilia.svelte';
   import EditarMorador from './telas/EditarMorador.svelte';
   import Importar from './telas/Importar.svelte';
+  import Painel from './telas/Painel.svelte';
   import Pendencias from './telas/Pendencias.svelte';
+  import Roteiro from './telas/Roteiro.svelte';
   import Familia from './telas/Familia.svelte';
   import Fila from './telas/Fila.svelte';
   import Inicio from './telas/Inicio.svelte';
@@ -40,7 +42,7 @@
       ? 'busca'
       : rota.tela === 'importar'
         ? 'ajustes'
-        : rota.tela === 'pendencias'
+        : ['pendencias', 'painel', 'roteiro'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -103,6 +105,10 @@
     <Importar />
   {:else if rota.tela === 'pendencias'}
     <Pendencias />
+  {:else if rota.tela === 'painel'}
+    <Painel />
+  {:else if rota.tela === 'roteiro'}
+    <Roteiro />
   {:else}
     <Inicio />
   {/if}

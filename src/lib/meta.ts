@@ -1,8 +1,23 @@
+import { contarDiasDeCampo, dentroDoPeriodo, periodoDe, type Periodo } from './calendario';
 import { contaParaMeta } from './desfecho';
-import { diasUteisAteFimDoMes, inicioDaSemana, mesDe } from './datas';
+import { ehDiaUtil, inicioDaSemana, somarDias } from './datas';
 import type { Desfecho, Familia, Visita } from './tipos';
 
+export interface OpcoesPainel {
+  /** Uma data dentro do período que se quer ver (padrão: hoje). */
+  referencia?: string;
+  /** Dia em que o período da meta começa (1 = mês do calendário). */
+  diaInicioPeriodo?: number;
+  /** Diz se a data é dia de campo (padrão: segunda a sexta). */
+  ehDiaDeCampo?: (iso: string) => boolean;
+}
+
 export interface Painel {
+  periodo: Periodo;
+  /** O período mostrado é o atual (contém hoje)? */
+  atual: boolean;
+  /** O período já terminou? */
+  passado: boolean;
   meta: number;
   /** Famílias diferentes com VD que conta (realizada ou ausente realizada) no mês. */
   familiasVisitadas: number;
@@ -21,6 +36,8 @@ export interface Painel {
   revisitar: { familia: Familia; data: string }[];
   /** Sugestão do dia: há mais tempo sem visita primeiro. */
   sugestoes: { familia: Familia; ultimaVisita: string | null }[];
+  /** Para o gráfico: famílias que contam e visitas que não contam, dia a dia do período (até hoje). */
+  porDia: { data: string; contam: number; naoContam: number; diaDeCampo: boolean }[];
 }
 
 /** Famílias que entram na conta (casas habitadas). */
@@ -33,9 +50,13 @@ export function calcularPainel(
   visitas: Visita[],
   hoje: string,
   meta: number,
+  opcoes: OpcoesPainel = {},
 ): Painel {
-  const mes = mesDe(hoje);
-  const doMes = visitas.filter((v) => mesDe(v.data) === mes);
+  const ehDiaDeCampo = opcoes.ehDiaDeCampo ?? ehDiaUtil;
+  const periodo = periodoDe(opcoes.referencia ?? hoje, opcoes.diaInicioPeriodo ?? 1);
+  const atual = dentroDoPeriodo(hoje, periodo);
+  const passado = hoje > periodo.fim;
+  const doMes = visitas.filter((v) => dentroDoPeriodo(v.data, periodo));
   const semana = inicioDaSemana(hoje);
 
   const porDesfecho: Record<Desfecho, number> = {
@@ -52,7 +73,8 @@ export function calcularPainel(
 
   const ativas = familiasAtivas(familias);
   const faltam = Math.max(0, meta - contadas.size);
-  const diasUteisRestantes = diasUteisAteFimDoMes(hoje);
+  const desde = hoje > periodo.inicio ? hoje : periodo.inicio;
+  const diasUteisRestantes = passado ? 0 : contarDiasDeCampo(desde, periodo.fim, ehDiaDeCampo);
   const porDiaUtil = diasUteisRestantes > 0 ? Math.ceil(faltam / diasUteisRestantes) : faltam;
 
   const naoVisitadas = ativas.filter((f) => !contadas.has(f.id));
@@ -87,7 +109,29 @@ export function calcularPainel(
       return a.ultimaVisita.localeCompare(b.ultimaVisita);
     });
 
+  // Gráfico: cada família conta uma vez, no primeiro dia em que contou no período.
+  const porDia: Painel['porDia'] = [];
+  const jaContou = new Set<string>();
+  const ordenadas = [...doMes].sort((a, b) => a.data.localeCompare(b.data));
+  const ultimoDia = periodo.fim < hoje ? periodo.fim : hoje;
+  for (let d = periodo.inicio; d <= ultimoDia; d = somarDias(d, 1)) {
+    let contam = 0;
+    let naoContam = 0;
+    for (const v of ordenadas) {
+      if (v.data !== d) continue;
+      if (contaParaMeta(v.desfecho) && !jaContou.has(v.familiaId)) {
+        jaContou.add(v.familiaId);
+        contam++;
+      } else naoContam++;
+    }
+    porDia.push({ data: d, contam, naoContam, diaDeCampo: ehDiaDeCampo(d) });
+  }
+
   return {
+    periodo,
+    atual,
+    passado,
+    porDia,
     meta,
     familiasVisitadas: contadas.size,
     faltam,

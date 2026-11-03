@@ -1,8 +1,9 @@
 <script lang="ts">
   import { entregarArquivo } from '../lib/arquivo';
   import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
+  import { FERIADOS_LOCAIS_SUGERIDOS, feriadosNacionais } from '../lib/calendario';
   import { problemaNoPin } from '../lib/cripto';
-  import { diferencaDias, formatarData, hojeISO } from '../lib/datas';
+  import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
     apagarTudo,
     app,
@@ -103,6 +104,39 @@
     }
   }
 
+  // ---- Calendário e meta ----
+  const anoAtual = Number(hoje.slice(0, 4));
+  const feriados = $derived(feriadosNacionais(anoAtual).filter((f) => f.data >= `${anoAtual}-01-01`));
+  function alternarFeriado(data: string, trabalho: boolean) {
+    const lista = app.config.feriadosIgnorados.filter((d) => d !== data);
+    app.config.feriadosIgnorados = trabalho ? [...lista, data] : lista;
+    salvarConfig();
+  }
+  let novoDia = $state('');
+  let novoMotivo = $state('');
+  function addDiaSemCampo(data = novoDia, motivo = novoMotivo) {
+    if (!data) return mostrarAviso('Escolha a data.');
+    if (app.config.diasSemCampo.some((d) => d.data === data)) return mostrarAviso('Esse dia já está na lista.');
+    app.config.diasSemCampo = [...app.config.diasSemCampo, { data, motivo: motivo.trim() || 'Dia sem campo' }].sort((a, b) =>
+      a.data.localeCompare(b.data),
+    );
+    novoDia = '';
+    novoMotivo = '';
+    salvarConfig();
+  }
+  function tirarDiaSemCampo(data: string) {
+    app.config.diasSemCampo = app.config.diasSemCampo.filter((d) => d.data !== data);
+    salvarConfig();
+  }
+  /** Próxima ocorrência (este ano ou o próximo) de um feriado local sugerido. */
+  const locaisSugeridos = $derived(
+    FERIADOS_LOCAIS_SUGERIDOS.map((f) => {
+      const data = `${anoAtual}-${f.mmdd}` >= hoje ? `${anoAtual}-${f.mmdd}` : `${anoAtual + 1}-${f.mmdd}`;
+      return { data, motivo: f.motivo };
+    }).filter((f) => !app.config.diasSemCampo.some((d) => d.data === f.data)),
+  );
+  const diasFuturos = $derived(app.config.diasSemCampo.filter((d) => d.data >= hoje));
+
   // ---- Apagar ----
   let confirmaApagar = $state('');
 </script>
@@ -164,6 +198,59 @@
     <button class="botao pequeno" onclick={addRua}>Adicionar</button>
   </div>
   <button class="botao largo salvar" onclick={salvar}>Salvar</button>
+</section>
+
+<!-- CALENDÁRIO E META -->
+<section class="cartao">
+  <h2>Calendário e meta</h2>
+  <label class="campo">
+    <span>A meta da unidade fecha</span>
+    <select bind:value={app.config.diaInicioPeriodo} onchange={salvarConfig}>
+      <option value={1}>no fim do mês (do dia 1 ao último dia)</option>
+      {#each Array.from({ length: 27 }, (_, i) => i + 2) as d (d)}
+        <option value={d}>do dia {d} ao dia {d - 1} do mês seguinte</option>
+      {/each}
+    </select>
+  </label>
+
+  <details>
+    <summary>Feriados nacionais de {anoAtual} ({feriados.length})</summary>
+    <p class="suave pequeno">Não contam como dia de campo. Se você trabalha num deles, marque “trabalho”.</p>
+    <ul class="lista">
+      {#each feriados as f (f.data)}
+        {@const trabalho = app.config.feriadosIgnorados.includes(f.data)}
+        <li class="feriado">
+          <span><strong>{formatarData(f.data)}</strong> · {f.motivo}</span>
+          <label class="trabalho"><input type="checkbox" checked={trabalho} onchange={(e) => alternarFeriado(f.data, e.currentTarget.checked)} /> trabalho</label>
+        </li>
+      {/each}
+    </ul>
+  </details>
+
+  <h3 class="sub">Meus dias sem campo</h3>
+  <p class="suave pequeno">Folga, férias, capacitação, reunião o dia todo, feriado da cidade…</p>
+  {#if diasFuturos.length}
+    <ul class="lista">
+      {#each diasFuturos as d (d.data)}
+        <li class="feriado">
+          <span><strong>{formatarDataLonga(d.data, true)}</strong><br /><span class="suave pequeno">{d.motivo}</span></span>
+          <button class="botao secundario pequeno" onclick={() => tirarDiaSemCampo(d.data)}>Tirar</button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+  <div class="dupla">
+    <label class="campo"><span>Data</span><input type="date" bind:value={novoDia} min={hoje} /></label>
+    <label class="campo"><span>Motivo</span><input type="text" bind:value={novoMotivo} placeholder="Ex.: férias" /></label>
+  </div>
+  <button class="botao secundario largo" onclick={() => addDiaSemCampo()}>Adicionar dia sem campo</button>
+  {#if locaisSugeridos.length}
+    <div class="chips-locais">
+      {#each locaisSugeridos as f (f.data)}
+        <button class="botao secundario pequeno" onclick={() => addDiaSemCampo(f.data, f.motivo)}>+ {f.motivo} ({formatarData(f.data)})</button>
+      {/each}
+    </div>
+  {/if}
 </section>
 
 <!-- SEGURANÇA -->
@@ -282,6 +369,42 @@
   .ok {
     color: var(--realizada);
     font-weight: 700;
+  }
+  .feriado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .trabalho {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .trabalho input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--primaria);
+  }
+  .sub {
+    margin-top: 16px;
+  }
+  .dupla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 10px;
+    margin-top: 8px;
+  }
+  .chips-locais {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
   }
   .perigo-zona summary {
     color: var(--perigo);

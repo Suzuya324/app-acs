@@ -1,5 +1,6 @@
 /* Estilo geral: pensado para celular, uma mão, sol forte e modo escuro. */
 :root {
+  --grafico-barra: #0d8a72;
   --fundo: #eef2f1;
   --cartao: #ffffff;
   --texto: #0e1716;
@@ -22,6 +23,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema='claro']) {
+    --grafico-barra: #2aa88e;
     --fundo: #0b1110;
     --cartao: #16201e;
     --texto: #eef4f2;
@@ -42,6 +44,7 @@
   }
 }
 :root[data-tema='escuro'] {
+  --grafico-barra: #2aa88e;
   --fundo: #0b1110;
   --cartao: #16201e;
   --texto: #eef4f2;
