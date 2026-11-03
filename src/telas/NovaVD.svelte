@@ -1,45 +1,112 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { idadeTexto } from '../lib/dados-ficticios';
-  import { formatarDataLonga, hojeISO } from '../lib/datas';
+  import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import { sugerirDesfecho } from '../lib/desfecho';
-  import { app, enderecoCurto, familiaPorId, mostrarAviso, salvarVisita } from '../lib/estado.svelte';
-  import { gerarRelato, juntarNomes, nomesCurtos } from '../lib/relato';
-  import { TEMAS_ORIENTACAO } from '../lib/rotulos';
-  import { voltar } from '../lib/rotas.svelte';
-  import type { Desfecho, SinaisVitais } from '../lib/tipos';
+  import {
+    app,
+    compartilhadosRecentes,
+    corrigirVisita,
+    descartarRascunho,
+    enderecoCurto,
+    familiaPorId,
+    guardarRascunho,
+    mostrarAviso,
+    ordemDaVisita,
+    registrarGravacaoRascunho,
+    salvarVisita,
+  } from '../lib/estado.svelte';
+  import { gerarRelato, juntarNomes, nomesCurtos, separarNomes } from '../lib/relato';
+  import { NOMES_GRUPO, TEMAS_ORIENTACAO } from '../lib/rotulos';
+  import { ir, voltar } from '../lib/rotas.svelte';
+  import type { Desfecho, RascunhoVD, SinaisVitais, Visita } from '../lib/tipos';
 
-  let { familiaId }: { familiaId: string } = $props();
+  /** visitaId preenchido = corrigir uma VD já salva. */
+  let { familiaId, visitaId = '' }: { familiaId: string; visitaId?: string } = $props();
+  /** O componente é recriado ao trocar de VD, então o valor inicial basta. */
+  const vid = untrack(() => visitaId);
   const hoje = hojeISO();
   const familia = $derived(familiaPorId(familiaId));
   const ativos = $derived(familia?.moradores.filter((m) => m.situacao === 'mora') ?? []);
 
-  let data = $state(hoje);
-  let presentes = $state<string[]>([]);
-  let conversou = $state(false);
-  let recusou = $state(false);
-  let desfechoManual = $state<Desfecho | null>(null);
-  let motivo = $state(app.config.motivoPadrao);
-  let compartilhada = $state(false);
-  let compartilhadaCom = $state('');
-  /** Sinais vitais de cada morador (chave = id do morador). */
-  let sinais = $state<Record<string, SinaisVitais>>(
-    Object.fromEntries(
-      (familiaPorId(untrack(() => familiaId))?.moradores ?? []).map((m) => [
-        m.id,
-        { pa: '', temperatura: '', peso: '', altura: '', glicemia: '' },
-      ]),
-    ),
+  // ---- Valores iniciais: rascunho guardado > VD sendo corrigida > VD nova ----
+  const inicio = untrack(() => {
+    const fam = familiaPorId(familiaId);
+    const vazios: Record<string, SinaisVitais> = Object.fromEntries(
+      (fam?.moradores ?? []).map((m) => [m.id, { pa: '', temperatura: '', peso: '', altura: '', glicemia: '' }]),
+    );
+    const original = vid ? app.visitas.find((v) => v.id === vid) : undefined;
+    const r = app.rascunho;
+    const rascunhoDestaVD = r && r.familiaId === familiaId && (r.visitaId ?? '') === vid ? r : null;
+    if (rascunhoDestaVD) {
+      return { ...rascunhoDestaVD, sinais: { ...vazios, ...rascunhoDestaVD.sinais }, original, restaurado: true };
+    }
+    if (original) {
+      const conhecidos = separarNomes(original.orientacoes);
+      return {
+        data: original.data,
+        presentes: [...original.presentes],
+        conversou: original.conversouComFamilia,
+        recusou: original.desfecho === 'recusa',
+        desfechoManual: null as Desfecho | null,
+        motivo: original.motivo,
+        compartilhada: !!original.compartilhadaCom,
+        compartilhadaCom: original.compartilhadaCom,
+        sinais: { ...vazios, ...structuredClone($state.snapshot(original.sinais)) },
+        temas: conhecidos.filter((t) => TEMAS_ORIENTACAO.includes(t)),
+        outrosTemas: conhecidos.filter((t) => !TEMAS_ORIENTACAO.includes(t)).join(', '),
+        relatoEditado: null as string | null,
+        original,
+        restaurado: false,
+      };
+    }
+    return {
+      data: hoje,
+      presentes: [] as string[],
+      conversou: false,
+      recusou: false,
+      desfechoManual: null as Desfecho | null,
+      motivo: app.config.motivoPadrao,
+      compartilhada: false,
+      compartilhadaCom: '',
+      sinais: vazios,
+      temas: [] as string[],
+      outrosTemas: '',
+      relatoEditado: null as string | null,
+      original,
+      restaurado: false,
+    };
+  });
+  const original: Visita | undefined = inicio.original;
+  const corrigindo = !!vid;
+  /** Há outra VD pela metade (de outra família ou outra correção)? */
+  const outroRascunho = untrack(() =>
+    app.rascunho && !(app.rascunho.familiaId === familiaId && (app.rascunho.visitaId ?? '') === vid) ? app.rascunho : null,
   );
+
+  let data = $state(inicio.data);
+  let presentes = $state<string[]>(inicio.presentes);
+  let conversou = $state(inicio.conversou);
+  let recusou = $state(inicio.recusou);
+  let desfechoManual = $state<Desfecho | null>(inicio.desfechoManual);
+  let motivo = $state(inicio.motivo);
+  let compartilhada = $state(inicio.compartilhada);
+  let compartilhadaCom = $state(inicio.compartilhadaCom);
+  /** Sinais vitais de cada morador (chave = id do morador). */
+  let sinais = $state<Record<string, SinaisVitais>>(inicio.sinais);
   /** Assuntos tocados nos botões + texto livre. */
-  let temas = $state<string[]>([]);
-  let outrosTemas = $state('');
+  let temas = $state<string[]>(inicio.temas);
+  let outrosTemas = $state(inicio.outrosTemas);
+  let relatoEditado = $state<string | null>(inicio.relatoEditado);
+  let voltarParaFila = $state(!!original?.lancadaNoFast);
+  const recentes = compartilhadosRecentes();
+
   const orientacoes = $derived(juntarNomes([...temas, ...(outrosTemas.trim() ? [outrosTemas.trim()] : [])]));
   const nomes = $derived(nomesCurtos(ativos));
   const comSinais = $derived(ativos.filter((m) => presentes.includes(m.id)));
-  let relatoEditado = $state<string | null>(null);
+  const contador = vid ? ordemDaVisita(vid) : untrack(() => app.visitas.length);
 
   const sugerido = $derived(
     sugerirDesfecho({
@@ -60,10 +127,18 @@
       sinais: sinaisPreenchidos(),
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
-      contador: app.visitas.length,
+      contador,
     }),
   );
   const relato = $derived(relatoEditado ?? relatoGerado);
+
+  // Ao corrigir: mantém o desfecho e o relato que estavam salvos, se forem diferentes do automático.
+  if (original && !inicio.restaurado) {
+    untrack(() => {
+      if (original.desfecho !== sugerido) desfechoManual = original.desfecho;
+      if (original.relato.trim() !== relatoGerado.trim()) relatoEditado = original.relato;
+    });
+  }
 
   const ordem: Desfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
@@ -88,6 +163,9 @@
   function alternarTema(t: string) {
     temas = temas.includes(t) ? temas.filter((x) => x !== t) : [...temas, t];
   }
+  function ligarCompartilhada() {
+    if (compartilhada && !compartilhadaCom.trim() && recentes.length) compartilhadaCom = recentes[0];
+  }
   /** Só os sinais de quem estava presente e com algum valor preenchido. */
   function sinaisPreenchidos(): Record<string, SinaisVitais> {
     const r: Record<string, SinaisVitais> = {};
@@ -98,14 +176,69 @@
     return r;
   }
 
+  // ---- Rascunho: guarda (criptografado) a cada mudança, para não perder a VD se o app trancar ----
+  function montarRascunho(): RascunhoVD {
+    return $state.snapshot({
+      familiaId,
+      visitaId: vid || undefined,
+      salvoEm: new Date().toISOString(),
+      data,
+      presentes,
+      conversou,
+      recusou,
+      desfechoManual,
+      motivo,
+      compartilhada,
+      compartilhadaCom,
+      sinais: sinaisPreenchidos(),
+      temas,
+      outrosTemas,
+      relatoEditado,
+    }) as RascunhoVD;
+  }
+  let mexeu = $state(inicio.restaurado);
+  let terminou = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let primeiraLeitura = true;
+  $effect(() => {
+    // lê tudo o que o ACS pode mudar
+    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado]);
+    if (primeiraLeitura) {
+      primeiraLeitura = false;
+      return;
+    }
+    mexeu = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => untrack(() => void gravarAgora()), 600);
+  });
+  async function gravarAgora() {
+    clearTimeout(timer);
+    if (mexeu && !terminou) await guardarRascunho(montarRascunho());
+  }
+  registrarGravacaoRascunho(gravarAgora);
+  onDestroy(() => {
+    clearTimeout(timer);
+    registrarGravacaoRascunho(null);
+  });
+
   async function copiar() {
     const ok = await copiarTexto(relato);
     mostrarAviso(ok ? 'Relato copiado!' : 'Não consegui copiar. Segure o texto e copie à mão.');
   }
 
-  function salvar() {
+  async function cancelar() {
+    if (mexeu && !confirm(corrigindo ? 'Descartar a correção?' : 'Descartar esta visita? O que foi preenchido será perdido.')) return;
+    terminou = true;
+    clearTimeout(timer);
+    if (mexeu || inicio.restaurado) await descartarRascunho();
+    voltar(`familia/${familiaId}`);
+  }
+
+  async function salvar() {
     if (!familia) return;
-    salvarVisita({
+    terminou = true;
+    clearTimeout(timer);
+    const v: Omit<Visita, 'id'> = {
       familiaId: familia.id,
       data,
       presentes: [...presentes],
@@ -117,19 +250,38 @@
       orientacoes,
       relato,
       lancadaNoFast: false,
-    });
-    mostrarAviso('VD salva e colocada na fila do Fast ✓');
+    };
+    if (corrigindo && original) {
+      await corrigirVisita(original.id, v, voltarParaFila);
+      mostrarAviso(voltarParaFila ? 'Correção salva ✓ Voltou para a fila do Fast.' : 'Correção salva ✓', 3500);
+    } else {
+      await salvarVisita(v);
+      mostrarAviso('VD salva e colocada na fila do Fast ✓');
+    }
     voltar(`familia/${familia.id}`);
   }
 </script>
 
-<button class="botao secundario pequeno voltar" onclick={() => voltar(`familia/${familiaId}`)}><Icone nome="voltar" /> Cancelar</button>
+<button class="botao secundario pequeno voltar" onclick={cancelar}><Icone nome="voltar" /> Cancelar</button>
 
-{#if !familia}
-  <p>Família não encontrada.</p>
+{#if !familia || (corrigindo && !original)}
+  <p>{familia ? 'Visita não encontrada.' : 'Família não encontrada.'}</p>
 {:else}
-  <h1>Nova visita</h1>
+  <h1>{corrigindo ? 'Corrigir visita' : 'Nova visita'}</h1>
   <p class="suave endereco">{enderecoCurto(familia)}</p>
+  {#if inicio.restaurado}
+    <p class="alerta">Você tinha começado esta visita: ela foi recuperada do jeito que estava.</p>
+  {/if}
+  {#if outroRascunho}
+    {@const outraFamilia = familiaPorId(outroRascunho.familiaId)}
+    <p class="alerta">
+      Há outra visita pela metade{outraFamilia ? ` (${enderecoCurto(outraFamilia)})` : ''}. Se você preencher esta, aquela será descartada.
+      {#if outraFamilia}<button class="link" onclick={() => ir(outroRascunho.visitaId ? `vd/${outroRascunho.familiaId}/${outroRascunho.visitaId}` : `vd/${outroRascunho.familiaId}`)}>Abrir a outra</button>{/if}
+    </p>
+  {/if}
+  {#if corrigindo && original}
+    <p class="suave pequeno">Corrigindo a VD de {formatarData(original.data)}. A correção fica registrada no histórico da família.</p>
+  {/if}
 
   <!-- DATA: sempre visível e editável -->
   <section class="cartao">
@@ -156,6 +308,9 @@
             <span>
               <strong>{m.nome}</strong><br />
               <span class="suave pequeno">{idadeTexto(m, data || hoje)}</span>
+              {#if m.grupos.length}
+                <span class="grupos-pessoa">{#each m.grupos as g (g)}<span class="grupo">{NOMES_GRUPO[g]}</span>{/each}</span>
+              {/if}
             </span>
           </button>
         </li>
@@ -249,14 +404,22 @@
 
   <section class="cartao">
     <label class="opcao">
-      <input type="checkbox" bind:checked={compartilhada} />
+      <input type="checkbox" bind:checked={compartilhada} onchange={ligarCompartilhada} />
       <span>Visita compartilhada com outro profissional</span>
     </label>
     {#if compartilhada}
       <label class="campo">
         <span>Nome e função</span>
-        <input type="text" bind:value={compartilhadaCom} placeholder="Ex.: técnica de enfermagem Rosa" />
+        <input type="text" bind:value={compartilhadaCom} placeholder="Ex.: técnica de enfermagem Rosa" list="compartilhados" />
+        <datalist id="compartilhados">{#each recentes as q (q)}<option value={q}></option>{/each}</datalist>
       </label>
+      {#if recentes.length > 1}
+        <div class="chips">
+          {#each recentes as q (q)}
+            <button class="chip" class:marcado={compartilhadaCom === q} onclick={() => (compartilhadaCom = q)}>{q}</button>
+          {/each}
+        </div>
+      {/if}
     {/if}
   </section>
 
@@ -270,8 +433,17 @@
     <button class="botao secundario largo" onclick={copiar}><Icone nome="copiar" /> Copiar relato</button>
   </section>
 
+  {#if corrigindo && original?.lancadaNoFast}
+    <section class="cartao">
+      <label class="opcao">
+        <input type="checkbox" bind:checked={voltarParaFila} />
+        <span>Esta VD já foi lançada no Fast. Colocar de novo na fila, para corrigir lá também</span>
+      </label>
+    </section>
+  {/if}
+
   <div class="rodape-salvar">
-    <button class="botao largo" onclick={salvar} disabled={!data}><Icone nome="ok" /> Salvar VD</button>
+    <button class="botao largo" onclick={salvar} disabled={!data}><Icone nome="ok" /> {corrigindo ? 'Salvar correção' : 'Salvar VD'}</button>
   </div>
   <div class="espaco" aria-hidden="true"></div>
 {/if}
@@ -289,6 +461,10 @@
   }
   .pessoas li {
     margin-bottom: 8px;
+  }
+  .grupos-pessoa {
+    display: block;
+    margin-top: 2px;
   }
   .pessoa {
     display: flex;

@@ -88,7 +88,7 @@
   {:else if rota.tela === 'familia'}
     {#key rota.id}<Familia id={rota.id} />{/key}
   {:else if rota.tela === 'vd'}
-    {#key rota.id}<NovaVD familiaId={rota.id} />{/key}
+    {#key `${rota.id}/${rota.sub}`}<NovaVD familiaId={rota.id} visitaId={rota.sub} />{/key}
   {:else if rota.tela === 'fila'}
     <Fila />
   {:else if rota.tela === 'ajustes'}
