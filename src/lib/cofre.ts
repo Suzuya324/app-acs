@@ -1,7 +1,7 @@
 // O "cofre": cria, abre (com o PIN) e grava os dados criptografados.
 import type { Armazenamento } from './armazenamento';
 import { bytesAleatorios, cifrar, decifrar, derivarChave, ITERACOES_PADRAO, type Cifrado } from './cripto';
-import type { Alteracao, Config, Familia, RascunhoVD, Visita } from './tipos';
+import type { Alteracao, Config, Familia, RascunhoVD, Revisita, Visita } from './tipos';
 
 export interface Dados {
   config: Config;
@@ -11,9 +11,11 @@ export interface Dados {
   historico: Alteracao[];
   /** Visita pela metade (ou null). */
   rascunho?: RascunhoVD | null;
+  /** Revisitas marcadas (voltar na casa por um motivo). */
+  revisitas?: Revisita[];
 }
 export type Parte = keyof Dados;
-const PARTES: Parte[] = ['config', 'familias', 'visitas', 'historico', 'rascunho'];
+const PARTES: Parte[] = ['config', 'familias', 'visitas', 'historico', 'rascunho', 'revisitas'];
 
 interface InfoCofre {
   versao: 1;
@@ -60,7 +62,7 @@ export class Cofre {
     const chave = await derivarChave(pin, sal, this.iteracoes);
     const info: InfoCofre = { versao: 1, sal, iteracoes: this.iteracoes, verificador: await cifrar(chave, VERIFICADOR) };
     const itens: Record<string, unknown> = { cofre: info, tentativas: { erros: 0, ultimoErro: 0 } };
-    for (const p of PARTES) itens[chaveParte(p)] = await cifrar(chave, dados[p] ?? null);
+    for (const p of PARTES) itens[chaveParte(p)] = await cifrar(chave, dados[p] ?? (p === 'config' || p === 'rascunho' ? null : []));
     await this.armaz.gravar(itens);
     this.chave = chave;
   }

@@ -13,7 +13,7 @@ import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } fro
 import { gerarRelato } from './relato';
 import { sugerirSexoNasFamilias } from './sexo-por-nome';
 import { novoId } from './ids';
-import type { Alteracao, Config, Familia, Morador, RascunhoVD, Visita } from './tipos';
+import type { Alteracao, Config, Familia, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -27,6 +27,8 @@ export const app = $state({
   historico: [] as Alteracao[],
   /** Visita pela metade (guardada criptografada). */
   rascunho: null as RascunhoVD | null,
+  /** Revisitas marcadas (abertas, feitas e canceladas; nada é apagado). */
+  revisitas: [] as Revisita[],
   aviso: '' as string,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
@@ -77,6 +79,7 @@ function carregar(d: Dados) {
   app.visitas = d.visitas ?? [];
   app.historico = d.historico ?? [];
   app.rascunho = d.rascunho ?? null;
+  app.revisitas = d.revisitas ?? [];
 }
 
 function dadosAtuais(): Dados {
@@ -86,6 +89,7 @@ function dadosAtuais(): Dados {
     visitas: app.visitas,
     historico: app.historico,
     rascunho: app.rascunho,
+    revisitas: app.revisitas,
   }) as Dados;
 }
 
@@ -160,6 +164,7 @@ export async function trancar() {
   app.visitas = [];
   app.historico = [];
   app.rascunho = null;
+  app.revisitas = [];
   app.busca = '';
   app.fase = 'trancado';
 }
@@ -170,6 +175,7 @@ export async function apagarTudo() {
   app.visitas = [];
   app.historico = [];
   app.rascunho = null;
+  app.revisitas = [];
   app.config = structuredClone(CONFIG_PADRAO);
   app.fase = 'configurar';
   location.hash = '#/';
@@ -199,9 +205,50 @@ export function familiaPorId(id: string): Familia | undefined {
 }
 
 export function salvarVisita(v: Omit<Visita, 'id'>) {
-  app.visitas.push({ ...v, id: novoId('v') });
+  const id = novoId('v');
+  app.visitas.push({ ...v, id });
   app.rascunho = null;
-  return gravar({ visitas: app.visitas, rascunho: null });
+  aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
+  return gravar({ visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico });
+}
+
+/** Marca como feitas as revisitas resolvidas na VD (e reabre as que foram desmarcadas numa correção). */
+function aplicarRevisitas(visitaId: string, familiaId: string, data: string, feitas: string[], antes: string[]) {
+  const textos: string[] = [];
+  for (const r of app.revisitas) {
+    if (feitas.includes(r.id) && !antes.includes(r.id)) {
+      r.feitaEm = data;
+      r.visitaId = visitaId;
+      textos.push(`Revisita feita: ${r.motivo}`);
+    } else if (!feitas.includes(r.id) && antes.includes(r.id)) {
+      r.feitaEm = undefined;
+      r.visitaId = undefined;
+      textos.push(`Revisita reaberta: ${r.motivo}`);
+    }
+  }
+  if (textos.length) app.historico.push(...criarAlteracoes(familiaId, textos));
+}
+
+/** Revisitas ainda por fazer, das mais urgentes para as mais tranquilas. */
+export function revisitasAbertas(familiaId?: string): Revisita[] {
+  return app.revisitas
+    .filter((r) => !r.feitaEm && !r.canceladaEm && (!familiaId || r.familiaId === familiaId))
+    .sort((a, b) => a.ate.localeCompare(b.ate));
+}
+
+export async function marcarRevisita(familiaId: string, motivo: string, ate: string) {
+  const r: Revisita = { id: novoId('r'), familiaId, motivo: motivo.trim(), ate, criadaEm: new Date().toISOString() };
+  app.revisitas.push(r);
+  app.historico.push(...criarAlteracoes(familiaId, [`Revisita marcada: ${r.motivo} (até ${ate.split('-').reverse().join('/')})`]));
+  await gravar({ revisitas: app.revisitas, historico: app.historico });
+}
+
+export async function cancelarRevisita(id: string) {
+  const r = app.revisitas.find((x) => x.id === id);
+  if (!r) return;
+  r.canceladaEm = new Date().toISOString();
+  app.historico.push(...criarAlteracoes(r.familiaId, [`Revisita cancelada: ${r.motivo}`]));
+  await gravar({ revisitas: app.revisitas, historico: app.historico });
 }
 
 /** Corrige uma VD já salva e registra no histórico da família o que mudou. */
@@ -216,7 +263,8 @@ export async function corrigirVisita(id: string, nova: Omit<Visita, 'id'>, volta
   app.visitas[i] = depois;
   app.rascunho = null;
   app.historico.push(...criarAlteracoes(antes.familiaId, textos));
-  await gravar({ visitas: app.visitas, historico: app.historico, rascunho: null });
+  aplicarRevisitas(id, antes.familiaId, depois.data, depois.revisitasFeitas ?? [], antes.revisitasFeitas ?? []);
+  await gravar({ visitas: app.visitas, historico: app.historico, rascunho: null, revisitas: app.revisitas });
 }
 
 /** Posição da visita na ordem em que foram feitas (para manter o mesmo modelo de relato ao corrigir). */

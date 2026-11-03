@@ -13,6 +13,8 @@ export interface EntradaRelato {
   /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   compartilhadaCom: string;
+  /** O que foi feito de revisita marcada (ex.: "entregue guia de encaminhamento"). */
+  feitos?: string[];
   /**
    * Número de ordem desta visita (0, 1, 2…). O modelo de frase muda a cada
    * VISITAS_POR_MODELO visitas, para o texto não ficar sempre igual.
@@ -144,6 +146,8 @@ export function gerarRelato(e: EntradaRelato): string {
   partes.push(textoSinais(e.sinais, nomes, [...e.presentes, ...e.ausentes]));
 
   if (orient) partes.push(`${concordancia(e.presentes)} sobre ${orient}`);
+
+  for (const f of e.feitos ?? []) if (f.trim()) partes.push(f.trim());
 
   partes.push(compartilhada);
 
