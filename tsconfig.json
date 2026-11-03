@@ -6,7 +6,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
-    "types": ["vite/client", "svelte"],
+    "types": ["vite/client", "svelte", "vite-plugin-pwa/client"],
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true
