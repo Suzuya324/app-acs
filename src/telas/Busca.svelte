@@ -3,7 +3,8 @@
   import Icone from '../componentes/Icone.svelte';
   import { buscar } from '../lib/busca';
   import { contaParaMeta } from '../lib/desfecho';
-  import { hojeISO, mesDe } from '../lib/datas';
+  import { dentroDoPeriodo, periodoDe } from '../lib/calendario';
+  import { hojeISO } from '../lib/datas';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
   import { NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
@@ -15,9 +16,9 @@
 
   const resultados = $derived(buscar(app.familias, app.busca));
   const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((f) => f.rua)])]);
-  const mes = mesDe(hojeISO());
+  const periodo = $derived(periodoDe(hojeISO(), app.config.diaInicioPeriodo));
   const visitadasNoMes = $derived(
-    new Set(app.visitas.filter((v) => mesDe(v.data) === mes && contaParaMeta(v.desfecho)).map((v) => v.familiaId)),
+    new Set(app.visitas.filter((v) => dentroDoPeriodo(v.data, periodo) && contaParaMeta(v.desfecho)).map((v) => v.familiaId)),
   );
 </script>
 

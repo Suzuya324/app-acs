@@ -1,15 +1,15 @@
 <script lang="ts">
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
-  import { diferencaDias, formatarData, formatarDataLonga, hojeISO, nomeMes } from '../lib/datas';
-  import { app, descartarRascunho, enderecoCurto, familiaPorId, responsavel } from '../lib/estado.svelte';
+  import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
+  import { app, descartarRascunho, enderecoCurto, familiaPorId, opcoesPainel, responsavel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
-  const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal));
+  const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoesPainel()));
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
@@ -55,7 +55,7 @@
 {/if}
 
 <section class="cartao" aria-labelledby="t-meta">
-  <h2 id="t-meta">Meta de {nomeMes(hoje)}</h2>
+  <h2 id="t-meta">Meta de {painel.periodo.rotulo}</h2>
   <p class="numero-meta">
     <strong>{painel.familiasVisitadas}</strong> <span class="suave">de {painel.meta} famílias</span>
   </p>
@@ -65,12 +65,13 @@
   {#if painel.faltam > 0}
     <p class="falta">
       Faltam <strong>{painel.faltam}</strong> famílias: cerca de
-      <strong>{painel.porDiaUtil} por dia útil</strong>
-      <span class="suave">({painel.diasUteisRestantes} dias úteis até o fim do mês)</span>
+      <strong>{painel.porDiaUtil} por dia de campo</strong>
+      <span class="suave">({painel.diasUteisRestantes} dias de campo até o fim, sem feriados)</span>
     </p>
   {:else}
     <p class="falta"><strong>Meta batida! 🎉</strong></p>
   {/if}
+  <button class="link-simples ver-mais" onclick={() => ir('painel')}>Ver gráfico e meses anteriores ›</button>
 </section>
 
 <button class="botao largo grande" onclick={() => ir('busca')}>
@@ -132,16 +133,10 @@
   </ul>
 </section>
 
-<section class="cartao">
-  <details>
-    <summary>Ainda não visitadas no mês: {painel.naoVisitadas.length}</summary>
-    <ul class="lista nao-visitadas">
-      {#each painel.naoVisitadas as f (f.id)}
-        <li><button class="link-simples" onclick={() => ir(`familia/${f.id}`)}>{enderecoCurto(f)}</button></li>
-      {/each}
-    </ul>
-  </details>
-</section>
+<button class="item-link planejar" onclick={() => ir('roteiro')}>
+  <span><strong>Planejar a rua do dia</strong><br /><span class="suave pequeno">casas que faltam, na ordem dos números</span></span>
+  <span class="num-pend">{painel.naoVisitadas.length}</span>
+</button>
 
 <style>
   .chamada {
@@ -233,8 +228,15 @@
   .desfechos li:last-child {
     border-bottom: 0;
   }
-  .nao-visitadas {
-    margin-top: 8px;
+  .ver-mais {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .planejar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
   }
   .link-simples {
     background: none;
