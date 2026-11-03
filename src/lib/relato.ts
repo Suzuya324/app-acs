@@ -149,3 +149,15 @@ export function gerarRelato(e: EntradaRelato): string {
 
   return finalizar(partes);
 }
+
+/** Faz o caminho de volta de juntarNomes: "consultas, dengue e vacinas" → ["consultas", "dengue", "vacinas"]. */
+export function separarNomes(texto: string): string[] {
+  const t = texto.trim();
+  if (!t) return [];
+  const partes = t.split(/,\s*/);
+  const ultima = partes.pop()!;
+  const i = ultima.lastIndexOf(' e ');
+  if (i >= 0) partes.push(ultima.slice(0, i), ultima.slice(i + 3));
+  else partes.push(ultima);
+  return partes.map((p) => p.trim()).filter(Boolean);
+}

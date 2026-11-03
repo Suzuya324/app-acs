@@ -2,7 +2,7 @@
 import { formatarData } from './datas';
 import { novoId } from './ids';
 import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from './rotulos';
-import type { Alteracao, Familia, Morador } from './tipos';
+import type { Alteracao, Familia, Morador, Visita } from './tipos';
 
 const vazio = (t: string) => (t.trim() ? t.trim() : '(vazio)');
 const sexoTxt = (s: string) => (s === 'F' ? 'Feminino' : s === 'M' ? 'Masculino' : '(vazio)');
@@ -63,4 +63,28 @@ export function mudancasMorador(antes: Morador | null, depois: Morador): string[
 
 export function criarAlteracoes(familiaId: string, textos: string[], moradorId?: string, quando = new Date()): Alteracao[] {
   return textos.map((texto) => ({ id: novoId('h'), quando: quando.toISOString(), familiaId, moradorId, texto }));
+}
+
+/** O que mudou numa VD corrigida. `nome` dá o nome de cada morador pelo id. */
+export function mudancasVisita(
+  antes: Visita,
+  depois: Visita,
+  nome: (id: string) => string,
+  nomeDesfecho: (d: Visita['desfecho']) => string,
+): string[] {
+  const m: string[] = [];
+  if (antes.data !== depois.data) m.push(`data ${formatarData(antes.data)} → ${formatarData(depois.data)}`);
+  if (antes.desfecho !== depois.desfecho) m.push(`desfecho ${nomeDesfecho(antes.desfecho)} → ${nomeDesfecho(depois.desfecho)}`);
+  const entrou = depois.presentes.filter((p) => !antes.presentes.includes(p)).map(nome);
+  const saiu = antes.presentes.filter((p) => !depois.presentes.includes(p)).map(nome);
+  if (entrou.length) m.push(`presentes + ${entrou.join(', ')}`);
+  if (saiu.length) m.push(`presentes − ${saiu.join(', ')}`);
+  if (antes.motivo !== depois.motivo) m.push(`motivo ${antes.motivo} → ${depois.motivo}`);
+  if (antes.compartilhadaCom.trim() !== depois.compartilhadaCom.trim()) {
+    m.push(`compartilhada ${vazio(antes.compartilhadaCom)} → ${vazio(depois.compartilhadaCom)}`);
+  }
+  if (antes.orientacoes.trim() !== depois.orientacoes.trim()) m.push('orientações alteradas');
+  if (JSON.stringify(antes.sinais) !== JSON.stringify(depois.sinais)) m.push('sinais vitais alterados');
+  if (antes.relato.trim() !== depois.relato.trim()) m.push('relato alterado');
+  return m.length ? [`VD de ${formatarData(antes.data)} corrigida: ${m.join('; ')}`] : [];
 }
