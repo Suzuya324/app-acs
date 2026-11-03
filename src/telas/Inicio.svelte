@@ -2,7 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
-  import { app, descartarRascunho, enderecoCurto, familiaPorId, opcoesPainel, responsavel } from '../lib/estado.svelte';
+  import { app, descartarRascunho, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -13,6 +13,7 @@
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
+  const marcadas = $derived(app.revisitas && revisitasAbertas());
   const totalPendencias = $derived(listarPendencias(app.familias).length);
   const precisaImportar = $derived(app.config.usandoExemplo || app.familias.length === 0);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
@@ -100,6 +101,28 @@
   </ul>
   <p class="suave pequeno">Contam para a meta: Visita realizada e Ausente realizada (cada família uma vez por mês).</p>
 </section>
+
+{#if marcadas.length}
+  <section class="cartao">
+    <h2>Revisitas marcadas ({marcadas.length})</h2>
+    <ul class="lista">
+      {#each marcadas.slice(0, 8) as r (r.id)}
+        {@const f = familiaPorId(r.familiaId)}
+        {@const atrasada = r.ate < hoje}
+        <li>
+          <button class="item-link" onclick={() => ir(`familia/${r.familiaId}`)}>
+            <strong>{f ? enderecoCurto(f) : '(família)'}</strong><br />
+            <span class="pequeno">{r.motivo}</span>
+            <span class="pequeno quando" class:atrasada class:hoje={r.ate === hoje}>
+              · {atrasada ? `atrasada (era até ${formatarData(r.ate)})` : r.ate === hoje ? 'hoje' : `até ${formatarData(r.ate)}`}
+            </span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+    {#if marcadas.length > 8}<p class="suave pequeno">…e mais {marcadas.length - 8}.</p>{/if}
+  </section>
+{/if}
 
 {#if painel.revisitar.length}
   <section class="cartao">
@@ -231,6 +254,15 @@
   .ver-mais {
     border-bottom: 0;
     padding-bottom: 0;
+  }
+  .quando {
+    font-weight: 700;
+  }
+  .quando.atrasada {
+    color: var(--perigo);
+  }
+  .quando.hoje {
+    color: var(--ausencia);
   }
   .planejar {
     display: flex;

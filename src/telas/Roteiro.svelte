@@ -2,7 +2,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, hojeISO } from '../lib/datas';
   import { contaParaMeta } from '../lib/desfecho';
-  import { app, opcoesPainel, responsavel } from '../lib/estado.svelte';
+  import { app, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularPainel, familiasAtivas } from '../lib/meta';
   import { agruparPorRua } from '../lib/roteiro';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -13,11 +13,19 @@
   const revisitar = $derived(new Set(painel.revisitar.map((r) => r.familia.id)));
   let mostrarVisitadas = $state(false);
 
+  /** Motivos das revisitas marcadas, por família. */
+  const marcadas = $derived.by(() => {
+    const m = new Map<string, string[]>();
+    for (const r of app.revisitas && revisitasAbertas()) m.set(r.familiaId, [...(m.get(r.familiaId) ?? []), r.motivo]);
+    return m;
+  });
   const grupos = $derived(agruparPorRua(familiasAtivas(app.familias), app.config.ruas));
   let ruaEscolhida = $state<string | null>(null);
   const rua = $derived(ruaEscolhida ?? grupos.find((g) => g.familias.some((f) => naoVisitadas.has(f.id)))?.rua ?? grupos[0]?.rua ?? '');
   const casas = $derived(
-    (grupos.find((g) => g.rua === rua)?.familias ?? []).filter((f) => mostrarVisitadas || naoVisitadas.has(f.id)),
+    (grupos.find((g) => g.rua === rua)?.familias ?? []).filter(
+      (f) => mostrarVisitadas || naoVisitadas.has(f.id) || marcadas.has(f.id),
+    ),
   );
 
   /** Última visita que contou, de cada família. */
@@ -70,6 +78,7 @@
           <span class="texto">
             <strong>{responsavel(f)}</strong>
             <span class="suave pequeno">{haQuanto(f.id)}</span>
+            {#if marcadas.has(f.id)}<span class="marcada">revisita: {marcadas.get(f.id)!.join('; ')}</span>{/if}
             {#if revisitar.has(f.id)}<span class="revisitar">revisitar: ninguém em casa na última tentativa</span>{/if}
             {#if feita}<span class="feito">✓ já contou no período</span>{/if}
           </span>
@@ -151,6 +160,11 @@
   .texto {
     display: flex;
     flex-direction: column;
+  }
+  .marcada {
+    color: var(--primaria);
+    font-weight: 700;
+    font-size: 0.85rem;
   }
   .revisitar {
     color: var(--ausencia);

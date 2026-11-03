@@ -57,6 +57,22 @@ export interface Familia {
   moradores: Morador[];
 }
 
+/** Volta marcada numa casa por um motivo (ex.: entregar guia de encaminhamento). */
+export interface Revisita {
+  id: string;
+  familiaId: string;
+  motivo: string;
+  /** Data prevista (aaaa-mm-dd). */
+  ate: string;
+  criadaEm: string;
+  /** Quando foi feita (aaaa-mm-dd), se já foi. */
+  feitaEm?: string;
+  /** VD em que foi feita. */
+  visitaId?: string;
+  /** Quando foi cancelada (ISO), se foi. */
+  canceladaEm?: string;
+}
+
 /** Visita pela metade, guardada (criptografada) enquanto o ACS preenche. */
 export interface RascunhoVD {
   familiaId: string;
@@ -75,6 +91,7 @@ export interface RascunhoVD {
   temas: string[];
   outrosTemas: string;
   relatoEditado: string | null;
+  revisitasFeitas?: string[];
 }
 
 /** Um registro do histórico: o que mudou, quando e em qual família/morador. Nada é apagado. */
@@ -114,6 +131,8 @@ export interface Visita {
   orientacoes: string;
   relato: string;
   lancadaNoFast: boolean;
+  /** Revisitas resolvidas nesta VD (ids). */
+  revisitasFeitas?: string[];
 }
 
 export interface Config {

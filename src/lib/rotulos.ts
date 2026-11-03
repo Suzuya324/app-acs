@@ -69,3 +69,20 @@ export const TEMAS_ORIENTACAO = [
   'exames',
   'alimentação',
 ];
+
+/** Motivos comuns para marcar uma revisita, e como aparecem no relato quando feitos. */
+export const MOTIVOS_REVISITA: { motivo: string; feito: string }[] = [
+  { motivo: 'Entregar guia de encaminhamento', feito: 'entregue guia de encaminhamento' },
+  { motivo: 'Entregar resultado de exame', feito: 'entregue resultado de exame' },
+  { motivo: 'Avisar consulta agendada', feito: 'avisada a família sobre consulta agendada' },
+  { motivo: 'Levar medicação/receita', feito: 'entregue medicação/receita' },
+  { motivo: 'Acompanhar morador', feito: 'realizado acompanhamento' },
+];
+
+/** Texto do relato para uma revisita feita. */
+export function textoRevisitaFeita(motivo: string): string {
+  const conhecido = MOTIVOS_REVISITA.find((m) => m.motivo.toLowerCase() === motivo.trim().toLowerCase());
+  if (conhecido) return conhecido.feito;
+  const t = motivo.trim().replace(/[.;,]+$/, '');
+  return t ? `realizado: ${t.charAt(0).toLowerCase()}${t.slice(1)}` : '';
+}

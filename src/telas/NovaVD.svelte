@@ -19,7 +19,7 @@
     salvarVisita,
   } from '../lib/estado.svelte';
   import { gerarRelato, juntarNomes, nomesCurtos, separarNomes } from '../lib/relato';
-  import { NOMES_GRUPO, TEMAS_ORIENTACAO } from '../lib/rotulos';
+  import { NOMES_GRUPO, TEMAS_ORIENTACAO, textoRevisitaFeita } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Desfecho, RascunhoVD, SinaisVitais, Visita } from '../lib/tipos';
 
@@ -58,6 +58,7 @@
         temas: conhecidos.filter((t) => TEMAS_ORIENTACAO.includes(t)),
         outrosTemas: conhecidos.filter((t) => !TEMAS_ORIENTACAO.includes(t)).join(', '),
         relatoEditado: null as string | null,
+        revisitasFeitas: [...(original.revisitasFeitas ?? [])],
         original,
         restaurado: false,
       };
@@ -75,6 +76,7 @@
       temas: [] as string[],
       outrosTemas: '',
       relatoEditado: null as string | null,
+      revisitasFeitas: [] as string[],
       original,
       restaurado: false,
     };
@@ -100,6 +102,17 @@
   let temas = $state<string[]>(inicio.temas);
   let outrosTemas = $state(inicio.outrosTemas);
   let relatoEditado = $state<string | null>(inicio.relatoEditado);
+  /** Revisitas marcadas resolvidas nesta VD. */
+  let revisitasFeitas = $state<string[]>(inicio.revisitasFeitas ?? []);
+  /** Revisitas desta família para mostrar: as abertas + as que esta VD (corrigida) já tinha resolvido. */
+  const revisitasDaFamilia = $derived(
+    app.revisitas.filter(
+      (r) => r.familiaId === familiaId && !r.canceladaEm && (!r.feitaEm || (vid && r.visitaId === vid)),
+    ),
+  );
+  function alternarRevisita(id: string) {
+    revisitasFeitas = revisitasFeitas.includes(id) ? revisitasFeitas.filter((x) => x !== id) : [...revisitasFeitas, id];
+  }
   let voltarParaFila = $state(!!original?.lancadaNoFast);
   const recentes = compartilhadosRecentes();
 
@@ -117,6 +130,10 @@
     }),
   );
   const desfecho = $derived(desfechoManual ?? sugerido);
+  const atendida = $derived(desfecho === 'realizada' || desfecho === 'ausente_realizada');
+  const feitosTexto = $derived(
+    atendida ? revisitasDaFamilia.filter((r) => revisitasFeitas.includes(r.id)).map((r) => textoRevisitaFeita(r.motivo)) : [],
+  );
 
   const relatoGerado = $derived(
     gerarRelato({
@@ -127,6 +144,7 @@
       sinais: sinaisPreenchidos(),
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
+      feitos: feitosTexto,
       contador,
     }),
   );
@@ -194,6 +212,7 @@
       temas,
       outrosTemas,
       relatoEditado,
+      revisitasFeitas,
     }) as RascunhoVD;
   }
   let mexeu = $state(inicio.restaurado);
@@ -202,7 +221,7 @@
   let primeiraLeitura = true;
   $effect(() => {
     // lê tudo o que o ACS pode mudar
-    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado]);
+    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado, revisitasFeitas]);
     if (primeiraLeitura) {
       primeiraLeitura = false;
       return;
@@ -250,6 +269,7 @@
       orientacoes,
       relato,
       lancadaNoFast: false,
+      revisitasFeitas: atendida ? revisitasFeitas.filter((id) => revisitasDaFamilia.some((r) => r.id === id)) : [],
     };
     if (corrigindo && original) {
       await corrigirVisita(original.id, v, voltarParaFila);
@@ -423,6 +443,19 @@
     {/if}
   </section>
 
+  {#if revisitasDaFamilia.length}
+    <section class="cartao revisitas">
+      <h2>Revisitas marcadas</h2>
+      {#each revisitasDaFamilia as r (r.id)}
+        <label class="opcao">
+          <input type="checkbox" checked={revisitasFeitas.includes(r.id)} onchange={() => alternarRevisita(r.id)} disabled={!atendida} />
+          <span><strong>{r.motivo}</strong> · feito nesta visita<br /><span class="suave pequeno">{r.ate < hoje ? 'atrasada, ' : ''}até {formatarData(r.ate)}</span></span>
+        </label>
+      {/each}
+      {#if !atendida}<p class="suave pequeno">Só dá para marcar como feita quando a visita foi atendida.</p>{/if}
+    </section>
+  {/if}
+
   <!-- RELATO -->
   <section class="cartao">
     <h2>Relato</h2>
@@ -461,6 +494,9 @@
   }
   .pessoas li {
     margin-bottom: 8px;
+  }
+  .revisitas {
+    border: 2px solid var(--primaria);
   }
   .grupos-pessoa {
     display: block;

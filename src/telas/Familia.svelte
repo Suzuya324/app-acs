@@ -1,9 +1,19 @@
 <script lang="ts">
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
+  import MarcarRevisita from '../componentes/MarcarRevisita.svelte';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
-  import { app, enderecoCurto, familiaPorId, historicoDaFamilia, mostrarAviso, registrarAusencia } from '../lib/estado.svelte';
+  import {
+    app,
+    cancelarRevisita,
+    enderecoCurto,
+    familiaPorId,
+    historicoDaFamilia,
+    mostrarAviso,
+    registrarAusencia,
+    revisitasAbertas,
+  } from '../lib/estado.svelte';
   import { prontuarioIncompleto } from '../lib/pendencias';
   import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -19,6 +29,13 @@
   const historico = $derived(historicoDaFamilia(id));
   let aberta = $state<string | null>(null);
   let confirmandoAusencia = $state(false);
+  let marcandoRevisita = $state(false);
+  const revisitas = $derived(app.revisitas && revisitasAbertas(id));
+  async function cancelar(rid: string, motivo: string) {
+    if (!confirm(`Cancelar a revisita “${motivo}”?`)) return;
+    await cancelarRevisita(rid);
+    mostrarAviso('Revisita cancelada');
+  }
   let dataAusencia = $state(hoje);
 
   async function confirmarAusencia() {
@@ -79,6 +96,28 @@
       </section>
     {/if}
   {/if}
+
+  <section class="cartao">
+    <h2>Revisitas marcadas ({revisitas.length})</h2>
+    {#each revisitas as r (r.id)}
+      {@const atrasada = r.ate < hoje}
+      <div class="revisita" class:atrasada>
+        <span>
+          <strong>{r.motivo}</strong><br />
+          <span class="pequeno">{atrasada ? 'atrasada: era até' : r.ate === hoje ? 'hoje,' : 'até'} {formatarDataLonga(r.ate)}</span>
+        </span>
+        <button class="botao secundario pequeno" onclick={() => cancelar(r.id, r.motivo)}>Cancelar</button>
+      </div>
+    {/each}
+    {#if revisitas.length}
+      <p class="suave pequeno">Ao registrar a visita, marque “feito nesta visita”.</p>
+    {/if}
+    {#if marcandoRevisita}
+      <MarcarRevisita familiaId={familia.id} aoTerminar={() => (marcandoRevisita = false)} />
+    {:else}
+      <button class="botao secundario largo" onclick={() => (marcandoRevisita = true)}><Icone nome="mais" /> Marcar revisita</button>
+    {/if}
+  </section>
 
   <section class="cartao">
     <h2>Moradores ({atuais.length})</h2>
@@ -192,6 +231,18 @@
     min-height: 64px;
     font-size: 1.2rem;
     margin-bottom: 10px;
+  }
+  .revisita {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .revisita.atrasada strong,
+  .revisita.atrasada .pequeno {
+    color: var(--perigo);
   }
   .ausencia {
     margin-bottom: 14px;
