@@ -132,6 +132,15 @@ Acácias 12 FUNDOS (pront. 00.001)
       </ul>
     </section>
 
+    {#if resultado.sexoSugerido}
+      <section class="cartao">
+        <p>
+          <strong>Sexo sugerido pelo primeiro nome para {resultado.sexoSugerido} moradores.</strong>
+          Eles ficam marcados como “a conferir” em <em>O que falta completar</em>.
+        </p>
+      </section>
+    {/if}
+
     {#if resultado.avisos.length}
       <section class="cartao">
         <details>

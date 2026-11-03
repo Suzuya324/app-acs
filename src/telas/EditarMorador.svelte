@@ -44,7 +44,8 @@
     if (m.nascimento && m.nascimento > hoje) return mostrarAviso('A data de nascimento não pode ser no futuro.');
     salvando = true;
     try {
-      await salvarMorador(familiaId, $state.snapshot(m) as Morador, responsavel);
+      // Quem abriu e salvou o morador conferiu o sexo.
+      await salvarMorador(familiaId, { ...($state.snapshot(m) as Morador), sexoAConferir: false }, responsavel);
       mostrarAviso(novo ? 'Morador incluído ✓' : 'Salvo ✓');
       voltar(`familia/${familiaId}`);
     } finally {
@@ -64,7 +65,7 @@
   <section class="cartao">
     <label class="campo"><span>Nome completo</span><input type="text" bind:value={m.nome} autocomplete="off" autocapitalize="words" /></label>
     <fieldset class="sexo">
-      <legend>Sexo</legend>
+      <legend>Sexo{#if original?.sexoAConferir}<span class="a-conferir"> · sugerido pelo nome, confira</span>{/if}</legend>
       <label><input type="radio" bind:group={m.sexo} value="F" /> Feminino</label>
       <label><input type="radio" bind:group={m.sexo} value="M" /> Masculino</label>
     </fieldset>
@@ -131,6 +132,11 @@
     font-weight: 600;
     margin-bottom: 4px;
     padding: 0;
+  }
+  .a-conferir {
+    color: var(--ausencia);
+    font-weight: 700;
+    font-size: 0.9rem;
   }
   .sexo label {
     display: flex;

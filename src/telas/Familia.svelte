@@ -92,7 +92,7 @@
               {#if m.id === familia.responsavelId}<span class="resp">responsável</span>{/if}
             </span>
             <span class="suave pequeno">
-              {m.sexo === 'F' ? 'Feminino' : m.sexo === 'M' ? 'Masculino' : 'Sexo não informado'} ·
+              {m.sexo === 'F' ? 'Feminino' : m.sexo === 'M' ? 'Masculino' : 'Sexo não informado'}{#if m.sexoAConferir}<span class="falta-dado"> (a conferir)</span>{/if} ·
               {#if m.nascimento}{idadeTexto(m, hoje)} ({formatarData(m.nascimento)}){:else}<span class="falta-dado">sem data de nascimento</span>{/if}
             </span>
             {#if m.grupos.length}

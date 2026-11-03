@@ -9,6 +9,7 @@ import { hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
 import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
 import { gerarRelato } from './relato';
+import { sugerirSexoNasFamilias } from './sexo-por-nome';
 import { novoId } from './ids';
 import type { Alteracao, Config, Familia, Morador, RascunhoVD, Visita } from './tipos';
 
@@ -318,8 +319,10 @@ export async function salvarMorador(familiaId: string, novo: Morador, tornarResp
     const nome = (id: string) => f.moradores.find((m) => m.id === id)?.nome ?? '(ninguém)';
     textos.push(`Responsável: ${nome(antesResp)} → ${nome(f.responsavelId)}`);
   }
-  if (!textos.length) return;
-  app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
+  // Grava também quando só mudou algo que não vai para o histórico (ex.: tirar a marca "a conferir").
+  const mudou = JSON.stringify(antigo) !== JSON.stringify(novo);
+  if (!textos.length && !mudou) return;
+  if (textos.length) app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
   await gravar({ familias: app.familias, historico: app.historico });
 }
 
@@ -332,6 +335,41 @@ export async function importarArea(familias: Familia[]): Promise<void> {
   app.config.usandoExemplo = false;
   app.config.ruas = ruas;
   await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico });
+}
+
+/** Sugere o sexo pelo primeiro nome para todos que estão em branco (fica "a conferir"). */
+export async function sugerirSexoParaTodos(): Promise<number> {
+  const n = sugerirSexoNasFamilias(app.familias);
+  if (n) {
+    app.historico.push(...criarAlteracoes('', [`Sexo sugerido pelo primeiro nome para ${n} moradores (a conferir)`]));
+    await gravar({ familias: app.familias, historico: app.historico });
+  }
+  return n;
+}
+
+/** Confirma (ou troca) o sexo de um morador e tira a marca "a conferir". */
+export async function confirmarSexo(familiaId: string, moradorId: string, sexo: 'M' | 'F') {
+  const m = familiaPorId(familiaId)?.moradores.find((x) => x.id === moradorId);
+  if (!m) return;
+  await salvarMorador(familiaId, { ...($state.snapshot(m) as Morador), sexo, sexoAConferir: false });
+}
+
+/** Confirma de uma vez todos os sexos sugeridos que ainda estão "a conferir". */
+export async function confirmarTodosOsSexos(): Promise<number> {
+  let n = 0;
+  for (const f of app.familias) {
+    for (const m of f.moradores) {
+      if (m.sexoAConferir) {
+        m.sexoAConferir = false;
+        n++;
+      }
+    }
+  }
+  if (n) {
+    app.historico.push(...criarAlteracoes('', [`Sexo confirmado em lote para ${n} moradores`]));
+    await gravar({ familias: app.familias, historico: app.historico });
+  }
+  return n;
 }
 
 export function historicoDaFamilia(familiaId: string): Alteracao[] {
