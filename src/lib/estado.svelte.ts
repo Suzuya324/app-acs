@@ -7,9 +7,10 @@ import { esperaAposErros } from './cripto';
 import { gerarDadosFicticios } from './dados-ficticios';
 import { hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
-import { criarAlteracoes, mudancasFamilia, mudancasMorador } from './historico';
+import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
+import { gerarRelato } from './relato';
 import { novoId } from './ids';
-import type { Alteracao, Config, Familia, Morador, Visita } from './tipos';
+import type { Alteracao, Config, Familia, Morador, RascunhoVD, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -21,6 +22,8 @@ export const app = $state({
   familias: [] as Familia[],
   visitas: [] as Visita[],
   historico: [] as Alteracao[],
+  /** Visita pela metade (guardada criptografada). */
+  rascunho: null as RascunhoVD | null,
   aviso: '' as string,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
@@ -70,6 +73,7 @@ function carregar(d: Dados) {
   app.familias = (d.familias ?? []).map(normalizarFamilia);
   app.visitas = d.visitas ?? [];
   app.historico = d.historico ?? [];
+  app.rascunho = d.rascunho ?? null;
 }
 
 function dadosAtuais(): Dados {
@@ -78,6 +82,7 @@ function dadosAtuais(): Dados {
     familias: app.familias,
     visitas: app.visitas,
     historico: app.historico,
+    rascunho: app.rascunho,
   }) as Dados;
 }
 
@@ -132,13 +137,26 @@ export async function desbloquear(pin: string): Promise<ResultadoDesbloqueio> {
   }
 }
 
-/** Tranca: esquece a chave e tira os dados da memória. */
-export function trancar() {
+/** Função que grava na hora o rascunho da VD aberta (registrada pela tela da VD). */
+let gravarRascunhoAgora: (() => Promise<void>) | null = null;
+export function registrarGravacaoRascunho(f: (() => Promise<void>) | null) {
+  gravarRascunhoAgora = f;
+}
+
+/** Tranca: grava a VD pela metade, esquece a chave e tira os dados da memória. */
+export async function trancar() {
+  if (app.fase !== 'aberto') return;
+  try {
+    await gravarRascunhoAgora?.();
+  } catch {
+    // segue trancando mesmo assim
+  }
   if (app.fase !== 'aberto') return;
   cofre.trancar();
   app.familias = [];
   app.visitas = [];
   app.historico = [];
+  app.rascunho = null;
   app.busca = '';
   app.fase = 'trancado';
 }
@@ -148,6 +166,7 @@ export async function apagarTudo() {
   app.familias = [];
   app.visitas = [];
   app.historico = [];
+  app.rascunho = null;
   app.config = structuredClone(CONFIG_PADRAO);
   app.fase = 'configurar';
   location.hash = '#/';
@@ -178,7 +197,88 @@ export function familiaPorId(id: string): Familia | undefined {
 
 export function salvarVisita(v: Omit<Visita, 'id'>) {
   app.visitas.push({ ...v, id: novoId('v') });
-  return gravar({ visitas: app.visitas });
+  app.rascunho = null;
+  return gravar({ visitas: app.visitas, rascunho: null });
+}
+
+/** Corrige uma VD já salva e registra no histórico da família o que mudou. */
+export async function corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) {
+  const i = app.visitas.findIndex((v) => v.id === id);
+  if (i < 0) return;
+  const antes = $state.snapshot(app.visitas[i]) as Visita;
+  const depois: Visita = { ...nova, id, lancadaNoFast: voltarParaFila ? false : antes.lancadaNoFast };
+  const f = familiaPorId(antes.familiaId);
+  const nome = (mid: string) => f?.moradores.find((m) => m.id === mid)?.nome.split(' ')[0] ?? '?';
+  const textos = mudancasVisita(antes, depois, nome, (d) => app.config.nomesDesfecho[d]);
+  app.visitas[i] = depois;
+  app.rascunho = null;
+  app.historico.push(...criarAlteracoes(antes.familiaId, textos));
+  await gravar({ visitas: app.visitas, historico: app.historico, rascunho: null });
+}
+
+/** Posição da visita na ordem em que foram feitas (para manter o mesmo modelo de relato ao corrigir). */
+export function ordemDaVisita(id: string): number {
+  const i = app.visitas.findIndex((v) => v.id === id);
+  return i < 0 ? app.visitas.length : i;
+}
+
+/** "Ninguém em casa" com 1 toque: registra a ausência completa na data escolhida. */
+export function registrarAusencia(familiaId: string, data: string) {
+  const relato = gerarRelato({
+    desfecho: 'ausencia_completa',
+    presentes: [],
+    ausentes: [],
+    conversouComFamilia: false,
+    sinais: {},
+    orientacoes: '',
+    compartilhadaCom: '',
+    contador: app.visitas.length,
+  });
+  return salvarVisita({
+    familiaId,
+    data,
+    presentes: [],
+    conversouComFamilia: false,
+    desfecho: 'ausencia_completa',
+    motivo: app.config.motivoPadrao,
+    compartilhadaCom: '',
+    sinais: {},
+    orientacoes: '',
+    relato,
+    lancadaNoFast: false,
+  });
+}
+
+/** Profissionais das últimas visitas compartilhadas (mais recente primeiro), para não digitar de novo. */
+export function compartilhadosRecentes(): string[] {
+  const vistos = new Set<string>();
+  const lista: string[] = [];
+  for (const v of [...app.visitas].sort((a, b) => b.data.localeCompare(a.data))) {
+    const q = v.compartilhadaCom.trim();
+    if (q && !vistos.has(q.toLowerCase())) {
+      vistos.add(q.toLowerCase());
+      lista.push(q);
+    }
+    if (lista.length >= 6) break;
+  }
+  return lista;
+}
+
+// ---------------- Rascunho da VD ----------------
+
+export async function guardarRascunho(r: RascunhoVD) {
+  if (app.fase !== 'aberto' || !cofre.aberto) return;
+  app.rascunho = r;
+  try {
+    await cofre.gravar({ rascunho: $state.snapshot(r) as RascunhoVD });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export async function descartarRascunho() {
+  app.rascunho = null;
+  if (cofre.aberto) await gravar({ rascunho: null });
 }
 
 export function marcarLancada(id: string, lancada: boolean) {
@@ -275,6 +375,7 @@ export function instalarBloqueioAutomatico() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       saiuEm = Date.now();
+      void gravarRascunhoAgora?.(); // saiu do app: guarda a VD pela metade na hora
     } else if (saiuEm !== null) {
       const fora = Date.now() - saiuEm;
       saiuEm = null;

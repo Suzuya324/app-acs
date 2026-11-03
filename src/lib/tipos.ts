@@ -55,6 +55,26 @@ export interface Familia {
   moradores: Morador[];
 }
 
+/** Visita pela metade, guardada (criptografada) enquanto o ACS preenche. */
+export interface RascunhoVD {
+  familiaId: string;
+  /** Preenchido quando é a correção de uma VD já salva. */
+  visitaId?: string;
+  salvoEm: string;
+  data: string;
+  presentes: string[];
+  conversou: boolean;
+  recusou: boolean;
+  desfechoManual: Desfecho | null;
+  motivo: string;
+  compartilhada: boolean;
+  compartilhadaCom: string;
+  sinais: Record<string, SinaisVitais>;
+  temas: string[];
+  outrosTemas: string;
+  relatoEditado: string | null;
+}
+
 /** Um registro do histórico: o que mudou, quando e em qual família/morador. Nada é apagado. */
 export interface Alteracao {
   id: string;
