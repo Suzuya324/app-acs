@@ -8,7 +8,9 @@ export interface EntradaRelato {
   presentes: Morador[];
   ausentes: Morador[];
   conversouComFamilia: boolean;
-  sinais: SinaisVitais;
+  /** Sinais vitais por morador (chave = id do morador). */
+  sinais: Record<string, SinaisVitais>;
+  /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   compartilhadaCom: string;
   /**
@@ -18,72 +20,36 @@ export interface EntradaRelato {
   contador: number;
 }
 
+/** Como começa a frase quando a visita foi atendida (estilo curto, com vírgulas). */
 interface Modelo {
-  abertura: (presentes: string) => string;
-  semPresentes: string;
-  ausentes: (nomes: string) => string;
-  sinais: string;
-  orientacoes: string;
-  compartilhada: (quem: string) => string;
+  /** `p` = nomes dos presentes; `todos` = toda a família estava; `plural` = mais de um presente. */
+  abertura: (p: string, todos: boolean, plural: boolean) => string;
 }
 
+const presentesTxt = (p: string, plural: boolean) => `${plural ? 'presentes' : 'presente'} ${p}`;
+
 const MODELOS_ATENDIDA: Modelo[] = [
-  {
-    abertura: (p) => `Realizada visita domiciliar. Presentes: ${p}.`,
-    semPresentes: 'Realizada visita domiciliar com contato com a família.',
-    ausentes: (a) => `Ausentes no momento: ${a}.`,
-    sinais: 'Sinais aferidos:',
-    orientacoes: 'Orientações:',
-    compartilhada: (q) => `Visita compartilhada com ${q}.`,
-  },
-  {
-    abertura: (p) => `Visita domiciliar realizada com a presença de ${p}.`,
-    semPresentes: 'Visita domiciliar realizada; conversado com a família.',
-    ausentes: (a) => `Não estavam em casa: ${a}.`,
-    sinais: 'Aferido:',
-    orientacoes: 'Orientações repassadas:',
-    compartilhada: (q) => `VD feita em conjunto com ${q}.`,
-  },
-  {
-    abertura: (p) => `Família visitada. Estavam em casa: ${p}.`,
-    semPresentes: 'Família visitada; contato feito com a família.',
-    ausentes: (a) => `Ausentes: ${a}.`,
-    sinais: 'Sinais vitais:',
-    orientacoes: 'Orientações dadas:',
-    compartilhada: (q) => `Visita acompanhada por ${q}.`,
-  },
-  {
-    abertura: (p) => `VD realizada. Participaram da visita: ${p}.`,
-    semPresentes: 'VD realizada por meio de conversa com a família.',
-    ausentes: (a) => `Não se encontravam no domicílio: ${a}.`,
-    sinais: 'Dados verificados na visita:',
-    orientacoes: 'Orientações realizadas:',
-    compartilhada: (q) => `Visita realizada junto com ${q}.`,
-  },
-  {
-    abertura: (p) => `Realizada VD de acompanhamento. Em domicílio no momento da visita: ${p}.`,
-    semPresentes: 'Realizada VD de acompanhamento; conversado com a família.',
-    ausentes: (a) => `Ausentes no momento da visita: ${a}.`,
-    sinais: 'Verificado durante a visita:',
-    orientacoes: 'Foram passadas as seguintes orientações:',
-    compartilhada: (q) => `VD compartilhada com ${q}.`,
-  },
+  { abertura: (p, _t, pl) => `Realizada VD, ${presentesTxt(p, pl)}` },
+  { abertura: (p, _t, pl) => `VD realizada, ${presentesTxt(p, pl)}` },
+  { abertura: (p) => `Realizada VD com ${p}` },
+  { abertura: (p, todos, pl) => (todos && pl ? `Feita VD, família presente (${p})` : `Feita VD, ${presentesTxt(p, pl)}`) },
+  { abertura: (p, _t, pl) => `Realizada visita, ${presentesTxt(p, pl)}` },
 ];
 
 const MODELOS_AUSENCIA = [
-  'Realizada tentativa de visita domiciliar; ninguém em casa no momento.',
-  'Tentativa de VD sem sucesso: família ausente no momento da visita.',
-  'Compareci ao domicílio, porém não havia ninguém em casa.',
-  'Visita não realizada por ausência de todos os moradores no momento.',
-  'Domicílio visitado sem resposta; família completa ausente.',
+  'Realizada tentativa de VD, ninguém em casa',
+  'Tentativa de VD, ninguém em casa',
+  'VD não realizada, ninguém em casa',
+  'Realizada tentativa de VD, família ausente',
+  'Tentativa de VD, família ausente no momento',
 ];
 
 const MODELOS_RECUSA = [
-  'Família recusou receber a visita domiciliar.',
-  'Visita domiciliar não realizada: a família não quis receber a visita.',
-  'Realizada abordagem no domicílio; a família recusou a visita.',
-  'Família optou por não receber a VD neste momento.',
-  'VD recusada pela família.',
+  'Família recusou a VD',
+  'VD recusada pela família',
+  'Família não quis receber a VD',
+  'Realizada tentativa de VD, família recusou',
+  'Família recusou receber a VD',
 ];
 
 /** Escolhe qual modelo usar a partir do número da visita. */
@@ -98,54 +64,88 @@ export function juntarNomes(nomes: string[]): string {
   return `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`;
 }
 
-function comPonto(texto: string): string {
-  const t = texto.trim();
-  if (!t) return '';
-  return /[.!?]$/.test(t) ? t : `${t}.`;
+/**
+ * Nome curto de cada morador: só o primeiro nome.
+ * Se dois moradores da mesma família têm o mesmo primeiro nome, usa os dois primeiros nomes.
+ */
+export function nomesCurtos(moradores: Morador[]): Map<string, string> {
+  const primeiro = (m: Morador) => m.nome.trim().split(/\s+/)[0] ?? m.nome;
+  const contagem = new Map<string, number>();
+  for (const m of moradores) contagem.set(primeiro(m), (contagem.get(primeiro(m)) ?? 0) + 1);
+  const mapa = new Map<string, string>();
+  for (const m of moradores) {
+    const p = primeiro(m);
+    mapa.set(m.id, (contagem.get(p) ?? 0) > 1 ? m.nome.trim().split(/\s+/).slice(0, 2).join(' ') : p);
+  }
+  return mapa;
 }
 
-/** Monta o texto dos sinais vitais preenchidos, ex.: "P.A. 120x80 mmHg; temperatura 36,5 °C." */
-export function textoSinais(s: SinaisVitais): string {
+/** "orientada", "orientado", "orientadas" ou "orientados", conforme quem estava presente. */
+export function concordancia(presentes: Morador[]): string {
+  if (presentes.length === 0) return 'orientada a família';
+  const todasF = presentes.every((m) => m.sexo === 'F');
+  if (presentes.length === 1) return todasF ? 'orientada' : 'orientado';
+  return todasF ? 'orientadas' : 'orientados';
+}
+
+const num = (x?: string) => (x ?? '').trim().replace('.', ',');
+
+/** "P.A. de Ana 130x85, glicemia de Ana 98 mg/dL" */
+export function textoSinais(sinais: Record<string, SinaisVitais>, nomes: Map<string, string>, ordem: Morador[]): string {
   const partes: string[] = [];
-  const v = (x?: string) => (x ?? '').trim().replace('.', ',');
-  if (s.pa?.trim()) partes.push(`P.A. ${s.pa.trim().replace(/\s*[/xX]\s*/, 'x')} mmHg`);
-  if (v(s.temperatura)) partes.push(`temperatura ${v(s.temperatura)} °C`);
-  if (v(s.peso)) partes.push(`peso ${v(s.peso)} kg`);
-  if (v(s.altura)) partes.push(`altura ${v(s.altura)} m`);
-  if (v(s.glicemia)) partes.push(`glicemia capilar ${v(s.glicemia)} mg/dL`);
-  return partes.length ? `${partes.join('; ')}.` : '';
+  for (const m of ordem) {
+    const s = sinais[m.id];
+    if (!s) continue;
+    const n = nomes.get(m.id) ?? m.nome;
+    if (s.pa?.trim()) partes.push(`P.A. de ${n} ${s.pa.trim().replace(/\s*[/xX]\s*/, 'x')}`);
+    if (num(s.temperatura)) partes.push(`temperatura de ${n} ${num(s.temperatura)} °C`);
+    if (num(s.peso)) partes.push(`peso de ${n} ${num(s.peso)} kg`);
+    if (num(s.altura)) partes.push(`altura de ${n} ${num(s.altura)} m`);
+    if (num(s.glicemia)) partes.push(`glicemia de ${n} ${num(s.glicemia)} mg/dL`);
+  }
+  return partes.join(', ');
+}
+
+function finalizar(partes: string[]): string {
+  const texto = partes.filter(Boolean).join(', ').trim().replace(/[.,;\s]+$/, '');
+  return `${texto}.`;
 }
 
 /** Gera o texto do relato pronto para copiar e colar no Fast. */
 export function gerarRelato(e: EntradaRelato): string {
-  const extra: string[] = [];
+  const quem = e.compartilhadaCom.trim();
+  const compartilhada = quem ? `VD compartilhada com ${quem}` : '';
+  const orient = e.orientacoes.trim().replace(/[.,;\s]+$/, '');
 
   if (e.desfecho === 'ausencia_completa') {
-    return MODELOS_AUSENCIA[indiceModelo(e.contador, MODELOS_AUSENCIA.length)];
+    return finalizar([MODELOS_AUSENCIA[indiceModelo(e.contador, MODELOS_AUSENCIA.length)], compartilhada]);
   }
 
   if (e.desfecho === 'recusa') {
-    const base = MODELOS_RECUSA[indiceModelo(e.contador, MODELOS_RECUSA.length)];
-    const quem = e.compartilhadaCom.trim();
-    const obs = comPonto(e.orientacoes);
-    return [base, quem ? `Abordagem feita junto com ${quem}.` : '', obs].filter(Boolean).join(' ');
+    return finalizar([MODELOS_RECUSA[indiceModelo(e.contador, MODELOS_RECUSA.length)], compartilhada]);
   }
 
-  const m = MODELOS_ATENDIDA[indiceModelo(e.contador, MODELOS_ATENDIDA.length)];
-  const nomesPresentes = e.presentes.map((p) => p.nome);
+  const nomes = nomesCurtos([...e.presentes, ...e.ausentes]);
+  const nomesPresentes = e.presentes.map((m) => nomes.get(m.id)!);
+  const partes: string[] = [];
 
-  extra.push(nomesPresentes.length ? m.abertura(juntarNomes(nomesPresentes)) : m.semPresentes);
+  if (nomesPresentes.length) {
+    const m = MODELOS_ATENDIDA[indiceModelo(e.contador, MODELOS_ATENDIDA.length)];
+    partes.push(m.abertura(juntarNomes(nomesPresentes), e.ausentes.length === 0, nomesPresentes.length > 1));
+  } else {
+    partes.push('Realizada VD, conversado com a família');
+  }
 
-  if (e.ausentes.length) extra.push(m.ausentes(juntarNomes(e.ausentes.map((p) => p.nome))));
+  if (e.ausentes.length && nomesPresentes.length) {
+    const a = e.ausentes.map((m) => nomes.get(m.id)!);
+    partes.push(`${a.length > 1 ? 'ausentes' : 'ausente'} ${juntarNomes(a)}`);
+  }
 
-  const sinais = textoSinais(e.sinais);
-  if (sinais) extra.push(`${m.sinais} ${sinais}`);
+  partes.push(textoSinais(e.sinais, nomes, [...e.presentes, ...e.ausentes]));
 
-  const orient = comPonto(e.orientacoes);
-  if (orient) extra.push(`${m.orientacoes} ${orient}`);
+  if (orient) partes.push(`${concordancia(e.presentes)} sobre ${orient}`);
 
-  const quem = e.compartilhadaCom.trim();
-  if (quem) extra.push(m.compartilhada(quem));
+  partes.push(compartilhada);
 
-  return extra.join(' ');
+  return finalizar(partes);
 }

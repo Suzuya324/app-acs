@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarDataLonga, hojeISO } from '../lib/datas';
   import { sugerirDesfecho } from '../lib/desfecho';
   import { app, enderecoCurto, familiaPorId, mostrarAviso, salvarVisita } from '../lib/estado.svelte';
-  import { gerarRelato } from '../lib/relato';
-  import { ORIENTACOES_RAPIDAS } from '../lib/rotulos';
+  import { gerarRelato, juntarNomes, nomesCurtos } from '../lib/relato';
+  import { TEMAS_ORIENTACAO } from '../lib/rotulos';
   import { voltar } from '../lib/rotas.svelte';
   import type { Desfecho, SinaisVitais } from '../lib/tipos';
 
@@ -23,8 +24,21 @@
   let motivo = $state(app.config.motivoPadrao);
   let compartilhada = $state(false);
   let compartilhadaCom = $state('');
-  let sinais = $state<SinaisVitais>({ pa: '', temperatura: '', peso: '', altura: '', glicemia: '' });
-  let orientacoes = $state('');
+  /** Sinais vitais de cada morador (chave = id do morador). */
+  let sinais = $state<Record<string, SinaisVitais>>(
+    Object.fromEntries(
+      (familiaPorId(untrack(() => familiaId))?.moradores ?? []).map((m) => [
+        m.id,
+        { pa: '', temperatura: '', peso: '', altura: '', glicemia: '' },
+      ]),
+    ),
+  );
+  /** Assuntos tocados nos botões + texto livre. */
+  let temas = $state<string[]>([]);
+  let outrosTemas = $state('');
+  const orientacoes = $derived(juntarNomes([...temas, ...(outrosTemas.trim() ? [outrosTemas.trim()] : [])]));
+  const nomes = $derived(nomesCurtos(ativos));
+  const comSinais = $derived(ativos.filter((m) => presentes.includes(m.id)));
   let relatoEditado = $state<string | null>(null);
 
   const sugerido = $derived(
@@ -43,10 +57,10 @@
       presentes: ativos.filter((m) => presentes.includes(m.id)),
       ausentes: ativos.filter((m) => !presentes.includes(m.id)),
       conversouComFamilia: conversou,
-      sinais,
+      sinais: sinaisPreenchidos(),
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
-      contador: app.contadorRelato,
+      contador: app.visitas.length,
     }),
   );
   const relato = $derived(relatoEditado ?? relatoGerado);
@@ -71,9 +85,17 @@
     recusou = !recusou;
     desfechoManual = null;
   }
-  function addOrientacao(t: string) {
-    const atual = orientacoes.trim().replace(/[.;]$/, '');
-    orientacoes = atual ? `${atual}. ${t}` : t;
+  function alternarTema(t: string) {
+    temas = temas.includes(t) ? temas.filter((x) => x !== t) : [...temas, t];
+  }
+  /** Só os sinais de quem estava presente e com algum valor preenchido. */
+  function sinaisPreenchidos(): Record<string, SinaisVitais> {
+    const r: Record<string, SinaisVitais> = {};
+    for (const id of presentes) {
+      const s = sinais[id];
+      if (s && Object.values(s).some((v) => (v ?? '').trim())) r[id] = { ...s };
+    }
+    return r;
   }
 
   async function copiar() {
@@ -91,8 +113,8 @@
       desfecho,
       motivo,
       compartilhadaCom: compartilhada ? compartilhadaCom.trim() : '',
-      sinais: { ...sinais },
-      orientacoes: orientacoes.trim(),
+      sinais: sinaisPreenchidos(),
+      orientacoes,
       relato,
       lancadaNoFast: false,
     });
@@ -189,27 +211,40 @@
   <section class="cartao">
     <details>
       <summary>Sinais vitais (opcional)</summary>
-      <p class="suave pequeno">Entram só no texto do relato.</p>
-      <div class="grade">
-        <label class="campo"><span>P.A. (mmHg)</span><input type="text" inputmode="numeric" placeholder="120/80" bind:value={sinais.pa} /></label>
-        <label class="campo"><span>Temp. (°C)</span><input type="text" inputmode="decimal" placeholder="36,5" bind:value={sinais.temperatura} /></label>
-        <label class="campo"><span>Peso (kg)</span><input type="text" inputmode="decimal" bind:value={sinais.peso} /></label>
-        <label class="campo"><span>Altura (m)</span><input type="text" inputmode="decimal" placeholder="1,65" bind:value={sinais.altura} /></label>
-        <label class="campo"><span>Glicemia (mg/dL)</span><input type="text" inputmode="numeric" bind:value={sinais.glicemia} /></label>
-      </div>
+      <p class="suave pequeno">Entram só no texto do relato, com o nome da pessoa.</p>
+      {#if comSinais.length === 0}
+        <p class="alerta">Marque primeiro quem estava em casa.</p>
+      {/if}
+      {#each comSinais as m (m.id)}
+        <fieldset class="sinais-pessoa">
+          <legend>{nomes.get(m.id)}</legend>
+          <div class="grade">
+            <label class="campo"><span>P.A.</span><input type="text" inputmode="numeric" placeholder="120/80" bind:value={sinais[m.id].pa} /></label>
+            <label class="campo"><span>Glicemia</span><input type="text" inputmode="numeric" placeholder="mg/dL" bind:value={sinais[m.id].glicemia} /></label>
+            <label class="campo"><span>Temp. (°C)</span><input type="text" inputmode="decimal" placeholder="36,5" bind:value={sinais[m.id].temperatura} /></label>
+            <label class="campo"><span>Peso (kg)</span><input type="text" inputmode="decimal" bind:value={sinais[m.id].peso} /></label>
+            <label class="campo"><span>Altura (m)</span><input type="text" inputmode="decimal" placeholder="1,65" bind:value={sinais[m.id].altura} /></label>
+          </div>
+        </fieldset>
+      {/each}
     </details>
   </section>
 
   <section class="cartao">
-    <details>
-      <summary>Orientações dadas (opcional)</summary>
-      <div class="chips">
-        {#each ORIENTACOES_RAPIDAS as o (o)}
-          <button class="chip" onclick={() => addOrientacao(o)}>+ {o}</button>
-        {/each}
-      </div>
-      <textarea rows="3" bind:value={orientacoes} placeholder="Escreva aqui as orientações"></textarea>
-    </details>
+    <h2>Orientações</h2>
+    <p class="suave pequeno">Toque nos assuntos conversados.</p>
+    <div class="chips">
+      {#each TEMAS_ORIENTACAO as t (t)}
+        {@const marcado = temas.includes(t)}
+        <button class="chip" class:marcado aria-pressed={marcado} onclick={() => alternarTema(t)}>
+          {#if marcado}<Icone nome="ok" tamanho={18} />{/if}{t}
+        </button>
+      {/each}
+    </div>
+    <label class="campo">
+      <span>Outros assuntos</span>
+      <input type="text" bind:value={outrosTemas} placeholder="Ex.: cartão SUS" />
+    </label>
   </section>
 
   <section class="cartao">
@@ -347,14 +382,30 @@
     margin: 8px 0 10px;
   }
   .chip {
-    border: 1px solid var(--borda);
-    background: var(--fundo);
-    border-radius: 12px;
-    padding: 8px 10px;
-    text-align: left;
-    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 2px solid var(--borda);
+    background: var(--cartao);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-weight: 600;
     cursor: pointer;
-    min-height: 44px;
+    min-height: 48px;
+  }
+  .chip.marcado {
+    border-color: var(--primaria);
+    background: var(--primaria-clara);
+  }
+  .sinais-pessoa {
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    margin: 8px 0 12px;
+    padding: 8px 12px 0;
+  }
+  .sinais-pessoa legend {
+    font-weight: 700;
+    padding: 0 6px;
   }
   .link {
     background: none;

@@ -1,18 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { gerarRelato, indiceModelo, juntarNomes, textoSinais, VISITAS_POR_MODELO, type EntradaRelato } from './relato';
+import {
+  concordancia,
+  gerarRelato,
+  indiceModelo,
+  juntarNomes,
+  nomesCurtos,
+  VISITAS_POR_MODELO,
+  type EntradaRelato,
+} from './relato';
 import type { Morador } from './tipos';
 
-const pessoa = (id: string, nome: string): Morador => ({
-  id, nome, sexo: 'F', nascimento: '1980-01-01', situacao: 'mora', grupos: [], obs: '',
+const pessoa = (id: string, nome: string, sexo: 'M' | 'F' = 'F'): Morador => ({
+  id, nome, sexo, nascimento: '1980-01-01', situacao: 'mora', grupos: [], obs: '',
 });
-const ana = pessoa('1', 'Ana Teste');
-const bia = pessoa('2', 'Bia Exemplo');
-const caio = pessoa('3', 'Caio Ficticio');
+const fulana = pessoa('1', 'Fulana Teste da Silva');
+const ciclano = pessoa('2', 'Ciclano Exemplo', 'M');
+const beltrana = pessoa('3', 'Beltrana Ficticia');
 
 const base: EntradaRelato = {
-  desfecho: 'ausente_realizada',
-  presentes: [ana],
-  ausentes: [bia, caio],
+  desfecho: 'realizada',
+  presentes: [fulana, ciclano],
+  ausentes: [],
   conversouComFamilia: false,
   sinais: {},
   orientacoes: '',
@@ -20,28 +28,66 @@ const base: EntradaRelato = {
   contador: 0,
 };
 
-describe('gerador de relato', () => {
-  it('cita quem estava presente e quem estava ausente', () => {
-    const t = gerarRelato(base);
-    expect(t).toContain('Ana Teste');
-    expect(t).toContain('Bia Exemplo e Caio Ficticio');
+describe('gerador de relato (estilo curto)', () => {
+  it('segue o estilo do ACS: "Realizada VD, presentes Fulana e Ciclano, orientados sobre..."', () => {
+    expect(gerarRelato({ ...base, orientacoes: 'consultas e dengue' })).toBe(
+      'Realizada VD, presentes Fulana e Ciclano, orientados sobre consultas e dengue.',
+    );
   });
 
-  it('inclui os sinais vitais preenchidos e ignora os vazios', () => {
-    const t = gerarRelato({ ...base, sinais: { pa: '120/80', glicemia: '98', peso: '' } });
-    expect(t).toContain('P.A. 120x80 mmHg');
-    expect(t).toContain('glicemia capilar 98 mg/dL');
+  it('usa só o primeiro nome', () => {
+    const t = gerarRelato(base);
+    expect(t).toContain('Fulana');
+    expect(t).not.toContain('Silva');
+    expect(t).not.toContain('Exemplo');
+  });
+
+  it('cita presentes e ausentes, no singular e no plural', () => {
+    expect(gerarRelato({ ...base, presentes: [fulana], ausentes: [ciclano] })).toBe(
+      'Realizada VD, presente Fulana, ausente Ciclano.',
+    );
+    expect(gerarRelato({ ...base, presentes: [fulana], ausentes: [ciclano, beltrana] })).toContain(
+      'ausentes Ciclano e Beltrana',
+    );
+  });
+
+  it('coloca a P.A. com o nome da pessoa e os outros sinais preenchidos', () => {
+    const t = gerarRelato({ ...base, sinais: { '1': { pa: '130/85', glicemia: '98', peso: '' } } });
+    expect(t).toContain('P.A. de Fulana 130x85');
+    expect(t).toContain('glicemia de Fulana 98 mg/dL');
     expect(t).not.toContain('peso');
   });
 
   it('formata temperatura com vírgula', () => {
-    expect(textoSinais({ temperatura: '36.5' })).toBe('temperatura 36,5 °C.');
+    const t = gerarRelato({ ...base, sinais: { '2': { temperatura: '36.5' } } });
+    expect(t).toContain('temperatura de Ciclano 36,5 °C');
   });
 
-  it('inclui orientações e visita compartilhada', () => {
-    const t = gerarRelato({ ...base, orientacoes: 'Orientada sobre vacinas', compartilhadaCom: 'técnica de enfermagem Rosa' });
-    expect(t).toContain('Orientada sobre vacinas.');
-    expect(t).toContain('técnica de enfermagem Rosa');
+  it('ajusta "orientada/orientado/orientadas/orientados"', () => {
+    expect(concordancia([fulana])).toBe('orientada');
+    expect(concordancia([ciclano])).toBe('orientado');
+    expect(concordancia([fulana, beltrana])).toBe('orientadas');
+    expect(concordancia([fulana, ciclano])).toBe('orientados');
+  });
+
+  it('inclui visita compartilhada', () => {
+    expect(gerarRelato({ ...base, compartilhadaCom: 'técnica de enfermagem Rosa' })).toContain(
+      'VD compartilhada com técnica de enfermagem Rosa.',
+    );
+  });
+
+  it('conversou com a família sem marcar presentes', () => {
+    expect(gerarRelato({ ...base, presentes: [], ausentes: [fulana], conversouComFamilia: true, orientacoes: 'vacinas' })).toBe(
+      'Realizada VD, conversado com a família, orientada a família sobre vacinas.',
+    );
+  });
+
+  it('mesmo primeiro nome na família: usa os dois primeiros nomes', () => {
+    const a = pessoa('a', 'Ana Maria Souza');
+    const b = pessoa('b', 'Ana Clara Souza');
+    const n = nomesCurtos([a, b]);
+    expect(n.get('a')).toBe('Ana Maria');
+    expect(n.get('b')).toBe('Ana Clara');
   });
 
   it('mantém o mesmo modelo dentro de um bloco de 5 visitas', () => {
@@ -55,18 +101,14 @@ describe('gerador de relato', () => {
     for (let i = 1; i < blocos.length; i++) expect(blocos[i]).not.toBe(blocos[i - 1]);
   });
 
-  it('varia também na ausência completa e na recusa', () => {
+  it('ausência completa e recusa: frases curtas, variando e sem nomes', () => {
     const a = gerarRelato({ ...base, desfecho: 'ausencia_completa', contador: 0 });
-    const b = gerarRelato({ ...base, desfecho: 'ausencia_completa', contador: 5 });
-    expect(a).not.toBe(b);
-    const r1 = gerarRelato({ ...base, desfecho: 'recusa', contador: 0 });
-    const r2 = gerarRelato({ ...base, desfecho: 'recusa', contador: 5 });
-    expect(r1).not.toBe(r2);
-  });
-
-  it('ausência completa não cita nomes', () => {
-    const t = gerarRelato({ ...base, desfecho: 'ausencia_completa', presentes: [] });
-    expect(t).not.toContain('Ana');
+    expect(a).toBe('Realizada tentativa de VD, ninguém em casa.');
+    expect(gerarRelato({ ...base, desfecho: 'ausencia_completa', contador: 5 })).not.toBe(a);
+    expect(a).not.toContain('Fulana');
+    const r = gerarRelato({ ...base, desfecho: 'recusa', contador: 0 });
+    expect(r).toBe('Família recusou a VD.');
+    expect(gerarRelato({ ...base, desfecho: 'recusa', contador: 5 })).not.toBe(r);
   });
 
   it('indiceModelo volta ao início depois de passar por todos', () => {

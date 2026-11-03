@@ -1,8 +1,8 @@
 import type { Config, Grupo, SituacaoCasa, SituacaoMorador } from './tipos';
 
 export const CONFIG_PADRAO: Config = {
-  nomeAcs: 'Agente Teste',
-  micro: 'Micro 00 (fictícia)',
+  nomeAcs: '',
+  micro: '',
   metaMensal: 200,
   nomesDesfecho: {
     realizada: 'Visita realizada',
@@ -19,6 +19,11 @@ export const CONFIG_PADRAO: Config = {
     'Egresso de internação',
   ],
   motivoPadrao: 'Outros',
+  ruas: [],
+  minutosParado: 5,
+  minutosFora: 1,
+  ultimoBackup: '',
+  usandoExemplo: false,
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {
@@ -51,11 +56,13 @@ export const NOMES_SITUACAO_CASA: Record<SituacaoCasa, string> = {
   construcao: 'Em construção',
 };
 
-export const ORIENTACOES_RAPIDAS = [
-  'Reforçada a importância de manter as consultas em dia na unidade',
-  'Orientado sobre o uso correto das medicações',
-  'Orientada a família sobre a atualização da caderneta de vacinação',
-  'Orientado sobre alimentação saudável e redução de sal',
-  'Orientado sobre prevenção da dengue (eliminar água parada)',
-  'Lembrado o agendamento de exames',
+/** Assuntos rápidos de orientação (viram "orientados sobre consultas, dengue e vacinas"). */
+export const TEMAS_ORIENTACAO = [
+  'consultas',
+  'saúde',
+  'dengue',
+  'vacinas',
+  'medicações',
+  'exames',
+  'alimentação',
 ];

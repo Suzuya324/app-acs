@@ -4,7 +4,6 @@
   import { buscar } from '../lib/busca';
   import { contaParaMeta } from '../lib/desfecho';
   import { hojeISO, mesDe } from '../lib/datas';
-  import { RUAS_FICTICIAS } from '../lib/dados-ficticios';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
   import { ir } from '../lib/rotas.svelte';
 
@@ -14,6 +13,7 @@
   });
 
   const resultados = $derived(buscar(app.familias, app.busca));
+  const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((f) => f.rua)])]);
   const mes = mesDe(hojeISO());
   const visitadasNoMes = $derived(
     new Set(app.visitas.filter((v) => mesDe(v.data) === mes && contaParaMeta(v.desfecho)).map((v) => v.familiaId)),
@@ -39,8 +39,11 @@
 {#if !app.busca.trim()}
   <p class="suave">Digite um <strong>nome</strong>, a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ipe 120”) ou o <strong>prontuário</strong>.</p>
   <h2>Ruas da área</h2>
+  {#if app.familias.length === 0}
+    <p class="alerta">Ainda não há famílias cadastradas. O importador da sua área (planilha CSV) chega na Etapa 3.</p>
+  {/if}
   <ul class="lista">
-    {#each RUAS_FICTICIAS as rua (rua)}
+    {#each ruas as rua (rua)}
       <li>
         <button class="item-link" onclick={() => (app.busca = rua)}>
           <strong>{rua}</strong>

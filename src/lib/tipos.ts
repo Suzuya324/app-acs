@@ -69,7 +69,9 @@ export interface Visita {
   desfecho: Desfecho;
   motivo: string;
   compartilhadaCom: string;
-  sinais: SinaisVitais;
+  /** Sinais vitais por morador (chave = id do morador). */
+  sinais: Record<string, SinaisVitais>;
+  /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   relato: string;
   lancadaNoFast: boolean;
@@ -84,4 +86,14 @@ export interface Config {
   /** Lista de motivos como aparecem no Fast da unidade (configurável). */
   motivos: string[];
   motivoPadrao: string;
+  /** Ruas da área (nomes completos). */
+  ruas: string[];
+  /** Tranca depois de X minutos parado dentro do app. */
+  minutosParado: number;
+  /** Tranca se ficar mais de X minutos fora do app (em outro app ou com a tela apagada). */
+  minutosFora: number;
+  /** Data (aaaa-mm-dd) do último backup, ou vazio se nunca fez. */
+  ultimoBackup: string;
+  /** Está usando os dados de exemplo (inventados), e não a área de verdade. */
+  usandoExemplo: boolean;
 }
