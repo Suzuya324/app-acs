@@ -1,0 +1,66 @@
+// Monta os textos do histórico ("o que mudou"), comparando antes e depois.
+import { formatarData } from './datas';
+import { novoId } from './ids';
+import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from './rotulos';
+import type { Alteracao, Familia, Morador } from './tipos';
+
+const vazio = (t: string) => (t.trim() ? t.trim() : '(vazio)');
+const sexoTxt = (s: string) => (s === 'F' ? 'Feminino' : s === 'M' ? 'Masculino' : '(vazio)');
+const dataTxt = (d: string) => (d ? formatarData(d) : '(vazio)');
+
+export function enderecoTexto(f: Pick<Familia, 'rua' | 'numero' | 'complemento'>): string {
+  return `${f.rua}, ${f.numero}${f.complemento ? ` – ${f.complemento}` : ''}`;
+}
+
+export function mudancasFamilia(antes: Familia | null, depois: Familia): string[] {
+  if (!antes) return [`Família cadastrada: ${enderecoTexto(depois)}`];
+  const m: string[] = [];
+  const campo = (rotulo: string, a: string, d: string) => {
+    if (a.trim() !== d.trim()) m.push(`${rotulo}: ${vazio(a)} → ${vazio(d)}`);
+  };
+  campo('Rua', antes.rua, depois.rua);
+  campo('Número', antes.numero, depois.numero);
+  campo('Complemento', antes.complemento, depois.complemento);
+  campo('Bairro', antes.bairro, depois.bairro);
+  campo('Colmeia', antes.colmeia, depois.colmeia);
+  campo('Prontuário', antes.prontuario, depois.prontuario);
+  if (antes.situacaoCasa !== depois.situacaoCasa) {
+    m.push(`Situação da casa: ${NOMES_SITUACAO_CASA[antes.situacaoCasa]} → ${NOMES_SITUACAO_CASA[depois.situacaoCasa]}`);
+  }
+  campo('Observações', antes.obs, depois.obs);
+  if (antes.responsavelId !== depois.responsavelId) {
+    const nome = (id: string) => depois.moradores.find((x) => x.id === id)?.nome ?? '(ninguém)';
+    m.push(`Responsável: ${nome(antes.responsavelId)} → ${nome(depois.responsavelId)}`);
+  }
+  return m;
+}
+
+export function mudancasMorador(antes: Morador | null, depois: Morador): string[] {
+  const quem = depois.nome;
+  if (!antes) {
+    const desde = depois.situacaoDesde ? ` (desde ${formatarData(depois.situacaoDesde)})` : '';
+    return [`${quem}: morador incluído${desde}`];
+  }
+  const m: string[] = [];
+  if (antes.nome.trim() !== depois.nome.trim()) m.push(`Nome: ${antes.nome} → ${depois.nome}`);
+  if (antes.sexo !== depois.sexo) m.push(`${quem}: sexo ${sexoTxt(antes.sexo)} → ${sexoTxt(depois.sexo)}`);
+  if (antes.nascimento !== depois.nascimento) {
+    m.push(`${quem}: nascimento ${dataTxt(antes.nascimento)} → ${dataTxt(depois.nascimento)}`);
+  }
+  if (antes.situacao !== depois.situacao) {
+    const desde = depois.situacaoDesde ? ` (desde ${formatarData(depois.situacaoDesde)})` : '';
+    m.push(`${quem}: ${NOMES_SITUACAO_MORADOR[antes.situacao]} → ${NOMES_SITUACAO_MORADOR[depois.situacao]}${desde}`);
+  } else if (antes.situacaoDesde !== depois.situacaoDesde) {
+    m.push(`${quem}: data da situação ${dataTxt(antes.situacaoDesde)} → ${dataTxt(depois.situacaoDesde)}`);
+  }
+  const entrou = depois.grupos.filter((g) => !antes.grupos.includes(g));
+  const saiu = antes.grupos.filter((g) => !depois.grupos.includes(g));
+  if (entrou.length) m.push(`${quem}: incluído em ${entrou.map((g) => NOMES_GRUPO[g]).join(', ')}`);
+  if (saiu.length) m.push(`${quem}: retirado de ${saiu.map((g) => NOMES_GRUPO[g]).join(', ')}`);
+  if (antes.obs.trim() !== depois.obs.trim()) m.push(`${quem}: observações ${vazio(antes.obs)} → ${vazio(depois.obs)}`);
+  return m;
+}
+
+export function criarAlteracoes(familiaId: string, textos: string[], moradorId?: string, quando = new Date()): Alteracao[] {
+  return textos.map((texto) => ({ id: novoId('h'), quando: quando.toISOString(), familiaId, moradorId, texto }));
+}
