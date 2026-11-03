@@ -1,6 +1,8 @@
 // Estado do app: os dados ficam na memória SÓ enquanto o app está desbloqueado.
 // Toda alteração é gravada criptografada no celular (ver cofre.ts).
 import { armazenamentoIndexedDB } from './armazenamento';
+import { criarDiaDeCampo } from './calendario';
+import type { OpcoesPainel } from './meta';
 import { lerBackup } from './backup';
 import { Cofre, PinErrado, type Dados } from './cofre';
 import { esperaAposErros } from './cripto';
@@ -424,6 +426,18 @@ export function instalarBloqueioAutomatico() {
 }
 
 // ---------------- Textos ----------------
+
+/** Opções do painel conforme os ajustes (período da meta e dias de campo). */
+export function opcoesPainel(referencia?: string): OpcoesPainel {
+  return {
+    referencia,
+    diaInicioPeriodo: app.config.diaInicioPeriodo,
+    ehDiaDeCampo: criarDiaDeCampo({
+      feriadosIgnorados: app.config.feriadosIgnorados,
+      diasSemCampo: app.config.diasSemCampo,
+    }),
+  };
+}
 
 export function enderecoCurto(f: Familia): string {
   const comp = f.complemento ? ` – ${f.complemento}` : '';
