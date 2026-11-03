@@ -206,7 +206,8 @@
   <label class="campo">
     <span>A meta da unidade fecha</span>
     <select bind:value={app.config.diaInicioPeriodo} onchange={salvarConfig}>
-      <option value={1}>no fim do mês (do dia 1 ao último dia)</option>
+      <option value={0}>no último dia útil do mês</option>
+      <option value={1}>no último dia do mês (do dia 1 ao último dia)</option>
       {#each Array.from({ length: 27 }, (_, i) => i + 2) as d (d)}
         <option value={d}>do dia {d} ao dia {d - 1} do mês seguinte</option>
       {/each}

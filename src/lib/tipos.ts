@@ -135,7 +135,7 @@ export interface Config {
   ultimoBackup: string;
   /** Está usando os dados de exemplo (inventados), e não a área de verdade. */
   usandoExemplo: boolean;
-  /** Dia em que o período da meta começa (1 = mês do calendário; 21 = do dia 21 ao dia 20). */
+  /** 0 = a meta fecha no último dia útil do mês (padrão); 1 = mês do calendário; 21 = do dia 21 ao dia 20. */
   diaInicioPeriodo: number;
   /** Feriados nacionais (aaaa-mm-dd) em que o ACS trabalha mesmo assim. */
   feriadosIgnorados: string[];

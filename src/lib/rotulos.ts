@@ -24,7 +24,7 @@ export const CONFIG_PADRAO: Config = {
   minutosFora: 1,
   ultimoBackup: '',
   usandoExemplo: false,
-  diaInicioPeriodo: 1,
+  diaInicioPeriodo: 0,
   feriadosIgnorados: [],
   diasSemCampo: [],
 };

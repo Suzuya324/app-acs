@@ -93,11 +93,39 @@ export interface Periodo {
 
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
+/** Último dia útil do mês (seg a sex, sem feriado nacional). `mes` de 0 a 11. */
+export function ultimoDiaUtil(ano: number, mes: number): string {
+  const feriados = new Set(feriadosNacionais(ano).map((f) => f.data));
+  let d = paraISO(new Date(ano, mes + 1, 0));
+  while (!ehDiaUtil(d) || feriados.has(d)) d = somarDias(d, -1);
+  return d;
+}
+
+/** Período que fecha no último dia útil de cada mês. */
+function periodoUltimoDiaUtil(iso: string): Periodo {
+  const d = deISO(iso);
+  let ano = d.getFullYear();
+  let mes = d.getMonth();
+  if (iso > ultimoDiaUtil(ano, mes)) {
+    mes++;
+    if (mes > 11) {
+      mes = 0;
+      ano++;
+    }
+  }
+  const fim = ultimoDiaUtil(ano, mes);
+  const inicio = somarDias(mes === 0 ? ultimoDiaUtil(ano - 1, 11) : ultimoDiaUtil(ano, mes - 1), 1);
+  return { inicio, fim, rotulo: `${MESES[mes]} de ${ano}` };
+}
+
 /**
- * Período da meta que contém a data. `diaInicio` = 1 é o mês do calendário;
- * outro valor (2 a 28) faz o período ir do dia X de um mês ao dia X-1 do mês seguinte.
+ * Período da meta que contém a data.
+ * `diaInicio` = 0: fecha no último dia útil do mês (padrão).
+ * `diaInicio` = 1: mês do calendário.
+ * 2 a 28: do dia X de um mês ao dia X-1 do mês seguinte.
  */
-export function periodoDe(iso: string, diaInicio = 1): Periodo {
+export function periodoDe(iso: string, diaInicio = 0): Periodo {
+  if (diaInicio === 0) return periodoUltimoDiaUtil(iso);
   const d = deISO(iso);
   const di = Math.min(28, Math.max(1, Math.round(diaInicio)));
   let ano = d.getFullYear();
@@ -117,7 +145,7 @@ export function periodoDe(iso: string, diaInicio = 1): Periodo {
 }
 
 /** Período anterior (-1) ou seguinte (+1). */
-export function periodoVizinho(p: Periodo, direcao: -1 | 1, diaInicio = 1): Periodo {
+export function periodoVizinho(p: Periodo, direcao: -1 | 1, diaInicio = 0): Periodo {
   return periodoDe(direcao < 0 ? somarDias(p.inicio, -1) : somarDias(p.fim, 1), diaInicio);
 }
 

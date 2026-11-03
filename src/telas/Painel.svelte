@@ -3,7 +3,7 @@
   import GraficoDias from '../componentes/GraficoDias.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { contarDiasDeCampo, periodoDe, periodoVizinho } from '../lib/calendario';
-  import { hojeISO } from '../lib/datas';
+  import { formatarData, hojeISO } from '../lib/datas';
   import { app, opcoesPainel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -33,6 +33,7 @@
   <button class="seta" onclick={() => mudar(-1)} aria-label="Período anterior"><Icone nome="voltar" /></button>
   <div class="periodo">
     <strong>{painel.periodo.rotulo}</strong>
+    <span class="suave pequeno">{formatarData(painel.periodo.inicio)} a {formatarData(painel.periodo.fim)}</span>
     {#if painel.atual}<span class="suave pequeno">período atual</span>{:else}<button class="link" onclick={() => (referencia = hoje)}>voltar para o atual</button>{/if}
   </div>
   <button class="seta" onclick={() => mudar(1)} disabled={!temProximo} aria-label="Próximo período"><Icone nome="seta" /></button>
