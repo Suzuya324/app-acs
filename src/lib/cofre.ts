@@ -1,15 +1,17 @@
 // O "cofre": cria, abre (com o PIN) e grava os dados criptografados.
 import type { Armazenamento } from './armazenamento';
 import { bytesAleatorios, cifrar, decifrar, derivarChave, ITERACOES_PADRAO, type Cifrado } from './cripto';
-import type { Config, Familia, Visita } from './tipos';
+import type { Alteracao, Config, Familia, Visita } from './tipos';
 
 export interface Dados {
   config: Config;
   familias: Familia[];
   visitas: Visita[];
+  /** Histórico de alterações do cadastro (nada é apagado). */
+  historico: Alteracao[];
 }
 export type Parte = keyof Dados;
-const PARTES: Parte[] = ['config', 'familias', 'visitas'];
+const PARTES: Parte[] = ['config', 'familias', 'visitas', 'historico'];
 
 interface InfoCofre {
   versao: 1;

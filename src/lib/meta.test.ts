@@ -3,8 +3,8 @@ import { calcularPainel } from './meta';
 import type { Desfecho, Familia, Visita } from './tipos';
 
 const fam = (id: string): Familia => ({
-  id, rua: 'Rua Teste', numero: id, complemento: '', colmeia: '', prontuario: '', situacaoCasa: 'habitada', obs: '',
-  moradores: [{ id: `${id}-1`, nome: 'Pessoa Teste', sexo: 'M', nascimento: '', situacao: 'mora', grupos: [], obs: '' }],
+  id, rua: 'Rua Teste', numero: id, complemento: '', bairro: '', colmeia: '', prontuario: '', situacaoCasa: 'habitada', obs: '', responsavelId: '',
+  moradores: [{ id: `${id}-1`, nome: 'Pessoa Teste', sexo: 'M', nascimento: '', situacao: 'mora', situacaoDesde: '', grupos: [], obs: '' }],
 });
 let n = 0;
 const vd = (familiaId: string, data: string, desfecho: Desfecho): Visita => ({

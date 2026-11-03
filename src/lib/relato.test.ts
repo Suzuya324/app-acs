@@ -10,8 +10,8 @@ import {
 } from './relato';
 import type { Morador } from './tipos';
 
-const pessoa = (id: string, nome: string, sexo: 'M' | 'F' = 'F'): Morador => ({
-  id, nome, sexo, nascimento: '1980-01-01', situacao: 'mora', grupos: [], obs: '',
+const pessoa = (id: string, nome: string, sexo: 'M' | 'F' | '' = 'F'): Morador => ({
+  id, nome, sexo, nascimento: '1980-01-01', situacao: 'mora', situacaoDesde: '', grupos: [], obs: '',
 });
 const fulana = pessoa('1', 'Fulana Teste da Silva');
 const ciclano = pessoa('2', 'Ciclano Exemplo', 'M');
@@ -68,6 +68,7 @@ describe('gerador de relato (estilo curto)', () => {
     expect(concordancia([ciclano])).toBe('orientado');
     expect(concordancia([fulana, beltrana])).toBe('orientadas');
     expect(concordancia([fulana, ciclano])).toBe('orientados');
+    expect(concordancia([pessoa('9', 'Sem Sexo', '')])).toBe('orientado(a)');
   });
 
   it('inclui visita compartilhada', () => {

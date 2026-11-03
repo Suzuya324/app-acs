@@ -71,7 +71,7 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
     if (r.chance(0.03)) grupos.push('deficiencia');
     if (anos >= 15 && r.chance(0.04)) grupos.push('saude_mental');
     const situacao = r.chance(0.02) ? 'mudou' : 'mora';
-    return { id: `m${++seqMorador}`, nome, sexo, nascimento, situacao, grupos, obs: '' };
+    return { id: `m${++seqMorador}`, nome, sexo, nascimento, situacao, situacaoDesde: '', grupos, obs: '' };
   };
 
   const familias: Familia[] = [];
@@ -119,10 +119,12 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
         rua,
         numero: semNumero ? 'S/N' : String(numero),
         complemento,
+        bairro: 'Bairro Exemplo',
         colmeia: String(r.entre(1, 250)),
         prontuario,
         situacaoCasa,
         obs: '',
+        responsavelId: situacaoCasa === 'habitada' || situacaoCasa === 'comercio' ? resp.id : '',
         moradores: situacaoCasa === 'habitada' || situacaoCasa === 'comercio' ? moradores : [],
       });
     }

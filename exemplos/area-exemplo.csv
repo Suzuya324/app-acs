@@ -1,0 +1,21 @@
+﻿Casa;Rua;Numero;Complemento;Bairro;Prontuario;Nome;Sexo;Data de nascimento
+C001;Rua das Acácias;12;;Bairro Exemplo;00.0001;Fulana de Tal Teste;F;14/03/1958
+C001;Rua das Acácias;12;;Bairro Exemplo;00.0001;Ciclano de Tal Teste;M;02/11/1955
+C002;Rua das Acácias;30;;Bairro Exemplo;00.0002;Beltrana Exemplo Souza;F;21/07/1990
+C002;Rua das Acácias;30;;Bairro Exemplo;00.0002;Joãozinho Exemplo Souza;M;05/01/2024
+C002;Rua das Acácias;30;;Bairro Exemplo;00.0002;Mariazinha Exemplo Souza;F;
+C003;Rua das Acácias;30;Fundos;Bairro Exemplo;;Paulo Inventado Lima;M;30/09/1972
+C004;Rua das Acácias;30;Casa 2;Bairro Exemplo;00.;Rita Ficticia Gomes;F;11/12/1949
+C005;Rua das Acácias;S/N;;Bairro Exemplo;00.0005;Severino Teste Nunes;M;19/04/1938
+C006;Rua dos Ipês Amarelos;7;;Bairro Exemplo;00.0006;Ana Exemplo Prado;F;08/08/1985
+C006;Rua dos Ipês Amarelos;7;;Bairro Exemplo;00.0006;Bruno Exemplo Prado;M;17/02/1983
+C006;Rua dos Ipês Amarelos;7;;Bairro Exemplo;00.0006;Clara Exemplo Prado;F;23/06/2012
+C007;Rua dos Ipês Amarelos;45;Apto 1;Bairro Exemplo;00.0007;Diego Ficticio Moura;M;01/01/2000
+C008;Rua dos Ipês Amarelos;45;Apto 2;Bairro Exemplo;00.0008;Elisa Ficticia Moura;F;15/05/1968
+C009;Rua dos Ipês Amarelos;310;;Bairro Exemplo;00.0009;Fábio Teste Campos;M;27/10/1979
+C009;Rua dos Ipês Amarelos;310;;Bairro Exemplo;00.0009;Gabriela Teste Campos;F;03/03/1981
+C010;Travessa Beija-Flor;2;;Bairro Exemplo;00.0010;Helena Inventada Rocha;F;12/12/1944
+C011;Travessa Beija-Flor;8;;Bairro Exemplo;00.0011;Igor Exemplo Dias;M;09/09/1995
+C011;Travessa Beija-Flor;8;;Bairro Exemplo;00.0011;Júlia Exemplo Dias;F;14/02/1997
+C011;Travessa Beija-Flor;8;;Bairro Exemplo;00.0011;Lucas Exemplo Dias;M;20/08/2025
+C012;Travessa Beija-Flor;15;;Bairro Exemplo;00.0012;Marta Teste Valente;F;06/06/1963

@@ -15,6 +15,7 @@
     salvarConfig,
     trocarPin,
   } from '../lib/estado.svelte';
+  import { ir } from '../lib/rotas.svelte';
   import type { Desfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
@@ -107,6 +108,14 @@
 </script>
 
 <h1>Ajustes</h1>
+
+<section class="cartao">
+  <h2>Minha área</h2>
+  <p class="suave pequeno">
+    {app.config.usandoExemplo ? 'Usando dados de exemplo (inventados).' : `${app.familias.length} famílias cadastradas.`}
+  </p>
+  <button class="botao secundario largo" onclick={() => ir('importar')}>Importar minha área (CSV)</button>
+</section>
 
 <!-- BACKUP -->
 <section class="cartao" id="backup">

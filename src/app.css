@@ -275,6 +275,27 @@ details > summary {
   min-height: 44px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+/* Setinha que mostra que dá para abrir/fechar */
+details > summary::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-right: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform 0.15s;
+}
+details[open] > summary::after {
+  transform: rotate(225deg) translateY(-3px);
 }
 
 .botao.perigo {

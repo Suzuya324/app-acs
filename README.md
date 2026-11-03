@@ -3,9 +3,19 @@
 App para Agentes Comunitários de Saúde: achar a família pelo endereço, registrar a visita
 domiciliar (VD) na rua, gerar o relato pronto para o Fast e acompanhar a meta do mês.
 
-> **Situação atual: Etapa 2 (Base).** PIN, dados criptografados no celular, bloqueio automático,
-> backup criptografado e funcionamento sem internet. O importador da área (CSV) vem na Etapa 3;
-> até lá dá para usar **dados de exemplo inventados**.
+> **Situação atual: Etapa 3 (Território).** Importar a área por CSV, cadastro de famílias e
+> moradores com situação e data, histórico de alterações e lista "o que falta completar".
+> Já prontos: PIN, dados criptografados, bloqueio automático, backup e funcionamento sem internet.
+
+## Formato do CSV da área
+Separador `;` (também aceita `,` e TAB), UTF-8 com BOM (também aceita o formato antigo do Excel):
+
+```
+Casa;Rua;Numero;Complemento;Bairro;Prontuario;Nome;Sexo;Data de nascimento
+```
+
+Uma linha por morador; a coluna `Casa` (C001, C002…) junta os moradores da mesma família.
+Exemplo **fictício**: [`exemplos/area-exemplo.csv`](exemplos/area-exemplo.csv).
 
 ## Privacidade
 - Os dados ficam **só no celular** de cada ACS. Não há servidor, nuvem, login nem estatísticas.
