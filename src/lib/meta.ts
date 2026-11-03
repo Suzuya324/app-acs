@@ -6,7 +6,7 @@ import type { Desfecho, Familia, Visita } from './tipos';
 export interface OpcoesPainel {
   /** Uma data dentro do período que se quer ver (padrão: hoje). */
   referencia?: string;
-  /** Dia em que o período da meta começa (1 = mês do calendário). */
+  /** 0 = fecha no último dia útil do mês; 1 = mês do calendário; 2-28 = do dia X ao X-1. */
   diaInicioPeriodo?: number;
   /** Diz se a data é dia de campo (padrão: segunda a sexta). */
   ehDiaDeCampo?: (iso: string) => boolean;
@@ -53,7 +53,7 @@ export function calcularPainel(
   opcoes: OpcoesPainel = {},
 ): Painel {
   const ehDiaDeCampo = opcoes.ehDiaDeCampo ?? ehDiaUtil;
-  const periodo = periodoDe(opcoes.referencia ?? hoje, opcoes.diaInicioPeriodo ?? 1);
+  const periodo = periodoDe(opcoes.referencia ?? hoje, opcoes.diaInicioPeriodo ?? 0);
   const atual = dentroDoPeriodo(hoje, periodo);
   const passado = hoje > periodo.fim;
   const doMes = visitas.filter((v) => dentroDoPeriodo(v.data, periodo));

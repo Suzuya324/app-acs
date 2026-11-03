@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contarDiasDeCampo, criarDiaDeCampo, feriadosNacionais, motivoSemCampo, pascoa, periodoDe, periodoVizinho } from './calendario';
+import { contarDiasDeCampo, criarDiaDeCampo, feriadosNacionais, motivoSemCampo, pascoa, periodoDe, periodoVizinho, ultimoDiaUtil } from './calendario';
 import { calcularPainel } from './meta';
 import { agruparPorRua, ordenarPorNumero } from './roteiro';
 import type { Desfecho, Familia, Visita } from './tipos';
@@ -32,10 +32,39 @@ describe('feriados', () => {
   });
 });
 
+describe('meta fecha no último dia útil do mês (padrão)', () => {
+  it('último dia útil: pula fim de semana e feriado', () => {
+    expect(ultimoDiaUtil(2026, 9)).toBe('2026-10-30'); // 31/10/2026 é sábado
+    expect(ultimoDiaUtil(2026, 10)).toBe('2026-11-30'); // segunda
+    expect(ultimoDiaUtil(2027, 0)).toBe('2027-01-29'); // 31/01/2027 é domingo
+    expect(ultimoDiaUtil(2026, 11)).toBe('2026-12-31'); // quinta
+  });
+
+  it('o sábado depois do fechamento já conta para o mês seguinte', () => {
+    expect(periodoDe('2026-10-30')).toEqual({ inicio: '2026-10-01', fim: '2026-10-30', rotulo: 'outubro de 2026' });
+    expect(periodoDe('2026-10-31')).toEqual({ inicio: '2026-10-31', fim: '2026-11-30', rotulo: 'novembro de 2026' });
+    expect(periodoDe('2027-01-30').rotulo).toBe('fevereiro de 2027');
+    expect(periodoDe('2027-01-01')).toEqual({ inicio: '2027-01-01', fim: '2027-01-29', rotulo: 'janeiro de 2027' });
+  });
+
+  it('anterior e seguinte', () => {
+    const nov = periodoDe('2026-11-18');
+    expect(periodoVizinho(nov, -1).rotulo).toBe('outubro de 2026');
+    expect(periodoVizinho(nov, 1)).toEqual({ inicio: '2026-12-01', fim: '2026-12-31', rotulo: 'dezembro de 2026' });
+    expect(periodoVizinho(periodoDe('2027-01-10'), -1).rotulo).toBe('dezembro de 2026');
+  });
+
+  it('visita no sábado 31/10 conta para novembro', () => {
+    const f = [fam('1')];
+    const p = calcularPainel(f, [vd('1', '2026-10-31', 'realizada')], '2026-11-03', 200);
+    expect(p.familiasVisitadas).toBe(1);
+  });
+});
+
 describe('período da meta', () => {
   it('mês do calendário', () => {
-    expect(periodoDe('2026-11-18')).toEqual({ inicio: '2026-11-01', fim: '2026-11-30', rotulo: 'novembro de 2026' });
-    expect(periodoDe('2026-02-10').fim).toBe('2026-02-28');
+    expect(periodoDe('2026-11-18', 1)).toEqual({ inicio: '2026-11-01', fim: '2026-11-30', rotulo: 'novembro de 2026' });
+    expect(periodoDe('2026-02-10', 1).fim).toBe('2026-02-28');
   });
 
   it('período que começa no dia 21', () => {
@@ -45,10 +74,10 @@ describe('período da meta', () => {
   });
 
   it('anterior e seguinte', () => {
-    const nov = periodoDe('2026-11-18');
-    expect(periodoVizinho(nov, -1).rotulo).toBe('outubro de 2026');
-    expect(periodoVizinho(nov, 1).rotulo).toBe('dezembro de 2026');
-    expect(periodoVizinho(periodoDe('2026-01-10'), -1).rotulo).toBe('dezembro de 2025');
+    const nov = periodoDe('2026-11-18', 1);
+    expect(periodoVizinho(nov, -1, 1).rotulo).toBe('outubro de 2026');
+    expect(periodoVizinho(nov, 1, 1).rotulo).toBe('dezembro de 2026');
+    expect(periodoVizinho(periodoDe('2026-01-10', 1), -1, 1).rotulo).toBe('dezembro de 2025');
   });
 });
 
@@ -75,7 +104,7 @@ describe('painel com feriados e períodos', () => {
 
   it('mês anterior: mostra o resultado fechado', () => {
     const visitas = [vd('1', '2026-10-05', 'realizada'), vd('2', '2026-10-06', 'ausencia_completa'), vd('3', '2026-11-03', 'realizada')];
-    const p = calcularPainel(familias, visitas, '2026-11-18', 200, { referencia: '2026-10-15', ehDiaDeCampo: campo });
+    const p = calcularPainel(familias, visitas, '2026-11-18', 200, { referencia: '2026-10-15', ehDiaDeCampo: campo, diaInicioPeriodo: 1 });
     expect(p.periodo.rotulo).toBe('outubro de 2026');
     expect(p.passado).toBe(true);
     expect(p.atual).toBe(false);
