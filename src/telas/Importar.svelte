@@ -4,7 +4,8 @@
   import { entregarArquivo } from '../lib/arquivo';
   import { hojeISO } from '../lib/datas';
   import { app, importarArea, mostrarAviso } from '../lib/estado.svelte';
-  import { decodificar, importarCSV, textoResumo, type ResultadoImportacao } from '../lib/importar-csv';
+  import { importarTexto } from '../lib/importar';
+  import { decodificar, textoResumo, type ResultadoImportacao } from '../lib/importar-csv';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const hoje = hojeISO();
@@ -25,7 +26,7 @@
   }
 
   function analisar(texto: string) {
-    resultado = importarCSV(texto, hoje);
+    resultado = importarTexto(texto, hoje);
     passo = 'previa';
   }
 
@@ -48,6 +49,12 @@
   }
 
   const amostra = $derived(resultado?.familias.slice(0, 5) ?? []);
+  const confere = $derived(
+    resultado?.totalInformado
+      ? resultado.totalInformado.familias === resultado.resumo.familias &&
+          resultado.totalInformado.moradores === resultado.resumo.moradores
+      : null,
+  );
 </script>
 
 <button class="botao secundario pequeno voltar" onclick={() => voltar('ajustes')}><Icone nome="voltar" /> Voltar</button>
@@ -65,19 +72,23 @@
   {/if}
 
   <section class="cartao">
-    <h2>Copiar do Fast e colar aqui</h2>
+    <h2>Copiar e colar aqui</h2>
+    <p>Pode ser uma <strong>tabela</strong> (copiada do Fast ou de uma planilha) ou uma <strong>lista em texto</strong>, assim:</p>
+    <pre class="modelo-lista">RUA DAS ACÁCIAS
+Acácias 12 FUNDOS (pront. 00.001)
+   - Fulana de Tal (14/03/1958)
+   - Ciclano de Tal (02/11/1955)</pre>
     <ol class="passos">
-      <li>No <strong>navegador do celular</strong>, abra a lista de moradores da sua área no Fast.</li>
-      <li>Selecione a lista <strong>incluindo a linha dos títulos</strong> (ex.: Nome da rua, Número da casa, Nome do paciente). Pode copiar uma página de cada vez.</li>
+      <li>No <strong>celular</strong>, abra a lista (no Fast ou onde ela estiver). Numa tabela, selecione <strong>incluindo a linha dos títulos</strong>.</li>
       <li>Toque em <strong>Copiar</strong>, volte para cá, segure o dedo na caixa abaixo e toque em <strong>Colar</strong>.</li>
       <li>Toque em <strong>Conferir</strong>. Nada é salvo antes de você confirmar, e o texto não sai do celular.</li>
     </ol>
     <textarea rows="5" bind:value={colado} placeholder="Cole aqui a lista copiada"></textarea>
     <button class="botao largo" onclick={() => analisar(colado)} disabled={!colado.trim()}>Conferir o texto colado</button>
     <p class="suave pequeno dica">
-      Colunas obrigatórias: <strong>rua</strong> e <strong>nome</strong>. As outras ajudam (número, complemento,
-      prontuário, sexo, data de nascimento). Sem a coluna “Casa”, o app junta os moradores pelo prontuário ou,
-      sem prontuário, pelo endereço.
+      Na lista: título da rua, uma linha por casa e os moradores com “-” embaixo. Na tabela: colunas
+      <strong>rua</strong> e <strong>nome</strong> são obrigatórias; sem a coluna “Casa”, o app junta os moradores
+      pelo prontuário ou pelo endereço.
     </p>
   </section>
 
@@ -106,6 +117,16 @@
     <section class="cartao">
       <h2>Confira antes de salvar</h2>
       <p class="resumo">{textoResumo(resultado.resumo)}</p>
+      {#if resultado.totalInformado}
+        {#if confere}
+          <p class="confere">✓ Confere com o TOTAL escrito no texto.</p>
+        {:else}
+          <p class="alerta">
+            O texto diz <strong>{resultado.totalInformado.familias} casas e {resultado.totalInformado.moradores} moradores</strong>.
+            Veja os avisos abaixo para entender a diferença (ex.: recém-nascido listado mas ainda não contado).
+          </p>
+        {/if}
+      {/if}
       <ul class="lista ruas">
         {#each resultado.resumo.ruas as r (r.rua)}<li><span>{r.rua || '(sem rua)'}</span><strong>{r.familias}</strong></li>{/each}
       </ul>
@@ -116,7 +137,7 @@
         <details>
           <summary>⚠️ {resultado.avisos.length} {resultado.avisos.length === 1 ? 'aviso' : 'avisos'} (toque para ver)</summary>
           <ul class="lista avisos">
-            {#each resultado.avisos.slice(0, 100) as a, i (i)}<li>{#if a.linha > 0}<strong>Linha {a.linha}:</strong> {/if}{a.texto}</li>{/each}
+            {#each resultado.avisos.slice(0, 100) as a, i (i)}<li>{#if a.linha > 0}<strong>Linha {a.linha}:&nbsp;</strong>{/if}{a.texto}</li>{/each}
           </ul>
           {#if resultado.avisos.length > 100}<p class="suave pequeno">…e mais {resultado.avisos.length - 100}.</p>{/if}
         </details>
@@ -176,6 +197,19 @@
   }
   .dica {
     margin-top: 10px;
+  }
+  .modelo-lista {
+    background: var(--fundo);
+    border: 1px dashed var(--borda);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .confere {
+    color: var(--realizada);
+    font-weight: 700;
   }
   textarea {
     margin-bottom: 10px;
