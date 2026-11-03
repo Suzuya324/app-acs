@@ -31,7 +31,9 @@ export interface ResultadoImportacao {
   /** Problemas que impedem a importação (ex.: falta a coluna Nome). */
   erros: string[];
   /** Como os moradores foram juntados em famílias. */
-  agrupamento: 'casa' | 'automatico';
+  agrupamento: 'casa' | 'automatico' | 'lista';
+  /** Totais escritos no próprio texto (ex.: "TOTAL: 194 casas e 536 moradores"), para conferir. */
+  totalInformado?: { familias: number; moradores: number };
   resumo: { ruas: { rua: string; familias: number }[]; familias: number; moradores: number };
 }
 
