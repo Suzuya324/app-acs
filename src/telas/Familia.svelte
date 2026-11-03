@@ -2,8 +2,8 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { idadeTexto } from '../lib/dados-ficticios';
-  import { formatarData, hojeISO } from '../lib/datas';
-  import { app, familiaPorId, historicoDaFamilia } from '../lib/estado.svelte';
+  import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
+  import { app, enderecoCurto, familiaPorId, historicoDaFamilia, mostrarAviso, registrarAusencia } from '../lib/estado.svelte';
   import { prontuarioIncompleto } from '../lib/pendencias';
   import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -18,6 +18,15 @@
   const antigos = $derived(familia?.moradores.filter((m) => m.situacao !== 'mora') ?? []);
   const historico = $derived(historicoDaFamilia(id));
   let aberta = $state<string | null>(null);
+  let confirmandoAusencia = $state(false);
+  let dataAusencia = $state(hoje);
+
+  async function confirmarAusencia() {
+    await registrarAusencia(id, dataAusencia);
+    confirmandoAusencia = false;
+    dataAusencia = hoje;
+    mostrarAviso('Ausência registrada ✓ Vai para “Revisitar” e para a fila do Fast.', 3500);
+  }
 
   function quando(iso: string): string {
     const d = new Date(iso);
@@ -51,8 +60,24 @@
 
   {#if familia.situacaoCasa === 'habitada'}
     <button class="botao largo grande" onclick={() => ir(`vd/${familia.id}`)}>
-      <Icone nome="mais" /> Registrar visita
+      <Icone nome="mais" /> {app.rascunho?.familiaId === familia.id && !app.rascunho.visitaId ? 'Continuar visita' : 'Registrar visita'}
     </button>
+    {#if !confirmandoAusencia}
+      <button class="botao secundario largo ausencia" onclick={() => (confirmandoAusencia = true)}>Ninguém em casa</button>
+    {:else}
+      <section class="cartao confirmar-ausencia">
+        <p><strong>Registrar “{app.config.nomesDesfecho.ausencia_completa}”</strong> em {enderecoCurto(familia)}?</p>
+        <label class="campo">
+          <span>Data</span>
+          <input type="date" bind:value={dataAusencia} max={hoje} />
+        </label>
+        <p class="data-aus">{dataAusencia ? formatarDataLonga(dataAusencia, true) : ''}{dataAusencia === hoje ? ' (hoje)' : ''}</p>
+        <div class="linha-botoes">
+          <button class="botao secundario" onclick={() => (confirmandoAusencia = false)}>Cancelar</button>
+          <button class="botao" onclick={confirmarAusencia} disabled={!dataAusencia}>Confirmar</button>
+        </div>
+      </section>
+    {/if}
   {/if}
 
   <section class="cartao">
@@ -114,6 +139,7 @@
           {#if aberta === v.id}
             <p class="relato">{v.relato}</p>
             <p class="suave pequeno">Motivo: {v.motivo} · {v.lancadaNoFast ? 'lançada no Fast' : 'pendente no Fast'}</p>
+            <button class="botao secundario pequeno corrigir" onclick={() => ir(`vd/${familia.id}/${v.id}`)}>Corrigir esta VD</button>
           {/if}
         </li>
       {/each}
@@ -165,7 +191,20 @@
   .grande {
     min-height: 64px;
     font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  .ausencia {
     margin-bottom: 14px;
+  }
+  .confirmar-ausencia {
+    border: 2px solid var(--ausencia);
+  }
+  .data-aus {
+    font-weight: 700;
+    margin-top: -6px;
+  }
+  .corrigir {
+    margin: 4px 0 12px;
   }
   .morador {
     display: flex;

@@ -2,7 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO, nomeMes } from '../lib/datas';
-  import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
+  import { app, descartarRascunho, enderecoCurto, familiaPorId, responsavel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -25,6 +25,19 @@
 </script>
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
+
+{#if app.rascunho}
+  {@const r = app.rascunho}
+  {@const fr = familiaPorId(r.familiaId)}
+  <div class="cartao chamada">
+    <strong>Visita pela metade{fr ? `: ${enderecoCurto(fr)}` : ''}</strong>
+    <span class="suave pequeno">{r.visitaId ? 'Correção de VD' : 'VD'} de {formatarData(r.data)} que você começou e não salvou.</span>
+    <div class="linha-botoes">
+      <button class="botao secundario pequeno" onclick={() => confirm('Descartar a visita pela metade?') && descartarRascunho()}>Descartar</button>
+      <button class="botao pequeno" onclick={() => ir(r.visitaId ? `vd/${r.familiaId}/${r.visitaId}` : `vd/${r.familiaId}`)}>Continuar</button>
+    </div>
+  </div>
+{/if}
 
 {#if precisaImportar}
   <div class="cartao chamada">
