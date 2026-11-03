@@ -69,7 +69,9 @@ export interface Visita {
   desfecho: Desfecho;
   motivo: string;
   compartilhadaCom: string;
-  sinais: SinaisVitais;
+  /** Sinais vitais por morador (chave = id do morador). */
+  sinais: Record<string, SinaisVitais>;
+  /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   relato: string;
   lancadaNoFast: boolean;

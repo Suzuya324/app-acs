@@ -152,14 +152,10 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
       recusou,
     });
     const hipertenso = presentes.find((m) => m.grupos.includes('hipertenso'));
-    const sinais = hipertenso && r.chance(0.5) ? { pa: `${r.entre(11, 15)}0x${r.entre(7, 9)}0` } : {};
+    const sinais: Record<string, { pa: string }> =
+      hipertenso && r.chance(0.5) ? { [hipertenso.id]: { pa: `${r.entre(11, 15)}0x${r.entre(7, 9)}0` } } : {};
     const orientacoes = desfecho === 'realizada' || desfecho === 'ausente_realizada'
-      ? r.um([
-          'Orientada a família sobre a atualização da caderneta de vacinação',
-          'Reforçada a importância de manter as consultas em dia na unidade',
-          'Orientado sobre o uso correto das medicações',
-          '',
-        ])
+      ? r.um(['consultas e saúde', 'consultas e dengue', 'vacinas', 'medicações', 'consultas, dengue e vacinas', ''])
       : '';
     const presentesIds = presentes.map((m) => m.id);
     const relato = gerarRelato({
