@@ -26,7 +26,7 @@
 
 {#each grupos as g (g.tipo)}
   <section class="cartao">
-    <details open={grupos.length <= 2}>
+    <details open={pendencias.length <= 30}>
       <summary>{NOMES_PENDENCIA[g.tipo]} ({g.itens.length})</summary>
       <ul class="lista">
         {#each g.itens as p (`${p.familia.id}-${p.morador?.id ?? ''}`)}
