@@ -58,6 +58,7 @@ export async function lerBackup(texto: string, senha: string): Promise<Dados> {
     throw new SenhaBackupErrada();
   }
   if (!dados?.config || !Array.isArray(dados.familias) || !Array.isArray(dados.visitas)) throw new ArquivoInvalido();
+  if (!Array.isArray(dados.historico)) dados.historico = []; // backups antigos não tinham histórico
   return dados;
 }
 

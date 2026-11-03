@@ -3,8 +3,8 @@ import { buscar } from './busca';
 import type { Familia } from './tipos';
 
 const fam = (id: string, rua: string, numero: string, prontuario: string, nomes: string[]): Familia => ({
-  id, rua, numero, complemento: '', colmeia: '', prontuario, situacaoCasa: 'habitada', obs: '',
-  moradores: nomes.map((nome, i) => ({ id: `${id}-${i}`, nome, sexo: 'F', nascimento: '', situacao: 'mora', grupos: [], obs: '' })),
+  id, rua, numero, complemento: '', bairro: '', colmeia: '', prontuario, situacaoCasa: 'habitada', obs: '', responsavelId: '',
+  moradores: nomes.map((nome, i) => ({ id: `${id}-${i}`, nome, sexo: 'F', nascimento: '', situacao: 'mora', situacaoDesde: '', grupos: [], obs: '' })),
 });
 
 const familias = [

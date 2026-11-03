@@ -7,7 +7,9 @@ import { esperaAposErros } from './cripto';
 import { gerarDadosFicticios } from './dados-ficticios';
 import { hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
-import type { Config, Familia, Visita } from './tipos';
+import { criarAlteracoes, mudancasFamilia, mudancasMorador } from './historico';
+import { novoId } from './ids';
+import type { Alteracao, Config, Familia, Morador, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -18,6 +20,7 @@ export const app = $state({
   config: structuredClone(CONFIG_PADRAO) as Config,
   familias: [] as Familia[],
   visitas: [] as Visita[],
+  historico: [] as Alteracao[],
   aviso: '' as string,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
@@ -55,14 +58,27 @@ export async function iniciar() {
   }
 }
 
+/** Completa campos que não existiam em versões antigas do app. */
+function normalizarFamilia(f: Familia): Familia {
+  const moradores = f.moradores.map((m) => ({ ...m, situacaoDesde: m.situacaoDesde ?? '', obs: m.obs ?? '', grupos: m.grupos ?? [] }));
+  const responsavelId = f.responsavelId ?? moradores.find((m) => m.situacao === 'mora')?.id ?? '';
+  return { ...f, bairro: f.bairro ?? '', obs: f.obs ?? '', colmeia: f.colmeia ?? '', responsavelId, moradores };
+}
+
 function carregar(d: Dados) {
   app.config = { ...structuredClone(CONFIG_PADRAO), ...d.config };
-  app.familias = d.familias;
-  app.visitas = d.visitas;
+  app.familias = (d.familias ?? []).map(normalizarFamilia);
+  app.visitas = d.visitas ?? [];
+  app.historico = d.historico ?? [];
 }
 
 function dadosAtuais(): Dados {
-  return $state.snapshot({ config: app.config, familias: app.familias, visitas: app.visitas }) as Dados;
+  return $state.snapshot({
+    config: app.config,
+    familias: app.familias,
+    visitas: app.visitas,
+    historico: app.historico,
+  }) as Dados;
 }
 
 /** Pede ao navegador para não apagar os dados sozinho (importante no iPhone). */
@@ -78,9 +94,9 @@ export async function pedirPersistencia() {
 export async function criarCofre(pin: string, config: Config, origem: 'exemplo' | 'vazio' | Dados) {
   let dados: Dados;
   if (origem === 'exemplo') {
-    dados = { config: { ...config, usandoExemplo: true }, ...gerarDadosFicticios(hojeISO()) };
+    dados = { config: { ...config, usandoExemplo: true }, ...gerarDadosFicticios(hojeISO()), historico: [] };
   } else if (origem === 'vazio') {
-    dados = { config: { ...config, usandoExemplo: false }, familias: [], visitas: [] };
+    dados = { config: { ...config, usandoExemplo: false }, familias: [], visitas: [], historico: [] };
   } else {
     dados = origem;
   }
@@ -122,6 +138,7 @@ export function trancar() {
   cofre.trancar();
   app.familias = [];
   app.visitas = [];
+  app.historico = [];
   app.busca = '';
   app.fase = 'trancado';
 }
@@ -130,6 +147,7 @@ export async function apagarTudo() {
   await cofre.apagarTudo();
   app.familias = [];
   app.visitas = [];
+  app.historico = [];
   app.config = structuredClone(CONFIG_PADRAO);
   app.fase = 'configurar';
   location.hash = '#/';
@@ -159,7 +177,7 @@ export function familiaPorId(id: string): Familia | undefined {
 }
 
 export function salvarVisita(v: Omit<Visita, 'id'>) {
-  app.visitas.push({ ...v, id: `v${Date.now()}${Math.floor(Math.random() * 1000)}` });
+  app.visitas.push({ ...v, id: novoId('v') });
   return gravar({ visitas: app.visitas });
 }
 
@@ -167,6 +185,57 @@ export function marcarLancada(id: string, lancada: boolean) {
   const v = app.visitas.find((x) => x.id === id);
   if (v) v.lancadaNoFast = lancada;
   return gravar({ visitas: app.visitas });
+}
+
+// ---------------- Território (famílias e moradores) ----------------
+
+/** Cria ou atualiza uma família (sem mexer nos moradores) e registra no histórico o que mudou. */
+export async function salvarFamilia(nova: Familia): Promise<void> {
+  const i = app.familias.findIndex((f) => f.id === nova.id);
+  const antiga = i >= 0 ? ($state.snapshot(app.familias[i]) as Familia) : null;
+  const final: Familia = antiga ? { ...nova, moradores: antiga.moradores } : nova;
+  const textos = mudancasFamilia(antiga, final);
+  if (!textos.length) return;
+  if (i >= 0) app.familias[i] = final;
+  else app.familias.push(final);
+  app.historico.push(...criarAlteracoes(final.id, textos));
+  await gravar({ familias: app.familias, historico: app.historico });
+}
+
+/** Cria ou atualiza um morador da família e registra no histórico o que mudou. */
+export async function salvarMorador(familiaId: string, novo: Morador, tornarResponsavel = false): Promise<void> {
+  const f = app.familias.find((x) => x.id === familiaId);
+  if (!f) return;
+  const i = f.moradores.findIndex((m) => m.id === novo.id);
+  const antigo = i >= 0 ? ($state.snapshot(f.moradores[i]) as Morador) : null;
+  const textos = mudancasMorador(antigo, novo);
+  if (i >= 0) f.moradores[i] = novo;
+  else f.moradores.push(novo);
+  const antesResp = f.responsavelId;
+  if (tornarResponsavel && novo.situacao === 'mora') f.responsavelId = novo.id;
+  else if (!f.responsavelId && novo.situacao === 'mora') f.responsavelId = novo.id;
+  if (f.responsavelId !== antesResp) {
+    const nome = (id: string) => f.moradores.find((m) => m.id === id)?.nome ?? '(ninguém)';
+    textos.push(`Responsável: ${nome(antesResp)} → ${nome(f.responsavelId)}`);
+  }
+  if (!textos.length) return;
+  app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
+  await gravar({ familias: app.familias, historico: app.historico });
+}
+
+/** Troca os dados de exemplo (ou a área vazia) pela área importada do CSV. */
+export async function importarArea(familias: Familia[]): Promise<void> {
+  const ruas = [...new Set([...app.config.ruas, ...familias.map((f) => f.rua).filter(Boolean)])];
+  app.familias = familias;
+  app.visitas = []; // as visitas de exemplo eram inventadas
+  app.historico = criarAlteracoes('', [`Área importada do CSV: ${familias.length} famílias`]);
+  app.config.usandoExemplo = false;
+  app.config.ruas = ruas;
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico });
+}
+
+export function historicoDaFamilia(familiaId: string): Alteracao[] {
+  return app.historico.filter((h) => h.familiaId === familiaId).sort((a, b) => b.quando.localeCompare(a.quando));
 }
 
 // ---------------- Backup ----------------
@@ -184,7 +253,7 @@ export async function registrarBackupFeito() {
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico });
 }
 
 // ---------------- Bloqueio automático ----------------
@@ -223,5 +292,6 @@ export function enderecoCurto(f: Familia): string {
 }
 
 export function responsavel(f: Familia): string {
-  return f.moradores.find((m) => m.situacao === 'mora')?.nome ?? '(sem morador)';
+  const atuais = f.moradores.filter((m) => m.situacao === 'mora');
+  return (atuais.find((m) => m.id === f.responsavelId) ?? atuais[0])?.nome ?? '(sem morador)';
 }

@@ -12,12 +12,13 @@ const dados = (): Dados => ({
   config: { ...CONFIG_PADRAO, nomeAcs: 'Agente Teste' },
   familias: [
     {
-      id: 'f1', rua: 'Rua Teste', numero: '10', complemento: '', colmeia: '', prontuario: '00.0001',
-      situacaoCasa: 'habitada', obs: '',
-      moradores: [{ id: 'm1', nome: 'Fulana Teste', sexo: 'F', nascimento: '', situacao: 'mora', grupos: [], obs: '' }],
+      id: 'f1', rua: 'Rua Teste', numero: '10', complemento: '', bairro: '', colmeia: '', prontuario: '00.0001',
+      situacaoCasa: 'habitada', obs: '', responsavelId: '',
+      moradores: [{ id: 'm1', nome: 'Fulana Teste', sexo: 'F', nascimento: '', situacao: 'mora', situacaoDesde: '', grupos: [], obs: '' }],
     },
   ],
   visitas: [],
+  historico: [],
 });
 
 describe('cofre criptografado', () => {

@@ -84,7 +84,7 @@ export function nomesCurtos(moradores: Morador[]): Map<string, string> {
 export function concordancia(presentes: Morador[]): string {
   if (presentes.length === 0) return 'orientada a família';
   const todasF = presentes.every((m) => m.sexo === 'F');
-  if (presentes.length === 1) return todasF ? 'orientada' : 'orientado';
+  if (presentes.length === 1) return todasF ? 'orientada' : presentes[0].sexo === 'M' ? 'orientado' : 'orientado(a)';
   return todasF ? 'orientadas' : 'orientados';
 }
 

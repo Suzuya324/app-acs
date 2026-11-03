@@ -3,8 +3,8 @@
  * (salvar no Drive, enviar para si mesmo etc.); no computador, baixa o arquivo.
  * Retorna false se o usuário cancelou.
  */
-export async function entregarArquivo(nome: string, texto: string): Promise<boolean> {
-  const arquivo = new File([texto], nome, { type: 'application/json' });
+export async function entregarArquivo(nome: string, texto: string, tipo = 'application/json'): Promise<boolean> {
+  const arquivo = new File([texto], nome, { type: tipo });
   if (navigator.canShare?.({ files: [arquivo] })) {
     try {
       await navigator.share({ files: [arquivo], title: nome });
