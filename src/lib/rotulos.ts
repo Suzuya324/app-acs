@@ -1,8 +1,8 @@
 import type { Config, Grupo, SituacaoCasa, SituacaoMorador } from './tipos';
 
 export const CONFIG_PADRAO: Config = {
-  nomeAcs: 'Agente Teste',
-  micro: 'Micro 00 (fictícia)',
+  nomeAcs: '',
+  micro: '',
   metaMensal: 200,
   nomesDesfecho: {
     realizada: 'Visita realizada',
@@ -19,6 +19,11 @@ export const CONFIG_PADRAO: Config = {
     'Egresso de internação',
   ],
   motivoPadrao: 'Outros',
+  ruas: [],
+  minutosParado: 5,
+  minutosFora: 1,
+  ultimoBackup: '',
+  usandoExemplo: false,
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {
