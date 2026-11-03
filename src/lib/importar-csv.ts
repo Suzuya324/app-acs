@@ -32,6 +32,8 @@ export interface ResultadoImportacao {
   erros: string[];
   /** Como os moradores foram juntados em famílias. */
   agrupamento: 'casa' | 'automatico' | 'lista';
+  /** Quantos moradores ficaram com o sexo sugerido pelo primeiro nome (a conferir). */
+  sexoSugerido?: number;
   /** Totais escritos no próprio texto (ex.: "TOTAL: 194 casas e 536 moradores"), para conferir. */
   totalInformado?: { familias: number; moradores: number };
   resumo: { ruas: { rua: string; familias: number }[]; familias: number; moradores: number };
