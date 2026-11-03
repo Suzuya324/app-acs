@@ -5,6 +5,7 @@
   import { contaParaMeta } from '../lib/desfecho';
   import { hojeISO, mesDe } from '../lib/datas';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
+  import { NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
 
   let campo: HTMLInputElement;
@@ -35,6 +36,8 @@
     enterkeyhint="search"
   />
 </div>
+
+<button class="botao secundario largo nova" onclick={() => ir('nova-familia')}><Icone nome="mais" /> Nova família</button>
 
 {#if !app.busca.trim()}
   <p class="suave">Digite um <strong>nome</strong>, a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ipe 120”) ou o <strong>prontuário</strong>.</p>
@@ -67,14 +70,14 @@
           </span>
           <span class="pequeno">
             {#if r.motivo === 'nome'}
-              {r.moradores.map((m) => m.nome).join(', ')}
+              {r.moradores.map((m) => (m.situacao === 'mora' ? m.nome : `${m.nome} (${NOMES_SITUACAO_MORADOR[m.situacao].toLowerCase()})`)).join(', ')}
             {:else}
               {responsavel(f)}
             {/if}
           </span>
           <span class="suave pequeno">
             Pront.: {f.prontuario || '—'} · {f.moradores.filter((m) => m.situacao === 'mora').length} morador(es)
-            {#if f.situacaoCasa !== 'habitada'} · casa {f.situacaoCasa}{/if}
+            {#if f.situacaoCasa !== 'habitada'} · casa {NOMES_SITUACAO_CASA[f.situacaoCasa].toLowerCase()}{/if}
           </span>
         </button>
       </li>
@@ -112,6 +115,9 @@
   .caixa-busca:focus-within {
     outline: 3px solid var(--primaria);
     outline-offset: 1px;
+  }
+  .nova {
+    margin-bottom: 12px;
   }
   .resultado {
     display: flex;

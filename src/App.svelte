@@ -8,6 +8,10 @@
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
   import Desbloquear from './telas/Desbloquear.svelte';
+  import EditarFamilia from './telas/EditarFamilia.svelte';
+  import EditarMorador from './telas/EditarMorador.svelte';
+  import Importar from './telas/Importar.svelte';
+  import Pendencias from './telas/Pendencias.svelte';
   import Familia from './telas/Familia.svelte';
   import Fila from './telas/Fila.svelte';
   import Inicio from './telas/Inicio.svelte';
@@ -31,7 +35,15 @@
     { tela: 'fila', caminho: 'fila', rotulo: 'Fila do Fast', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
-  const abaAtiva = $derived(rota.tela === 'familia' || rota.tela === 'vd' ? 'busca' : rota.tela);
+  const abaAtiva = $derived(
+    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador'].includes(rota.tela)
+      ? 'busca'
+      : rota.tela === 'importar'
+        ? 'ajustes'
+        : rota.tela === 'pendencias'
+          ? 'inicio'
+          : rota.tela,
+  );
 </script>
 
 {#if app.novaVersao}
@@ -81,6 +93,16 @@
     <Fila />
   {:else if rota.tela === 'ajustes'}
     <Ajustes />
+  {:else if rota.tela === 'editar-familia'}
+    {#key rota.id}<EditarFamilia id={rota.id} />{/key}
+  {:else if rota.tela === 'nova-familia'}
+    <EditarFamilia id="" />
+  {:else if rota.tela === 'morador'}
+    {#key `${rota.id}/${rota.sub}`}<EditarMorador familiaId={rota.id} moradorId={rota.sub} />{/key}
+  {:else if rota.tela === 'importar'}
+    <Importar />
+  {:else if rota.tela === 'pendencias'}
+    <Pendencias />
   {:else}
     <Inicio />
   {/if}

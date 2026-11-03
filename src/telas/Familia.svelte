@@ -3,7 +3,8 @@
   import Icone from '../componentes/Icone.svelte';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, hojeISO } from '../lib/datas';
-  import { app, familiaPorId } from '../lib/estado.svelte';
+  import { app, familiaPorId, historicoDaFamilia } from '../lib/estado.svelte';
+  import { prontuarioIncompleto } from '../lib/pendencias';
   import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
 
@@ -13,8 +14,15 @@
   const visitas = $derived(
     app.visitas.filter((v) => v.familiaId === id).sort((a, b) => b.data.localeCompare(a.data)),
   );
-  const prontIncompleto = $derived(!familia?.prontuario || /\.$/.test(familia.prontuario));
+  const atuais = $derived(familia?.moradores.filter((m) => m.situacao === 'mora') ?? []);
+  const antigos = $derived(familia?.moradores.filter((m) => m.situacao !== 'mora') ?? []);
+  const historico = $derived(historicoDaFamilia(id));
   let aberta = $state<string | null>(null);
+
+  function quando(iso: string): string {
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  }
 </script>
 
 <button class="botao secundario pequeno voltar" onclick={() => voltar('busca')}><Icone nome="voltar" /> Voltar</button>
@@ -23,43 +31,72 @@
   <p>Família não encontrada.</p>
 {:else}
   <section class="cartao">
-    <h1>{familia.rua}, {familia.numero}</h1>
+    <div class="cabecalho">
+      <h1>{familia.rua}, {familia.numero}</h1>
+      <button class="botao secundario pequeno" onclick={() => ir(`editar-familia/${familia.id}`)}>Editar</button>
+    </div>
     {#if familia.complemento}<p class="suave">{familia.complemento}</p>{/if}
     <dl class="dados">
       <div><dt>Prontuário</dt><dd>{familia.prontuario || '—'}</dd></div>
       <div><dt>Colmeia</dt><dd>{familia.colmeia || '—'}</dd></div>
       <div><dt>Casa</dt><dd>{NOMES_SITUACAO_CASA[familia.situacaoCasa]}</dd></div>
     </dl>
-    {#if prontIncompleto}
-      <p class="alerta">Prontuário {familia.prontuario ? 'incompleto' : 'em branco'}: completar quando possível.</p>
+    {#if !familia.prontuario}
+      <p class="alerta">Prontuário em branco: completar quando possível.</p>
+    {:else if prontuarioIncompleto(familia.prontuario)}
+      <p class="alerta">Prontuário incompleto: completar quando possível.</p>
     {/if}
+    {#if familia.obs}<p class="obs"><strong>Obs.:</strong> {familia.obs}</p>{/if}
   </section>
 
-  <button class="botao largo grande" onclick={() => ir(`vd/${familia.id}`)}>
-    <Icone nome="mais" /> Registrar visita
-  </button>
+  {#if familia.situacaoCasa === 'habitada'}
+    <button class="botao largo grande" onclick={() => ir(`vd/${familia.id}`)}>
+      <Icone nome="mais" /> Registrar visita
+    </button>
+  {/if}
 
   <section class="cartao">
-    <h2>Moradores ({familia.moradores.filter((m) => m.situacao === 'mora').length})</h2>
+    <h2>Moradores ({atuais.length})</h2>
     <ul class="lista">
-      {#each familia.moradores as m (m.id)}
-        <li class="morador" class:inativo={m.situacao !== 'mora'}>
-          <div class="nome">
-            <Icone nome="pessoa" tamanho={20} />
-            <strong>{m.nome}</strong>
-          </div>
-          <div class="suave pequeno">
-            {m.sexo === 'F' ? 'Feminino' : 'Masculino'} ·
-            {#if m.nascimento}{idadeTexto(m, hoje)} ({formatarData(m.nascimento)}){:else}<span class="falta-dado">sem data de nascimento</span>{/if}
-            {#if m.situacao !== 'mora'} · <strong>{NOMES_SITUACAO_MORADOR[m.situacao]}</strong>{/if}
-          </div>
-          {#if m.grupos.length}
-            <div>{#each m.grupos as g (g)}<span class="grupo">{NOMES_GRUPO[g]}</span>{/each}</div>
-          {/if}
+      {#each atuais as m (m.id)}
+        <li>
+          <button class="morador" onclick={() => ir(`morador/${familia.id}/${m.id}`)}>
+            <span class="nome">
+              <Icone nome="pessoa" tamanho={20} />
+              <strong>{m.nome}</strong>
+              {#if m.id === familia.responsavelId}<span class="resp">responsável</span>{/if}
+            </span>
+            <span class="suave pequeno">
+              {m.sexo === 'F' ? 'Feminino' : m.sexo === 'M' ? 'Masculino' : 'Sexo não informado'} ·
+              {#if m.nascimento}{idadeTexto(m, hoje)} ({formatarData(m.nascimento)}){:else}<span class="falta-dado">sem data de nascimento</span>{/if}
+            </span>
+            {#if m.grupos.length}
+              <span>{#each m.grupos as g (g)}<span class="grupo">{NOMES_GRUPO[g]}</span>{/each}</span>
+            {/if}
+          </button>
         </li>
       {/each}
     </ul>
-    {#if familia.moradores.length === 0}<p class="suave">Nenhum morador cadastrado.</p>{/if}
+    {#if atuais.length === 0}<p class="suave">Nenhum morador.</p>{/if}
+    <button class="botao secundario largo" onclick={() => ir(`morador/${familia.id}/novo`)}><Icone nome="mais" /> Adicionar morador</button>
+
+    {#if antigos.length}
+      <details class="antigos">
+        <summary>Não moram mais aqui ({antigos.length})</summary>
+        <ul class="lista">
+          {#each antigos as m (m.id)}
+            <li>
+              <button class="morador inativo" onclick={() => ir(`morador/${familia.id}/${m.id}`)}>
+                <strong>{m.nome}</strong>
+                <span class="suave pequeno">
+                  {NOMES_SITUACAO_MORADOR[m.situacao]}{m.situacaoDesde ? ` desde ${formatarData(m.situacaoDesde)}` : ''}
+                </span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </details>
+    {/if}
   </section>
 
   <section class="cartao">
@@ -82,11 +119,31 @@
       {/each}
     </ul>
   </section>
+
+  <section class="cartao">
+    <details>
+      <summary>Histórico de alterações ({historico.length})</summary>
+      {#if historico.length === 0}
+        <p class="suave">Nenhuma alteração registrada.</p>
+      {/if}
+      <ul class="lista historico">
+        {#each historico as h (h.id)}
+          <li><span class="suave pequeno">{quando(h.quando)}</span><br />{h.texto}</li>
+        {/each}
+      </ul>
+    </details>
+  </section>
 {/if}
 
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .cabecalho {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
   }
   .dados {
     display: grid;
@@ -102,29 +159,51 @@
     margin: 0;
     font-weight: 700;
   }
+  .obs {
+    margin-top: 8px;
+  }
   .grande {
     min-height: 64px;
     font-size: 1.2rem;
     margin-bottom: 14px;
   }
   .morador {
-    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
     border-bottom: 1px solid var(--borda);
-  }
-  .morador:last-child {
-    border-bottom: 0;
+    padding: 12px 0;
+    cursor: pointer;
+    min-height: 56px;
   }
   .morador.inativo {
-    opacity: 0.6;
+    opacity: 0.75;
   }
   .nome {
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
+  }
+  .resp {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 2px solid var(--primaria);
+    color: var(--primaria);
   }
   .falta-dado {
     color: var(--ausencia);
     font-weight: 700;
+  }
+  .antigos {
+    margin-top: 14px;
   }
   .visita {
     border-bottom: 1px solid var(--borda);
@@ -143,5 +222,9 @@
     padding: 6px 0;
     cursor: pointer;
     gap: 8px;
+  }
+  .historico li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--borda);
   }
 </style>

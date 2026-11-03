@@ -4,6 +4,7 @@
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO, nomeMes } from '../lib/datas';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
+  import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
@@ -12,6 +13,8 @@
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
+  const totalPendencias = $derived(listarPendencias(app.familias).length);
+  const precisaImportar = $derived(app.config.usandoExemplo || app.familias.length === 0);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function haQuanto(data: string | null): string {
@@ -23,7 +26,15 @@
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
 
-{#if lembrarBackup}
+{#if precisaImportar}
+  <div class="cartao chamada">
+    <strong>{app.config.usandoExemplo ? 'Você está usando dados de exemplo.' : 'Sua área ainda está vazia.'}</strong>
+    <span>Importe a lista da sua área (planilha CSV) para começar de verdade.</span>
+    <button class="botao pequeno" onclick={() => ir('importar')}>Importar minha área</button>
+  </div>
+{/if}
+
+{#if lembrarBackup && !precisaImportar}
   <div class="alerta lembrete">
     <span>{diasSemBackup === null ? 'Você ainda não fez nenhum backup.' : `Último backup há ${diasSemBackup} dias.`} Faça um agora para não perder nada.</span>
     <button class="botao pequeno" onclick={() => ir('ajustes')}>Fazer backup</button>
@@ -58,6 +69,13 @@
   <div class="cartao mini"><strong>{painel.visitasSemana}</strong><span>na semana</span></div>
   <div class="cartao mini"><strong>{painel.totalVisitasMes}</strong><span>VDs no mês</span></div>
 </section>
+
+{#if totalPendencias > 0}
+  <button class="item-link pendencias" onclick={() => ir('pendencias')}>
+    <span><strong>O que falta completar</strong><br /><span class="suave pequeno">prontuários, datas de nascimento, responsáveis…</span></span>
+    <span class="num-pend">{totalPendencias}</span>
+  </button>
+{/if}
 
 <section class="cartao">
   <h2>Visitas do mês por desfecho</h2>
@@ -113,6 +131,27 @@
 </section>
 
 <style>
+  .chamada {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 2px solid var(--primaria);
+  }
+  .pendencias {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .num-pend {
+    min-width: 44px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--aviso-fundo);
+    color: var(--aviso-texto);
+    font-weight: 800;
+    text-align: center;
+  }
   .lembrete {
     display: flex;
     flex-direction: column;
