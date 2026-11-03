@@ -161,3 +161,81 @@ describe('leitura de valores', () => {
     expect(lerNumero('90-A')).toBe('90-A');
   });
 });
+
+describe('lista copiada do Fast e colada no app', () => {
+  it('aceita os títulos "Nome da rua", "Número da casa", "Nome do paciente" sem coluna Casa', () => {
+    const texto = [
+      'Nome da rua\tNúmero da casa\tNome do paciente',
+      'RUA DAS ACÁCIAS\t12\tFULANA DE TAL TESTE',
+      'RUA DAS ACÁCIAS\t12\tCICLANO DE TAL TESTE',
+      'RUA DAS ACÁCIAS\t30\tBELTRANA EXEMPLO',
+      'RUA DOS IPÊS\t7\tANA EXEMPLO',
+    ].join('\n');
+    const r = importarCSV(texto, HOJE);
+    expect(r.erros).toEqual([]);
+    expect(r.agrupamento).toBe('automatico');
+    expect(textoResumo(r.resumo)).toBe('2 ruas, 3 famílias, 4 moradores');
+    expect(r.familias[0].rua).toBe('Rua das Acácias');
+    expect(r.familias[0].moradores.map((m) => m.nome)).toEqual(['Fulana de Tal Teste', 'Ciclano de Tal Teste']);
+    expect(r.avisos[0].texto).toContain('Sem a coluna Casa');
+  });
+
+  it('sem Casa: junta pelo prontuário; prontuário incompleto junta pelo endereço', () => {
+    const texto = [
+      'Rua;Número;Complemento;Prontuário;Nome',
+      'Rua Um;10;;00.0001;Ana Teste',
+      'Rua Um;10;Fundos;00.0002;Bia Teste',
+      'Rua Um;10;;00.0001;Caio Teste',
+      'Rua Um;20;;00.;Davi Teste',
+      'Rua Um;20;;00.;Eva Teste',
+      'Rua Um;20;Casa 2;;Fábio Teste',
+    ].join('\n');
+    const r = importarCSV(texto, HOJE);
+    const familias = r.familias.map((f) => f.moradores.map((m) => m.nome.split(' ')[0]).join('+'));
+    expect(familias).toEqual(['Ana+Caio', 'Bia', 'Davi+Eva', 'Fábio']);
+  });
+
+  it('avisa quando junta muita gente numa família só', () => {
+    const linhas = ['Rua;Numero;Nome', ...Array.from({ length: 8 }, (_, i) => `Rua Um;5;Pessoa Teste ${i}`)];
+    const r = importarCSV(linhas.join('\n'), HOJE);
+    expect(r.avisos.some((a) => a.texto.includes('8 moradores juntos'))).toBe(true);
+  });
+
+  it('ignora o cabeçalho repetido (copiou várias páginas)', () => {
+    const r = importarCSV('Rua;Numero;Nome\nRua Um;1;Ana Teste\nRua;Numero;Nome\nRua Um;2;Bia Teste', HOJE);
+    expect(r.resumo.moradores).toBe(2);
+    expect(r.avisos.filter((a) => a.linha > 0)).toEqual([]);
+  });
+
+  it('entende texto com uma informação por linha', () => {
+    const texto = ['Nome da rua', 'Número da casa', 'Nome do paciente', 'Rua Um', '10', 'Ana Teste', 'Rua Um', '10', 'Bia Teste', 'Rua Dois', 'S/N', 'Caio Teste'].join('\n');
+    const r = importarCSV(texto, HOJE);
+    expect(r.erros).toEqual([]);
+    expect(textoResumo(r.resumo)).toBe('2 ruas, 2 famílias, 3 moradores');
+    expect(r.familias[1].numero).toBe('S/N');
+  });
+
+  it('uma informação por linha, com títulos repetidos no meio', () => {
+    const texto = ['Rua', 'Nome', 'Rua Um', 'Ana Teste', 'Rua', 'Nome', 'Rua Um', 'Bia Teste'].join('\n');
+    expect(importarCSV(texto, HOJE).resumo.moradores).toBe(2);
+  });
+
+  it('uma informação por linha desalinhada: erro claro em vez de dados trocados', () => {
+    const texto = ['Rua', 'Número', 'Nome', 'Rua Um', '10', 'Ana Teste', 'Rua Um', 'Bia Teste'].join('\n');
+    const r = importarCSV(texto, HOJE);
+    expect(r.erros[0]).toContain('desalinhadas');
+    expect(r.familias).toEqual([]);
+  });
+
+  it('texto sem títulos de coluna: erro pedindo para copiar com os títulos', () => {
+    const r = importarCSV('Rua Um\n10\nAna Teste', HOJE);
+    expect(r.erros[0]).toContain('títulos das colunas');
+  });
+
+  it('com a coluna Casa continua juntando pela Casa', () => {
+    const r = importarCSV('Casa;Rua;Numero;Nome\nC1;Rua Um;1;Ana Teste\nC1;Rua Um;1;Bia Teste', HOJE);
+    expect(r.agrupamento).toBe('casa');
+    expect(r.resumo.familias).toBe(1);
+    expect(r.avisos).toEqual([]);
+  });
+});
