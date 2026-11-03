@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Segurança: nunca enviar planilhas (podem ter dados reais de pacientes).
+*.csv
+*.xlsx
+*.xls
+# Exceção: só os exemplos FICTÍCIOS
+!exemplos/*.csv
