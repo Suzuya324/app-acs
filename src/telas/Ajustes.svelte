@@ -27,13 +27,13 @@
   let senhaB = $state('');
   let senhaB2 = $state('');
   let gerando = $state(false);
-  async function fazerBackup() {
+  async function fazerBackup(modo: 'compartilhar' | 'baixar' = 'baixar') {
     if (senhaB.length < 6) return mostrarAviso('A senha do backup precisa ter pelo menos 6 caracteres.', 4000);
     if (senhaB !== senhaB2) return mostrarAviso('As duas senhas não são iguais.', 4000);
     gerando = true;
     try {
       const texto = await criarBackup(dadosParaBackup(), senhaB);
-      const ok = await entregarArquivo(nomeArquivoBackup(hoje), texto);
+      const ok = await entregarArquivo(nomeArquivoBackup(hoje), texto, 'application/json', modo);
       if (ok) {
         await registrarBackupFeito();
         senhaB = senhaB2 = '';
@@ -197,7 +197,9 @@
   <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaB} autocomplete="new-password" /></label>
   <label class="campo"><span>Repita a senha</span><input type="password" bind:value={senhaB2} autocomplete="new-password" /></label>
   <p class="suave pequeno">Dica: use uma frase longa, com letras e números (ex.: uma frase só sua). Pode ser diferente do PIN.</p>
-  <button class="botao largo" onclick={fazerBackup} disabled={gerando}>{gerando ? 'Gerando…' : 'Fazer backup agora'}</button>
+  <button class="botao largo" onclick={() => fazerBackup('baixar')} disabled={gerando}>{gerando ? 'Gerando…' : 'Fazer backup agora (salvar no celular)'}</button>
+  <button class="botao secundario largo espaco-b" onclick={() => fazerBackup('compartilhar')} disabled={gerando}>Fazer backup e compartilhar (Drive…)</button>
+  <p class="suave pequeno">“Salvar no celular” grava na pasta <strong>Downloads</strong> (abra pelo app <em>Arquivos</em>).</p>
 
   <details class="restaurar">
     <summary>Juntar com um backup (celular ↔ computador)</summary>
@@ -389,6 +391,9 @@
 </section>
 
 <style>
+  .espaco-b {
+    margin-top: 8px;
+  }
   .restaurar {
     margin-top: 16px;
   }

@@ -1,11 +1,17 @@
 /**
- * Entrega um arquivo ao usuário: no celular abre o menu "Compartilhar"
- * (salvar no Drive, enviar para si mesmo etc.); no computador, baixa o arquivo.
+ * Entrega um arquivo ao usuário.
+ * - "compartilhar": no celular abre o menu Compartilhar (Drive etc.); sem esse menu, baixa.
+ * - "baixar": grava direto na pasta Downloads, sem menu.
  * Retorna false se o usuário cancelou.
  */
-export async function entregarArquivo(nome: string, texto: string, tipo = 'application/json'): Promise<boolean> {
+export async function entregarArquivo(
+  nome: string,
+  texto: string,
+  tipo = 'application/json',
+  modo: 'compartilhar' | 'baixar' = 'compartilhar',
+): Promise<boolean> {
   const arquivo = new File([texto], nome, { type: tipo });
-  if (navigator.canShare?.({ files: [arquivo] })) {
+  if (modo === 'compartilhar' && navigator.canShare?.({ files: [arquivo] })) {
     try {
       await navigator.share({ files: [arquivo], title: nome });
       return true;
