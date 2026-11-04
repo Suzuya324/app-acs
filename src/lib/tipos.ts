@@ -54,6 +54,8 @@ export interface Familia {
   obs: string;
   /** Id do morador responsável pela família, ou vazio. */
   responsavelId: string;
+  /** Última alteração da família ou de algum morador (ISO). Usado para juntar backups. */
+  atualizadoEm?: string;
   moradores: Morador[];
 }
 
@@ -133,6 +135,8 @@ export interface Visita {
   lancadaNoFast: boolean;
   /** Revisitas resolvidas nesta VD (ids). */
   revisitasFeitas?: string[];
+  /** Última alteração (salvar, corrigir, marcar lançada) (ISO). Usado para juntar backups. */
+  atualizadoEm?: string;
 }
 
 export interface Config {
@@ -160,4 +164,6 @@ export interface Config {
   feriadosIgnorados: string[];
   /** Dias sem campo marcados pelo ACS (folga, férias, capacitação, feriado local). */
   diasSemCampo: { data: string; motivo: string }[];
+  /** Endereço do Fast, só para o botão "Abrir o Fast" (nenhum dado é enviado). */
+  urlFast: string;
 }
