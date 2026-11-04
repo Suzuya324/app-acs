@@ -153,27 +153,27 @@ describe('lista em texto: outros jeitos de escrever', () => {
 });
 
 describe('lista em texto: complementos variados (dados inventados)', () => {
-  const texto = `RUA MORRO DAS FLORES TESTE - 7 casas/famílias, 8 moradores
+  const texto = `RUA DAS FLORES TESTE - 7 casas/famílias, 8 moradores
 =====
-Morro 400 NUMERO14  (pront. 0000.06.137, 1 morador)
+Flores 400 NUMERO14  (pront. 0000.09.901, 1 morador)
    - Pessoa Um Teste (02/03/2013)
 
-Morro 400 CASA 4 A1  (pront. 0000.04.128, 1 morador)
+Flores 400 CASA 4 A1  (pront. 0000.09.902, 1 morador)
    - Pessoa Dois Teste (28/08/1998)
 
-Morro 400 NUMERO 13A  (pront. 0000.04.141, 1 morador)
+Flores 400 NUMERO 13A  (pront. 0000.09.903, 1 morador)
    - Pessoa Tres Teste (17/11/1960)
 
-Morro 30 30F  (pront. 0000.04.187, 1 morador)
+Flores 30 30F  (pront. 0000.09.904, 1 morador)
    - Pessoa Quatro Teste (09/10/2023)
 
-Morro 56 CONJUNTO CASA CORETO  (pront. -, 1 morador)
+Flores 56 CONJUNTO CASA AZUL  (pront. -, 1 morador)
    - Pessoa Cinco Teste (21/02/1978)
 
-Morro S/Nº  (pront. 0000.04.015, 1 morador)
+Flores S/Nº  (pront. 0000.09.905, 1 morador)
    - Pessoa Seis Teste (10/06/1972)
 
-Morro 450  (pront. 0000.04.178, 1 morador)
+Flores 450  (pront. 0000.09.906, 1 morador)
    - Pessoa Sete Teste (22/04/2006)
    - Bebê Teste (recém-nascida, AINDA NÃO CADASTRADA)
 `;
@@ -185,11 +185,11 @@ Morro 450  (pront. 0000.04.178, 1 morador)
       '400|CASA 4 A1',
       '400|NUMERO 13A',
       '30|30F',
-      '56|CONJUNTO CASA CORETO',
+      '56|CONJUNTO CASA AZUL',
       'S/N|',
       '450|',
     ]);
-    expect(new Set(r.familias.map((f) => f.rua))).toEqual(new Set(['Rua Morro das Flores Teste']));
+    expect(new Set(r.familias.map((f) => f.rua))).toEqual(new Set(['Rua das Flores Teste']));
   });
 
   it('o recém-nascido conta, e o app avisa a diferença na casa (texto diz 1, encontrei 2)', () => {

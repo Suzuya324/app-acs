@@ -3,10 +3,7 @@
   import {
     app,
     confirmarSexo,
-    confirmarTodosOsSexos,
     enderecoCurto,
-    mostrarAviso,
-    sugerirSexoParaTodos,
   } from '../lib/estado.svelte';
   import { listarPendencias, NOMES_PENDENCIA, type Pendencia, type TipoPendencia } from '../lib/pendencias';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -18,20 +15,9 @@
     'sem_responsavel',
     'sem_moradores',
     'sem_nascimento',
-    'sexo_a_conferir',
     'sem_sexo',
   ];
-  const ehSexo = (t: TipoPendencia) => t === 'sexo_a_conferir' || t === 'sem_sexo';
-
-  async function sugerir() {
-    const n = await sugerirSexoParaTodos();
-    mostrarAviso(n ? `Sexo sugerido para ${n} moradores. Confira na lista “a conferir”.` : 'Nenhum nome deu para sugerir.', 4000);
-  }
-  async function confirmarTodos(n: number) {
-    if (!confirm(`Confirmar o sexo sugerido para os ${n} moradores da lista? Faça isso só depois de olhar a lista e corrigir os errados.`)) return;
-    const feitos = await confirmarTodosOsSexos();
-    mostrarAviso(`${feitos} confirmados ✓`);
-  }
+  const ehSexo = (t: TipoPendencia) => t === 'sem_sexo';
   /** Para onde ir ao tocar: no morador, no formulário da família ou na ficha. */
   function destino(p: Pendencia): string {
     if (p.morador) return `morador/${p.familia.id}/${p.morador.id}`;
@@ -55,11 +41,7 @@
     <details open={pendencias.length <= 30}>
       <summary>{NOMES_PENDENCIA[g.tipo]} ({g.itens.length})</summary>
       {#if g.tipo === 'sem_sexo'}
-        <button class="botao secundario largo acao-grupo" onclick={sugerir}>Sugerir pelo primeiro nome</button>
-      {:else if g.tipo === 'sexo_a_conferir'}
-        <p class="suave pequeno">
-          O sexo destacado foi sugerido pelo primeiro nome. Toque no certo para confirmar; corrija os errados.
-        </p>
+        <p class="suave pequeno">Toque em F ou M.</p>
       {/if}
       <ul class="lista">
         {#each g.itens as p (`${p.familia.id}-${p.morador?.id ?? ''}`)}
@@ -75,7 +57,7 @@
                   {#each ['F', 'M'] as const as s (s)}
                     <button
                       class="sexo"
-                      class:sugerido={m.sexo === s}
+                      
                       aria-label={s === 'F' ? 'Feminino' : 'Masculino'}
                       onclick={() => confirmarSexo(p.familia.id, m.id, s)}>{s}</button
                     >
@@ -96,11 +78,6 @@
           </li>
         {/each}
       </ul>
-      {#if g.tipo === 'sexo_a_conferir'}
-        <button class="botao largo acao-grupo" onclick={() => confirmarTodos(g.itens.length)}>
-          Já conferi a lista: confirmar todos os {g.itens.length}
-        </button>
-      {/if}
     </details>
   </section>
 {/each}
@@ -112,9 +89,6 @@
   .ok {
     color: var(--realizada);
     font-weight: 700;
-  }
-  .acao-grupo {
-    margin: 8px 0;
   }
   .linha-sexo {
     display: flex;
@@ -140,10 +114,6 @@
     font-weight: 800;
     font-size: 1.1rem;
     cursor: pointer;
-  }
-  .sexo.sugerido {
-    background: var(--primaria);
-    color: var(--primaria-texto);
   }
   .item {
     display: flex;
