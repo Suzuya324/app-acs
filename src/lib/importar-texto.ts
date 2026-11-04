@@ -116,7 +116,7 @@ export function importarListaTexto(texto: string, hoje: string): ResultadoImport
     const linha = bruta.trim();
     if (!linha || SEPARADOR.test(linha)) continue;
 
-    // TOTAL: 194 casas/famílias e 536 moradores
+    // TOTAL: 120 casas/famílias e 350 moradores
     const total = linha.match(/^total\b[^\d]*(\d+)\s*casas?[^\d]*?(\d+)\s*moradores?/i);
     if (total) {
       totalInformado = { familias: Number(total[1]), moradores: Number(total[2]) };

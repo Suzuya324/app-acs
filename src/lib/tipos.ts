@@ -29,8 +29,6 @@ export interface Morador {
   id: string;
   nome: string;
   sexo: Sexo;
-  /** O sexo foi sugerido pelo primeiro nome e o ACS ainda não conferiu. */
-  sexoAConferir?: boolean;
   /** Data de nascimento no formato aaaa-mm-dd, ou vazio se não souber. */
   nascimento: string;
   situacao: SituacaoMorador;

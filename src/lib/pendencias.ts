@@ -7,8 +7,7 @@ export type TipoPendencia =
   | 'sem_responsavel'
   | 'sem_moradores'
   | 'sem_nascimento'
-  | 'sem_sexo'
-  | 'sexo_a_conferir';
+  | 'sem_sexo';
 
 export const NOMES_PENDENCIA: Record<TipoPendencia, string> = {
   sem_prontuario: 'Família sem prontuário',
@@ -17,7 +16,6 @@ export const NOMES_PENDENCIA: Record<TipoPendencia, string> = {
   sem_moradores: 'Casa habitada sem moradores',
   sem_nascimento: 'Morador sem data de nascimento',
   sem_sexo: 'Morador sem sexo informado',
-  sexo_a_conferir: 'Sexo sugerido pelo nome (conferir)',
 };
 
 export interface Pendencia {
@@ -55,7 +53,6 @@ export function listarPendencias(familias: Familia[]): Pendencia[] {
     for (const m of atuais) {
       if (!m.nascimento) lista.push({ tipo: 'sem_nascimento', familia: f, morador: m });
       if (!m.sexo) lista.push({ tipo: 'sem_sexo', familia: f, morador: m });
-      else if (m.sexoAConferir) lista.push({ tipo: 'sexo_a_conferir', familia: f, morador: m });
     }
   }
   return lista;

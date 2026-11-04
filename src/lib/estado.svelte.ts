@@ -12,7 +12,6 @@ import { CONFIG_PADRAO } from './rotulos';
 import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
 import { juntarDados, textoResumoJuncao, type ResumoJuncao } from './juntar';
 import { gerarRelato } from './relato';
-import { sugerirSexoNasFamilias } from './sexo-por-nome';
 import { novoId } from './ids';
 import type { Alteracao, Config, Familia, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
@@ -69,7 +68,12 @@ export async function iniciar() {
 
 /** Completa campos que não existiam em versões antigas do app. */
 function normalizarFamilia(f: Familia): Familia {
-  const moradores = f.moradores.map((m) => ({ ...m, situacaoDesde: m.situacaoDesde ?? '', obs: m.obs ?? '', grupos: m.grupos ?? [] }));
+  const moradores = f.moradores.map((m) => {
+    // a marca "sexo a conferir" (sugestão pelo nome) não existe mais
+    const { sexoAConferir: _, ...resto } = m as Morador & { sexoAConferir?: boolean };
+    void _;
+    return { ...resto, situacaoDesde: m.situacaoDesde ?? '', obs: m.obs ?? '', grupos: m.grupos ?? [] };
+  });
   const responsavelId = f.responsavelId ?? moradores.find((m) => m.situacao === 'mora')?.id ?? '';
   return { ...f, bairro: f.bairro ?? '', obs: f.obs ?? '', colmeia: f.colmeia ?? '', responsavelId, moradores };
 }
@@ -397,44 +401,11 @@ export async function importarArea(familias: Familia[]): Promise<void> {
   await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: [] });
 }
 
-/** Sugere o sexo pelo primeiro nome para todos que estão em branco (fica "a conferir"). */
-export async function sugerirSexoParaTodos(): Promise<number> {
-  const antes = new Map(app.familias.map((f) => [f.id, JSON.stringify(f.moradores)]));
-  const n = sugerirSexoNasFamilias(app.familias);
-  if (n) {
-    const quando = agora();
-    for (const f of app.familias) if (antes.get(f.id) !== JSON.stringify(f.moradores)) f.atualizadoEm = quando;
-    app.historico.push(...criarAlteracoes('', [`Sexo sugerido pelo primeiro nome para ${n} moradores (a conferir)`]));
-    await gravar({ familias: app.familias, historico: app.historico });
-  }
-  return n;
-}
-
-/** Confirma (ou troca) o sexo de um morador e tira a marca "a conferir". */
+/** Define o sexo de um morador (botões F/M em "o que falta completar"). */
 export async function confirmarSexo(familiaId: string, moradorId: string, sexo: 'M' | 'F') {
   const m = familiaPorId(familiaId)?.moradores.find((x) => x.id === moradorId);
   if (!m) return;
-  await salvarMorador(familiaId, { ...($state.snapshot(m) as Morador), sexo, sexoAConferir: false });
-}
-
-/** Confirma de uma vez todos os sexos sugeridos que ainda estão "a conferir". */
-export async function confirmarTodosOsSexos(): Promise<number> {
-  let n = 0;
-  const quando = agora();
-  for (const f of app.familias) {
-    for (const m of f.moradores) {
-      if (m.sexoAConferir) {
-        m.sexoAConferir = false;
-        f.atualizadoEm = quando;
-        n++;
-      }
-    }
-  }
-  if (n) {
-    app.historico.push(...criarAlteracoes('', [`Sexo confirmado em lote para ${n} moradores`]));
-    await gravar({ familias: app.familias, historico: app.historico });
-  }
-  return n;
+  await salvarMorador(familiaId, { ...($state.snapshot(m) as Morador), sexo });
 }
 
 export function historicoDaFamilia(familiaId: string): Alteracao[] {
