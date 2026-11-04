@@ -12,11 +12,13 @@
   import EditarMorador from './telas/EditarMorador.svelte';
   import Importar from './telas/Importar.svelte';
   import Painel from './telas/Painel.svelte';
+  import Relatorio from './telas/Relatorio.svelte';
   import Pendencias from './telas/Pendencias.svelte';
   import Roteiro from './telas/Roteiro.svelte';
   import Familia from './telas/Familia.svelte';
   import Fila from './telas/Fila.svelte';
   import Inicio from './telas/Inicio.svelte';
+  import Lancar from './telas/Lancar.svelte';
   import NovaVD from './telas/NovaVD.svelte';
 
   const prefereEscuro = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
@@ -40,9 +42,11 @@
   const abaAtiva = $derived(
     ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador'].includes(rota.tela)
       ? 'busca'
-      : rota.tela === 'importar'
+      : rota.tela === 'lancar'
+        ? 'fila'
+        : rota.tela === 'importar'
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -61,7 +65,7 @@
 
 <header class="topo">
   <div>
-    <strong>App do ACS</strong>
+    <strong>Facilitador de VDs</strong>
     {#if app.fase === 'aberto' && app.config.micro}<span class="suave pequeno">{app.config.micro}</span>{/if}
   </div>
   <div class="acoes-topo">
@@ -93,6 +97,8 @@
     {#key `${rota.id}/${rota.sub}`}<NovaVD familiaId={rota.id} visitaId={rota.sub} />{/key}
   {:else if rota.tela === 'fila'}
     <Fila />
+  {:else if rota.tela === 'lancar'}
+    <Lancar />
   {:else if rota.tela === 'ajustes'}
     <Ajustes />
   {:else if rota.tela === 'editar-familia'}
@@ -107,6 +113,8 @@
     <Pendencias />
   {:else if rota.tela === 'painel'}
     <Painel />
+  {:else if rota.tela === 'relatorio'}
+    <Relatorio />
   {:else if rota.tela === 'roteiro'}
     <Roteiro />
   {:else}

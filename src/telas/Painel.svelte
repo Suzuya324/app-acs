@@ -73,6 +73,8 @@
   <p class="suave pequeno">Contam para a meta: {app.config.nomesDesfecho.realizada} e {app.config.nomesDesfecho.ausente_realizada} (cada família uma vez no período).</p>
 </section>
 
+<button class="botao largo relatorio" onclick={() => ir('relatorio')}>Relatório de produção (imprimir/PDF)</button>
+
 {#if painel.atual}
   <button class="botao secundario largo" onclick={() => ir('roteiro')}>Planejar a rua do dia ({painel.naoVisitadas.length} não visitadas)</button>
 {/if}
@@ -80,6 +82,9 @@
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .relatorio {
+    margin-bottom: 10px;
   }
   .navegar {
     display: flex;

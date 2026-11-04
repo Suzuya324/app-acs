@@ -10,6 +10,7 @@ import { gerarDadosFicticios } from './dados-ficticios';
 import { hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
 import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
+import { juntarDados, textoResumoJuncao, type ResumoJuncao } from './juntar';
 import { gerarRelato } from './relato';
 import { sugerirSexoNasFamilias } from './sexo-por-nome';
 import { novoId } from './ids';
@@ -200,13 +201,15 @@ export async function trocarPin(novoPin: string) {
   await cofre.trocarPin(novoPin, dadosAtuais());
 }
 
+const agora = () => new Date().toISOString();
+
 export function familiaPorId(id: string): Familia | undefined {
   return app.familias.find((f) => f.id === id);
 }
 
 export function salvarVisita(v: Omit<Visita, 'id'>) {
   const id = novoId('v');
-  app.visitas.push({ ...v, id });
+  app.visitas.push({ ...v, id, atualizadoEm: agora() });
   app.rascunho = null;
   aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
   return gravar({ visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico });
@@ -256,7 +259,7 @@ export async function corrigirVisita(id: string, nova: Omit<Visita, 'id'>, volta
   const i = app.visitas.findIndex((v) => v.id === id);
   if (i < 0) return;
   const antes = $state.snapshot(app.visitas[i]) as Visita;
-  const depois: Visita = { ...nova, id, lancadaNoFast: voltarParaFila ? false : antes.lancadaNoFast };
+  const depois: Visita = { ...nova, id, lancadaNoFast: voltarParaFila ? false : antes.lancadaNoFast, atualizadoEm: agora() };
   const f = familiaPorId(antes.familiaId);
   const nome = (mid: string) => f?.moradores.find((m) => m.id === mid)?.nome.split(' ')[0] ?? '?';
   const textos = mudancasVisita(antes, depois, nome, (d) => app.config.nomesDesfecho[d]);
@@ -334,7 +337,10 @@ export async function descartarRascunho() {
 
 export function marcarLancada(id: string, lancada: boolean) {
   const v = app.visitas.find((x) => x.id === id);
-  if (v) v.lancadaNoFast = lancada;
+  if (v) {
+    v.lancadaNoFast = lancada;
+    v.atualizadoEm = agora();
+  }
   return gravar({ visitas: app.visitas });
 }
 
@@ -347,6 +353,7 @@ export async function salvarFamilia(nova: Familia): Promise<void> {
   const final: Familia = antiga ? { ...nova, moradores: antiga.moradores } : nova;
   const textos = mudancasFamilia(antiga, final);
   if (!textos.length) return;
+  final.atualizadoEm = agora();
   if (i >= 0) app.familias[i] = final;
   else app.familias.push(final);
   app.historico.push(...criarAlteracoes(final.id, textos));
@@ -372,6 +379,7 @@ export async function salvarMorador(familiaId: string, novo: Morador, tornarResp
   // Grava também quando só mudou algo que não vai para o histórico (ex.: tirar a marca "a conferir").
   const mudou = JSON.stringify(antigo) !== JSON.stringify(novo);
   if (!textos.length && !mudou) return;
+  f.atualizadoEm = agora();
   if (textos.length) app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
   await gravar({ familias: app.familias, historico: app.historico });
 }
@@ -379,18 +387,23 @@ export async function salvarMorador(familiaId: string, novo: Morador, tornarResp
 /** Troca os dados de exemplo (ou a área vazia) pela área importada do CSV. */
 export async function importarArea(familias: Familia[]): Promise<void> {
   const ruas = [...new Set([...app.config.ruas, ...familias.map((f) => f.rua).filter(Boolean)])];
-  app.familias = familias;
+  const quando = agora();
+  app.familias = familias.map((f) => ({ ...f, atualizadoEm: quando }));
   app.visitas = []; // as visitas de exemplo eram inventadas
+  app.revisitas = [];
   app.historico = criarAlteracoes('', [`Área importada do CSV: ${familias.length} famílias`]);
   app.config.usandoExemplo = false;
   app.config.ruas = ruas;
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: [] });
 }
 
 /** Sugere o sexo pelo primeiro nome para todos que estão em branco (fica "a conferir"). */
 export async function sugerirSexoParaTodos(): Promise<number> {
+  const antes = new Map(app.familias.map((f) => [f.id, JSON.stringify(f.moradores)]));
   const n = sugerirSexoNasFamilias(app.familias);
   if (n) {
+    const quando = agora();
+    for (const f of app.familias) if (antes.get(f.id) !== JSON.stringify(f.moradores)) f.atualizadoEm = quando;
     app.historico.push(...criarAlteracoes('', [`Sexo sugerido pelo primeiro nome para ${n} moradores (a conferir)`]));
     await gravar({ familias: app.familias, historico: app.historico });
   }
@@ -407,10 +420,12 @@ export async function confirmarSexo(familiaId: string, moradorId: string, sexo: 
 /** Confirma de uma vez todos os sexos sugeridos que ainda estão "a conferir". */
 export async function confirmarTodosOsSexos(): Promise<number> {
   let n = 0;
+  const quando = agora();
   for (const f of app.familias) {
     for (const m of f.moradores) {
       if (m.sexoAConferir) {
         m.sexoAConferir = false;
+        f.atualizadoEm = quando;
         n++;
       }
     }
@@ -437,11 +452,21 @@ export async function registrarBackupFeito() {
   await salvarConfig();
 }
 
+/** Junta os dados de um backup com os deste aparelho, sem apagar nada. */
+export async function juntarBackup(texto: string, senha: string): Promise<ResumoJuncao> {
+  const outro = await lerBackup(texto, senha);
+  const { dados, resumo } = juntarDados(dadosAtuais(), outro);
+  carregar(dados);
+  app.historico.push(...criarAlteracoes('', [`Backup juntado: ${textoResumoJuncao(resumo)}`]));
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas });
+  return resumo;
+}
+
 /** Substitui TODOS os dados atuais pelos do backup (mantém o PIN atual). */
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas });
 }
 
 // ---------------- Bloqueio automático ----------------

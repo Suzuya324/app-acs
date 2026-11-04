@@ -17,7 +17,7 @@ interface ArquivoBackup {
 
 export class ArquivoInvalido extends Error {
   constructor() {
-    super('Este arquivo não é um backup do App do ACS.');
+    super('Este arquivo não é um backup do Facilitador de VDs.');
   }
 }
 export class SenhaBackupErrada extends Error {
@@ -65,5 +65,5 @@ export async function lerBackup(texto: string, senha: string): Promise<Dados> {
 }
 
 export function nomeArquivoBackup(hoje: string): string {
-  return `backup-app-acs-${hoje}.json`;
+  return `backup-facilitador-${hoje}.json`;
 }

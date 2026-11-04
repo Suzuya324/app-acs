@@ -1,11 +1,11 @@
-# App do ACS — Guia do projeto para o Claude Code
+# Facilitador de VDs — Guia do projeto para o Claude Code
 
 ## O que é
 App web instalável (PWA) para Agentes Comunitários de Saúde (ACS). Funciona em **Android e iPhone**
 pelo navegador, vira um ícone na tela do celular e funciona **sem internet**.
 
-Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web da SBCD) faz mal:
-- achar a família pelo endereço ("Alpheu 90") em segundos;
+Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web usado pela unidade) faz mal:
+- achar a família pelo endereço ("Acácias 90") em segundos;
 - registrar a visita domiciliar (VD) na rua, offline;
 - gerar o texto do relato pronto para copiar e colar no Fast;
 - saber a qualquer momento quantas famílias já foram visitadas no mês e quanto falta para a meta;
@@ -13,9 +13,9 @@ Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web da SBCD) f
 
 **O app NÃO se conecta ao Fast.** O lançamento oficial das VDs continua sendo feito à mão no Fast.
 
-Primeiro usuário: um ACS da micro 04 (Rua Morro do Livramento e Rua Alpheu Luiz Gasparini, Vila Nova
-Galvão), com cerca de 198 famílias e 540 moradores. Depois, colegas da unidade vão usar, cada um com a
-própria área.
+**Uso pessoal:** o app é de um único ACS, só para uso próprio (celular e computador pessoal).
+Não é distribuído para outros usuários. Não registrar no repositório nada que identifique o usuário,
+a unidade, a micro ou as ruas da área (o repositório pode ser público).
 
 ## Como trabalhar com o usuário
 - Responder sempre em **português brasileiro**, com linguagem simples.
@@ -68,7 +68,7 @@ O app guarda nomes, endereços e informações de saúde de pacientes (dados pro
     área, faleceu, recusa), condições/grupos (gestante, puérpera, criança pequena, idoso, acamado,
     hipertenso, diabético, pessoa com deficiência, saúde mental, outros), observações.
 - **Nada é apagado de verdade**: mudança de situação guarda data e histórico; exclusão vai para lixeira.
-- **Busca única**: um campo que acha por nome, por "rua + número" (ex. "Alpheu 90", "Morro 310") ou
+- **Busca única**: um campo que acha por nome, por "rua + número" (ex. "Acácias 90", "Ipês 310") ou
   por prontuário. Aceitar abreviações das ruas.
 - Lista **"o que falta completar"**: família sem prontuário ou com prontuário incompleto, morador sem
   data de nascimento, casa sem responsável.
@@ -79,7 +79,7 @@ O ACS carrega a própria área a partir de um arquivo CSV (gerado por ele a part
   `Casa;Rua;Numero;Complemento;Bairro;Prontuario;Nome;Sexo;Data de nascimento`
 - Uma linha por morador. A coluna `Casa` (C001, C002…) agrupa os moradores da mesma família.
   `Sexo` = M/F. Datas em dd/mm/aaaa. Prontuário pode vir vazio.
-- Antes de salvar, mostrar o resumo ("2 ruas, 198 famílias, 542 moradores") e pedir confirmação.
+- Antes de salvar, mostrar o resumo ("2 ruas, 190 famílias, 530 moradores") e pedir confirmação.
 - Criar um CSV de exemplo **fictício** no mesmo formato para testes.
 
 ### Visitas domiciliares (VD)
@@ -125,9 +125,8 @@ O ACS carrega a própria área a partir de um arquivo CSV (gerado por ele a part
 5. **Meta e painel** (regras acima).
 6. **Proteção contra perda**: lixeira, desfazer, histórico de alterações, backup e restauração
    criptografados, lembrete semanal de backup.
-7. **Publicar e instalar**: GitHub Pages; guiar a instalação no Android (Chrome → "Instalar app") e
-   no iPhone (Safari → Compartilhar → "Adicionar à Tela de Início").
-8. **Uso real**: corrigir o que aparecer, tutorial de primeiro uso e guia para os colegas.
+7. **Publicar e instalar**: GitHub Pages; instalação no celular do próprio ACS e no computador pessoal.
+8. **Uso real**: corrigir o que aparecer e tutorial de primeiro uso.
 
 Depois da versão 1, novas funções em pacotes pequenos (colmeia com cores, calendário de dias úteis,
 lembretes, roteiros de orientação por grupo, relatório do mês em PDF paisagem, lista de prontuários

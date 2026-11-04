@@ -13,3 +13,4 @@ dist/
 # Segurança: nunca enviar arquivos de backup (têm os dados, mesmo criptografados).
 backup-app-acs-*
 *.acsbackup
+backup-facilitador-*
