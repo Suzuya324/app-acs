@@ -84,6 +84,7 @@ export function mudancasVisita(
     m.push(`compartilhada ${vazio(antes.compartilhadaCom)} → ${vazio(depois.compartilhadaCom)}`);
   }
   if (antes.orientacoes.trim() !== depois.orientacoes.trim()) m.push('orientações alteradas');
+  if ((antes.observacao ?? '').trim() !== (depois.observacao ?? '').trim()) m.push('observação alterada');
   if (JSON.stringify(antes.sinais) !== JSON.stringify(depois.sinais)) m.push('sinais vitais alterados');
   if (antes.relato.trim() !== depois.relato.trim()) m.push('relato alterado');
   return m.length ? [`VD de ${formatarData(antes.data)} corrigida: ${m.join('; ')}`] : [];

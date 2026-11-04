@@ -13,6 +13,12 @@ export interface EntradaRelato {
   /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   compartilhadaCom: string;
+  /** Motivo da VD quando não é o padrão ("Outros"): entra no relato. */
+  motivo?: string;
+  /** O que foi conversado / observado (escrito pelo ACS). */
+  observacao?: string;
+  /** VD anterior da família nos últimos 30 dias (para dar continuidade no texto). */
+  anterior?: { data: string; desfecho: Desfecho };
   /** Usar o nome completo dos moradores (padrão: só o primeiro nome). */
   nomeCompleto?: boolean;
   /** O que foi feito de revisita marcada (ex.: "entregue guia de encaminhamento"). */
@@ -115,18 +121,28 @@ function finalizar(partes: string[]): string {
   return `${texto}.`;
 }
 
+const dataCurta = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const limparTexto = (t?: string) => (t ?? '').trim().replace(/\s+/g, ' ').replace(/[.,;\s]+$/, '');
+const minuscula = (t: string) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : t);
+
 /** Gera o texto do relato pronto para copiar e colar no Fast. */
 export function gerarRelato(e: EntradaRelato): string {
   const quem = e.compartilhadaCom.trim();
   const compartilhada = quem ? `VD compartilhada com ${quem}` : '';
   const orient = e.orientacoes.trim().replace(/[.,;\s]+$/, '');
+  const motivo = limparTexto(e.motivo);
+  const parteMotivo = motivo && motivo.toLowerCase() !== 'outros' ? `motivo: ${minuscula(motivo)}` : '';
+  const observacao = minuscula(limparTexto(e.observacao));
+  const anteriorFoiAusencia = e.anterior?.desfecho === 'ausencia_completa';
 
   if (e.desfecho === 'ausencia_completa') {
-    return finalizar([MODELOS_AUSENCIA[indiceModelo(e.contador, MODELOS_AUSENCIA.length)], compartilhada]);
+    const base = MODELOS_AUSENCIA[indiceModelo(e.contador, MODELOS_AUSENCIA.length)];
+    const nova = anteriorFoiAusencia ? `nova tentativa (anterior em ${dataCurta(e.anterior!.data)})` : '';
+    return finalizar([base, nova, parteMotivo, observacao, compartilhada]);
   }
 
   if (e.desfecho === 'recusa') {
-    return finalizar([MODELOS_RECUSA[indiceModelo(e.contador, MODELOS_RECUSA.length)], compartilhada]);
+    return finalizar([MODELOS_RECUSA[indiceModelo(e.contador, MODELOS_RECUSA.length)], parteMotivo, observacao, compartilhada]);
   }
 
   const todos = [...e.presentes, ...e.ausentes];
@@ -134,17 +150,29 @@ export function gerarRelato(e: EntradaRelato): string {
   const nomesPresentes = e.presentes.map((m) => nomes.get(m.id)!);
   const partes: string[] = [];
 
+  let abertura: string;
   if (nomesPresentes.length) {
     const m = MODELOS_ATENDIDA[indiceModelo(e.contador, MODELOS_ATENDIDA.length)];
-    partes.push(m.abertura(juntarNomes(nomesPresentes), e.ausentes.length === 0, nomesPresentes.length > 1));
+    abertura = m.abertura(juntarNomes(nomesPresentes), e.ausentes.length === 0, nomesPresentes.length > 1);
   } else {
-    partes.push('Realizada VD, conversado com a família');
+    abertura = 'Realizada VD, conversado com a família';
   }
+  // Continuidade com a VD anterior (até 30 dias): "Após tentativa sem sucesso em 28/10, realizada VD…"
+  if (e.anterior) {
+    const prefixo = anteriorFoiAusencia
+      ? `Após tentativa sem sucesso em ${dataCurta(e.anterior.data)}`
+      : `Em continuidade à VD de ${dataCurta(e.anterior.data)}`;
+    abertura = `${prefixo}, ${minuscula(abertura)}`;
+  }
+  partes.push(abertura);
 
   if (e.ausentes.length && nomesPresentes.length) {
     const a = e.ausentes.map((m) => nomes.get(m.id)!);
     partes.push(`${a.length > 1 ? 'ausentes' : 'ausente'} ${juntarNomes(a)}`);
   }
+
+  partes.push(parteMotivo);
+  partes.push(observacao);
 
   partes.push(textoSinais(e.sinais, nomes, [...e.presentes, ...e.ausentes]));
 

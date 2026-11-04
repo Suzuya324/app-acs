@@ -3,7 +3,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { idadeTexto } from '../lib/dados-ficticios';
-  import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
+  import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import { sugerirDesfecho } from '../lib/desfecho';
   import {
     app,
@@ -59,6 +59,7 @@
         outrosTemas: conhecidos.filter((t) => !TEMAS_ORIENTACAO.includes(t)).join(', '),
         relatoEditado: null as string | null,
         revisitasFeitas: [...(original.revisitasFeitas ?? [])],
+        observacao: original.observacao ?? '',
         original,
         restaurado: false,
       };
@@ -77,6 +78,7 @@
       outrosTemas: '',
       relatoEditado: null as string | null,
       revisitasFeitas: [] as string[],
+      observacao: '',
       original,
       restaurado: false,
     };
@@ -102,6 +104,16 @@
   let temas = $state<string[]>(inicio.temas);
   let outrosTemas = $state(inicio.outrosTemas);
   let relatoEditado = $state<string | null>(inicio.relatoEditado);
+  /** O que foi conversado / observado (entra no relato). */
+  let observacao = $state(inicio.observacao ?? '');
+  /** VD anterior desta família (até 30 dias antes da data desta VD), para dar continuidade ao relato. */
+  const anterior = $derived.by(() => {
+    if (!data) return undefined;
+    const lista = app.visitas
+      .filter((v) => v.familiaId === familiaId && v.id !== vid && v.data < data && diferencaDias(v.data, data) <= 30)
+      .sort((a, b) => b.data.localeCompare(a.data));
+    return lista[0] ? { data: lista[0].data, desfecho: lista[0].desfecho } : undefined;
+  });
   /** Revisitas marcadas resolvidas nesta VD. */
   let revisitasFeitas = $state<string[]>(inicio.revisitasFeitas ?? []);
   /** Revisitas desta família para mostrar: as abertas + as que esta VD (corrigida) já tinha resolvido. */
@@ -145,6 +157,9 @@
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
       feitos: feitosTexto,
+      motivo: motivo === app.config.motivoPadrao ? '' : motivo,
+      observacao,
+      anterior,
       nomeCompleto: app.config.relatoNomeCompleto,
       contador,
     }),
@@ -214,6 +229,7 @@
       outrosTemas,
       relatoEditado,
       revisitasFeitas,
+      observacao,
     }) as RascunhoVD;
   }
   let mexeu = $state(inicio.restaurado);
@@ -222,7 +238,7 @@
   let primeiraLeitura = true;
   $effect(() => {
     // lê tudo o que o ACS pode mudar
-    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado, revisitasFeitas]);
+    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado, revisitasFeitas, observacao]);
     if (primeiraLeitura) {
       primeiraLeitura = false;
       return;
@@ -271,6 +287,7 @@
       relato,
       lancadaNoFast: false,
       revisitasFeitas: atendida ? revisitasFeitas.filter((id) => revisitasDaFamilia.some((r) => r.id === id)) : [],
+      observacao: observacao.trim(),
     };
     if (corrigindo && original) {
       await corrigirVisita(original.id, v, voltarParaFila);
@@ -421,6 +438,17 @@
       <span>Outros assuntos</span>
       <input type="text" bind:value={outrosTemas} placeholder="Ex.: cartão SUS" />
     </label>
+  </section>
+
+  <section class="cartao">
+    <label class="campo">
+      <span>O que foi conversado / observado (opcional)</span>
+      <textarea rows="3" bind:value={observacao} placeholder="Ex.: refere dor nas costas, aguarda resultado de exame"></textarea>
+    </label>
+    <p class="suave pequeno">Entra no relato. Dica: toque no microfone do teclado para ditar.</p>
+    {#if anterior}
+      <p class="suave pequeno">O relato vai citar a VD anterior de {formatarData(anterior.data)}.</p>
+    {/if}
   </section>
 
   <section class="cartao">
