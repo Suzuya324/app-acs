@@ -488,6 +488,12 @@ export function enderecoCurto(f: Familia): string {
   return `${f.rua}, ${f.numero}${comp}`;
 }
 
+/** Nomes completos de quem estava presente na VD (para achar a família no Fast). */
+export function presentesDaVisita(v: Visita): string[] {
+  const f = familiaPorId(v.familiaId);
+  return v.presentes.map((id) => f?.moradores.find((m) => m.id === id)?.nome).filter((n): n is string => !!n);
+}
+
 export function responsavel(f: Familia): string {
   const atuais = f.moradores.filter((m) => m.situacao === 'mora');
   return (atuais.find((m) => m.id === f.responsavelId) ?? atuais[0])?.nome ?? '(sem morador)';

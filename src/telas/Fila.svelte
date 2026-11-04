@@ -3,7 +3,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { formatarData, formatarDataLonga } from '../lib/datas';
-  import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso } from '../lib/estado.svelte';
+  import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso, presentesDaVisita, responsavel } from '../lib/estado.svelte';
   import { ir } from '../lib/rotas.svelte';
   import type { Visita } from '../lib/tipos';
 
@@ -71,6 +71,13 @@
         </div>
         <p class="suave pequeno info">Data: {formatarData(v.data)} · Motivo: {v.motivo}</p>
         {#if f}
+          {@const pres = presentesDaVisita(v)}
+          <p class="nomes">
+            <span>Responsável: <strong>{responsavel(f)}</strong></span>
+            {#if pres.length}<br /><span>Presentes: <strong>{pres.join(', ')}</strong></span>{/if}
+          </p>
+        {/if}
+        {#if f}
           <div class="pront">
             <span>Prontuário: <strong>{f.prontuario || '—'}</strong></span>
             {#if f.prontuario}
@@ -128,6 +135,10 @@
   }
   .info {
     margin-bottom: 6px;
+  }
+  .nomes {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
   }
   .pront {
     display: flex;

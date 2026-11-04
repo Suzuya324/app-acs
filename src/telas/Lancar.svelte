@@ -6,7 +6,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { formatarData, formatarDataLonga } from '../lib/datas';
-  import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso } from '../lib/estado.svelte';
+  import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso, presentesDaVisita, responsavel } from '../lib/estado.svelte';
   import { voltar } from '../lib/rotas.svelte';
 
   /** Lista fixada ao abrir a tela (assim marcar como lançada não "pula" a ordem). */
@@ -69,6 +69,8 @@
     <p class="info">
       <span>Data: <strong>{formatarDataLonga(visita.data, true)}</strong></span><br />
       <span>Motivo: <strong>{visita.motivo}</strong></span>
+      {#if familia}<br /><span>Responsável: <strong>{responsavel(familia)}</strong></span>{/if}
+      {#if presentesDaVisita(visita).length}<br /><span>Presentes: <strong>{presentesDaVisita(visita).join(', ')}</strong></span>{/if}
     </p>
 
     <div class="passo">
