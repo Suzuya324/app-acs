@@ -28,6 +28,7 @@ export const CONFIG_PADRAO: Config = {
   feriadosIgnorados: [],
   diasSemCampo: [],
   urlFast: '',
+  relatoNomeCompleto: false,
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

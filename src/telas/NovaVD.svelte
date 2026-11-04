@@ -145,6 +145,7 @@
       orientacoes,
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
       feitos: feitosTexto,
+      nomeCompleto: app.config.relatoNomeCompleto,
       contador,
     }),
   );

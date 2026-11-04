@@ -13,6 +13,8 @@ export interface EntradaRelato {
   /** Assuntos das orientações, ex.: "consultas, dengue e vacinas". */
   orientacoes: string;
   compartilhadaCom: string;
+  /** Usar o nome completo dos moradores (padrão: só o primeiro nome). */
+  nomeCompleto?: boolean;
   /** O que foi feito de revisita marcada (ex.: "entregue guia de encaminhamento"). */
   feitos?: string[];
   /**
@@ -127,7 +129,8 @@ export function gerarRelato(e: EntradaRelato): string {
     return finalizar([MODELOS_RECUSA[indiceModelo(e.contador, MODELOS_RECUSA.length)], compartilhada]);
   }
 
-  const nomes = nomesCurtos([...e.presentes, ...e.ausentes]);
+  const todos = [...e.presentes, ...e.ausentes];
+  const nomes = e.nomeCompleto ? new Map(todos.map((m) => [m.id, m.nome.trim().replace(/\s+/g, ' ')])) : nomesCurtos(todos);
   const nomesPresentes = e.presentes.map((m) => nomes.get(m.id)!);
   const partes: string[] = [];
 

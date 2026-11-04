@@ -125,3 +125,13 @@ describe('gerador de relato (estilo curto)', () => {
     expect(juntarNomes(['A', 'B', 'C'])).toBe('A, B e C');
   });
 });
+
+describe('relato com nome completo (chave em Ajustes)', () => {
+  it('usa o nome completo em presentes, ausentes e sinais', () => {
+    const t = gerarRelato({ ...base, presentes: [fulana], ausentes: [ciclano], sinais: { '1': { pa: '120/80' } }, nomeCompleto: true });
+    expect(t).toBe('Realizada VD, presente Fulana Teste da Silva, ausente Ciclano Exemplo, P.A. de Fulana Teste da Silva 120x80.');
+  });
+  it('desligado continua só com o primeiro nome', () => {
+    expect(gerarRelato({ ...base, nomeCompleto: false })).toBe('Realizada VD, presentes Fulana e Ciclano.');
+  });
+});

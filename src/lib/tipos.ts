@@ -164,4 +164,6 @@ export interface Config {
   diasSemCampo: { data: string; motivo: string }[];
   /** Endereço do Fast, só para o botão "Abrir o Fast" (nenhum dado é enviado). */
   urlFast: string;
+  /** Relato com o nome completo dos moradores (em vez de só o primeiro nome). */
+  relatoNomeCompleto: boolean;
 }
