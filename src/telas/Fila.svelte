@@ -52,6 +52,13 @@
   {pendentes.length === 0 ? 'Tudo lançado. 👏' : pendentes.length === 1 ? '1 visita esperando lançamento.' : `${pendentes.length} visitas esperando lançamento.`}
 </p>
 
+{#if pendentes.length}
+  <button class="botao largo sequencia" onclick={() => ir('lancar')}>Lançar em sequência ({pendentes.length})</button>
+{/if}
+{#if app.config.urlFast}
+  <a class="botao secundario largo sequencia" href={app.config.urlFast} target="_blank" rel="noopener noreferrer">Abrir o Fast ↗</a>
+{/if}
+
 {#each porDia as [dia, visitas] (dia)}
   <h2 class="dia">{formatarDataLonga(dia, true)} <span class="suave pequeno">({visitas.length})</span></h2>
   <ul class="lista">
@@ -106,6 +113,9 @@
 {/if}
 
 <style>
+  .sequencia {
+    margin-bottom: 10px;
+  }
   .dia {
     margin: 18px 0 8px;
   }

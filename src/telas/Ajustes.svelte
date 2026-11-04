@@ -3,12 +3,14 @@
   import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
   import { FERIADOS_LOCAIS_SUGERIDOS, feriadosNacionais } from '../lib/calendario';
   import { problemaNoPin } from '../lib/cripto';
+  import { textoResumoJuncao } from '../lib/juntar';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
     apagarTudo,
     app,
     cofre,
     dadosParaBackup,
+    juntarBackup,
     mostrarAviso,
     pedirPersistencia,
     registrarBackupFeito,
@@ -57,6 +59,25 @@
     }
   }
 
+  let arquivoJ = $state<File | null>(null);
+  let senhaJ = $state('');
+  let juntando = $state(false);
+  let resultadoJ = $state('');
+  async function juntar() {
+    if (!arquivoJ) return mostrarAviso('Escolha o arquivo do backup.');
+    juntando = true;
+    try {
+      const r = await juntarBackup(await arquivoJ.text(), senhaJ);
+      resultadoJ = textoResumoJuncao(r) + (r.semData ? ` (${r.semData} com alteração dos dois lados sem data: ficou a deste aparelho)` : '');
+      senhaJ = '';
+      mostrarAviso('Backup juntado ✓', 3500);
+    } catch (e) {
+      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui juntar.', 5000);
+    } finally {
+      juntando = false;
+    }
+  }
+
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
 
   // ---- Dados do ACS ----
@@ -102,6 +123,16 @@
     } finally {
       trocando = false;
     }
+  }
+
+  // ---- Fast ----
+  function salvarUrlFast() {
+    const u = app.config.urlFast.trim();
+    if (u && !/^https:\/\//i.test(u)) {
+      mostrarAviso('O endereço precisa começar com https://');
+      app.config.urlFast = '';
+    } else app.config.urlFast = u;
+    salvarConfig();
   }
 
   // ---- Calendário e meta ----
@@ -169,7 +200,23 @@
   <button class="botao largo" onclick={fazerBackup} disabled={gerando}>{gerando ? 'Gerando…' : 'Fazer backup agora'}</button>
 
   <details class="restaurar">
-    <summary>Restaurar um backup</summary>
+    <summary>Juntar com um backup (celular ↔ computador)</summary>
+    <p class="suave pequeno">
+      Soma o que está no backup com o que está aqui, <strong>sem apagar nada</strong>. VDs e famílias novas entram; se a
+      mesma coisa mudou dos dois lados, fica a alteração mais recente; VD lançada num lado fica lançada nos dois.
+      Seus ajustes e o PIN deste aparelho não mudam.
+    </p>
+    <label class="campo">
+      <span>Arquivo do backup do outro aparelho</span>
+      <input type="file" accept=".json,application/json" onchange={(e) => (arquivoJ = e.currentTarget.files?.[0] ?? null)} />
+    </label>
+    <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaJ} autocomplete="off" /></label>
+    <button class="botao largo" onclick={juntar} disabled={juntando}>{juntando ? 'Juntando…' : 'Juntar'}</button>
+    {#if resultadoJ}<p class="ok">✓ {resultadoJ}.</p>{/if}
+  </details>
+
+  <details class="restaurar">
+    <summary>Restaurar um backup (substitui tudo)</summary>
     <p class="alerta">Isso <strong>substitui todos os dados atuais</strong> pelos do backup.</p>
     <label class="campo">
       <span>Arquivo do backup</span>
@@ -198,6 +245,16 @@
     <button class="botao pequeno" onclick={addRua}>Adicionar</button>
   </div>
   <button class="botao largo salvar" onclick={salvar}>Salvar</button>
+</section>
+
+<!-- FAST -->
+<section class="cartao">
+  <h2>Fast</h2>
+  <label class="campo">
+    <span>Endereço do Fast (para o botão “Abrir o Fast”)</span>
+    <input type="url" inputmode="url" bind:value={app.config.urlFast} placeholder="https://…" autocomplete="off" onchange={salvarUrlFast} />
+  </label>
+  <p class="suave pequeno">O botão só abre o site no navegador. O app não envia nada para o Fast.</p>
 </section>
 
 <!-- CALENDÁRIO E META -->

@@ -171,6 +171,7 @@ input[type='search'],
 input[type='date'],
 input[type='number'],
 input[type='password'],
+input[type='url'],
 input[type='file'],
 input:not([type]),
 select,
@@ -310,4 +311,21 @@ details[open] > summary::after {
 .botao.perigo.secundario {
   background: transparent;
   color: var(--perigo);
+}
+
+/* Impressão (relatório): só o conteúdo, sem topo, abas e avisos */
+@media print {
+  .topo,
+  .abas,
+  .faixa,
+  .toast {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .conteudo {
+    max-width: none;
+    padding: 0;
+  }
 }

@@ -27,6 +27,7 @@ export const CONFIG_PADRAO: Config = {
   diaInicioPeriodo: 0,
   feriadosIgnorados: [],
   diasSemCampo: [],
+  urlFast: '',
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {
