@@ -44,8 +44,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icone.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'App do ACS',
-        short_name: 'ACS',
+        name: 'Facilitador de VDs',
+        short_name: 'Facilitador',
         description: 'Visitas domiciliares, relatos e meta do mês. Dados só no celular.',
         lang: 'pt-BR',
         start_url: './',

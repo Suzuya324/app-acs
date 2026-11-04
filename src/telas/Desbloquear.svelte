@@ -48,7 +48,7 @@
 
 <section class="tela-pin">
   <div class="cadeado" aria-hidden="true">🔒</div>
-  <h1>App do ACS</h1>
+  <h1>Facilitador de VDs</h1>
   {#if !esqueci}
     <p class="suave">Digite seu PIN</p>
     <TecladoPin bind:valor={pin} onconfirmar={entrar} desabilitado={abrindo || espera > 0} />

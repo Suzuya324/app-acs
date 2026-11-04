@@ -61,7 +61,7 @@
 
 <header class="topo">
   <div>
-    <strong>App do ACS</strong>
+    <strong>Facilitador de VDs</strong>
     {#if app.fase === 'aberto' && app.config.micro}<span class="suave pequeno">{app.config.micro}</span>{/if}
   </div>
   <div class="acoes-topo">

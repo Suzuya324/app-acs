@@ -91,7 +91,7 @@
 
 {#if passo === 'inicio'}
   <section class="cartao">
-    <h1>Bem-vindo ao App do ACS</h1>
+    <h1>Bem-vindo ao Facilitador de VDs</h1>
     <p>Antes de começar, três coisas importantes:</p>
     <ol class="itens">
       <li><strong>Seus dados ficam só neste celular.</strong> Nada vai para a internet, nem para o Fast.</li>
