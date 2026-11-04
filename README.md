@@ -37,6 +37,9 @@ npm run build    # gera a versão final na pasta dist/
 Ferramentas: Vite + TypeScript + Svelte 5, testes com Vitest. Ver `CLAUDE.md` para as regras do projeto.
 A publicação no GitHub Pages é automática a cada envio para a branch `main`.
 
+## Guia de uso
+Passo a passo de backup, celular ↔ PC, lançar no Fast e verificação em duas etapas: [GUIA-DE-USO.md](GUIA-DE-USO.md).
+
 ## Créditos
 Ícone do app: “community-healthworker”, da coleção [Health Icons](https://healthicons.org),
 em domínio público (CC0 1.0).
