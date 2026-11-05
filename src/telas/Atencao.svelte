@@ -2,7 +2,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { calcularAtencao, NOMES_ATENCAO, ORDEM_ATENCAO, type AvisoAtencao } from '../lib/atencao';
   import { hojeISO } from '../lib/datas';
-  import { app, enderecoCurto, salvarMorador } from '../lib/estado.svelte';
+  import { app, enderecoCurto, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Morador } from '../lib/tipos';
 
@@ -16,7 +16,7 @@
     const m = $state.snapshot(a.morador) as Morador;
     const grupos = acao.incluir ? [...new Set([...m.grupos, acao.incluir])] : m.grupos.filter((g) => g !== acao.tirar);
     await salvarMorador(a.familia.id, { ...m, grupos });
-    app.aviso = `${m.nome.split(' ')[0]}: ${acao.rotulo.toLowerCase()} ✓`;
+    mostrarAviso(`${m.nome.split(' ')[0]}: ${acao.rotulo.toLowerCase()} ✓`);
   }
 </script>
 

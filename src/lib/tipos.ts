@@ -173,4 +173,6 @@ export interface Config {
   primeirosPassosOcultos: boolean;
   /** Números das pastas físicas na colmeia, digitados pelo ACS (ex.: "1-50, 52"). */
   pastasNaColmeia: string;
+  /** Números de prontuário em uso no Fast (lidos de uma lista colada), por micro. Só números. */
+  emUsoNoFast: { micro: string; numeros: string };
 }

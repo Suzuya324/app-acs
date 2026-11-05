@@ -31,6 +31,7 @@ export const CONFIG_PADRAO: Config = {
   relatoNomeCompleto: false,
   primeirosPassosOcultos: false,
   pastasNaColmeia: '',
+  emUsoNoFast: { micro: '', numeros: '' },
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

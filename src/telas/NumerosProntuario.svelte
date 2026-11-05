@@ -1,7 +1,8 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
-  import { app, enderecoCurto, responsavel, salvarConfig, tirarFamiliasDaArea } from '../lib/estado.svelte';
-  import { analisarNumeros, emIntervalos, escreverProntuario, lerNumeros, microPrincipal, microsEncontradas, partesProntuario, proximoLivre } from '../lib/numeros';
+  import { app, enderecoCurto, mostrarAviso, responsavel, salvarConfig, tirarFamiliasDaArea } from '../lib/estado.svelte';
+  import { analisarNumeros, emIntervalos, escreverProntuario, lerNumeros, microPrincipal, microsEncontradas, numerosDaMicro, partesProntuario, proximoLivre } from '../lib/numeros';
+  import { decodificar } from '../lib/importar-csv';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const micros = $derived(microsEncontradas(app.familias));
@@ -9,7 +10,35 @@
   const micro = $derived(microEscolhida ?? microPrincipal(app.familias, app.config.micro));
   let textoPastas = $state(app.config.pastasNaColmeia);
   const pastas = $derived(lerNumeros(app.config.pastasNaColmeia));
-  const a = $derived(analisarNumeros(app.familias, micro, pastas));
+  const emUsoFast = $derived(app.config.emUsoNoFast?.micro === micro ? lerNumeros(app.config.emUsoNoFast.numeros) : []);
+  const a = $derived(analisarNumeros(app.familias, micro, pastas, emUsoFast));
+
+  /** Aviso de algo que não se desfaz (ajuste guardado): tira o botão Desfazer da ação anterior. */
+  function avisoSimples(texto: string) {
+    app.desfazer = null;
+    mostrarAviso(texto);
+  }
+
+  // ---- Números em uso no Fast ----
+  let textoFast = $state('');
+  const lidosFast = $derived(textoFast.trim() ? numerosDaMicro(textoFast, micro) : []);
+  async function guardarFast(texto = textoFast) {
+    const nums = numerosDaMicro(texto, micro);
+    app.config.emUsoNoFast = { micro, numeros: emIntervalos(nums) };
+    await salvarConfig();
+    textoFast = '';
+    avisoSimples(`${nums.length} números em uso na micro ${micro} guardados ✓`);
+  }
+  async function arquivoFast(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const arq = input.files?.[0];
+    input.value = '';
+    if (arq) await guardarFast(decodificar(new Uint8Array(await arq.arrayBuffer())));
+  }
+  async function apagarFast() {
+    app.config.emUsoNoFast = { micro: '', numeros: '' };
+    await salvarConfig();
+  }
   const proximo = $derived(escreverProntuario(micro, proximoLivre(a), a.digitos, a.prefixo));
 
   // ---- Tirar da área as famílias de outra micro ----
@@ -42,7 +71,7 @@
     tirando = true;
     try {
       await tirarFamiliasDaArea(paraTirar.map((f) => f.id), `prontuário de outra micro`);
-      app.aviso = `${n} ${n === 1 ? 'família tirada' : 'famílias tiradas'} da área ✓`;
+      mostrarAviso(`${n} ${n === 1 ? 'família tirada' : 'famílias tiradas'} da área ✓`);
     } finally {
       tirando = false;
     }
@@ -51,7 +80,7 @@
   async function guardarPastas() {
     app.config.pastasNaColmeia = textoPastas.trim();
     await salvarConfig();
-    app.aviso = app.config.pastasNaColmeia ? `${lerNumeros(textoPastas).length} pastas guardadas ✓` : 'Pastas apagadas';
+    avisoSimples(app.config.pastasNaColmeia ? `${lerNumeros(textoPastas).length} pastas guardadas ✓` : 'Pastas apagadas');
   }
 </script>
 
@@ -110,7 +139,37 @@
       <p class="suave pequeno">Têm pasta na colmeia, mas nenhuma família sua usa. Tire a pasta (e confirme que a família já tem outro número no sistema) antes de reaproveitar.</p>
       <p class="numeros">{emIntervalos(a.livresComPasta)}</p>
     {/if}
-    <p class="suave pequeno">“Livre” aqui quer dizer: nenhuma família do app usa. Antes de usar, confira no sistema se o número não está com outra família.</p>
+    {#if a.soNoFast.length}
+      <h3>Em uso no Fast, sem família no app ({a.soNoFast.length})</h3>
+      <p class="suave pequeno">Não entram como livres. Podem ser da Projetada ou de famílias que não estão no app. Quando o Fast mudar, guarde a lista nova.</p>
+      <p class="numeros">{emIntervalos(a.soNoFast)}</p>
+    {/if}
+    <p class="suave pequeno">
+      “Livre” aqui quer dizer: nenhuma família do app usa{emUsoFast.length ? ' e não está na lista do Fast' : ''}. Antes de usar, confira no sistema.
+    </p>
+  </section>
+
+  <section class="cartao">
+    <h2>Números em uso no Fast</h2>
+    {#if emUsoFast.length}
+      <p>Guardados: <strong>{emUsoFast.length}</strong> números da micro {micro}.</p>
+    {:else}
+      <p class="suave pequeno">Ainda não guardou. Com a lista do Fast, os livres ficam mais certos.</p>
+    {/if}
+    <p class="suave pequeno">Escolha o arquivo (TXT, CSV ou JSON) ou cole a lista. O app pega só os números de prontuário da micro {micro}; nomes não são guardados.</p>
+    <label class="botao secundario largo arquivo">
+      <input type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json" onchange={arquivoFast} />
+      Escolher arquivo
+    </label>
+    <label class="campo">
+      <span>Ou cole aqui</span>
+      <textarea rows="3" bind:value={textoFast} placeholder="Ex.: 0000.{micro}.001, 0000.{micro}.002…"></textarea>
+    </label>
+    {#if textoFast.trim()}<p class="suave pequeno">Lidos: {lidosFast.length} números da micro {micro}</p>{/if}
+    <div class="linha-botoes">
+      {#if emUsoFast.length}<button class="botao secundario pequeno" onclick={apagarFast}>Apagar lista guardada</button>{/if}
+      <button class="botao pequeno" disabled={!lidosFast.length} onclick={() => guardarFast()}>Guardar</button>
+    </div>
   </section>
 
   <section class="cartao">
@@ -258,6 +317,17 @@
   textarea {
     width: 100%;
     font-size: 1.05rem;
+  }
+  .arquivo {
+    position: relative;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .arquivo input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
   }
   .opcao {
     display: flex;

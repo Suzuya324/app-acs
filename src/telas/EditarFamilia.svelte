@@ -40,7 +40,8 @@
     const outras = app.familias.filter((x) => x.id !== f.id);
     const micro = microPrincipal(outras, app.config.micro);
     if (!micro) return '';
-    const a = analisarNumeros(outras, micro, lerNumeros(app.config.pastasNaColmeia));
+    const fast = app.config.emUsoNoFast?.micro === micro ? lerNumeros(app.config.emUsoNoFast.numeros) : [];
+    const a = analisarNumeros(outras, micro, lerNumeros(app.config.pastasNaColmeia), fast);
     return escreverProntuario(micro, proximoLivre(a), a.digitos, a.prefixo);
   });
 
