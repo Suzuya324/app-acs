@@ -16,9 +16,22 @@ interface ArquivoBackup {
 }
 
 export class ArquivoInvalido extends Error {
-  constructor() {
-    super('Este arquivo não é um backup do Facilitador de VDs.');
+  constructor(mensagem = 'Este arquivo não é um backup do Facilitador de VDs.') {
+    super(mensagem);
   }
+}
+
+/** Diz qual arquivo foi escolhido por engano no lugar do backup. */
+function naoEBackup(texto: string): ArquivoInvalido {
+  if (texto.includes('facilitador-conexao')) {
+    return new ArquivoInvalido(
+      'Esse é o arquivo de conexão (só serve para ligar a sincronização), não um backup. O backup se chama backup-facilitador-AAAA-MM-DD: crie em Ajustes → Backup → Fazer backup agora.',
+    );
+  }
+  if (texto.includes('facilitador-importacao')) {
+    return new ArquivoInvalido('Esse é o arquivo do Sistema de Visitas: use em Ajustes → Trazer do Sistema de Visitas. Não é um backup.');
+  }
+  return new ArquivoInvalido();
 }
 export class SenhaBackupErrada extends Error {
   constructor() {
@@ -47,9 +60,9 @@ export async function lerBackup(texto: string, senha: string): Promise<Dados> {
   try {
     a = JSON.parse(texto);
   } catch {
-    throw new ArquivoInvalido();
+    throw naoEBackup(texto);
   }
-  if (a?.formato !== FORMATO_BACKUP || a.versao !== 1) throw new ArquivoInvalido();
+  if (a?.formato !== FORMATO_BACKUP || a.versao !== 1) throw naoEBackup(texto);
   const chave = await derivarChave(senha, deBase64(a.sal), a.iteracoes);
   let dados: Dados;
   try {

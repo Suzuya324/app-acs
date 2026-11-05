@@ -20,7 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
-import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, mesmoConteudo, type ConfigSinc } from './sinc';
+import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
@@ -974,6 +974,31 @@ export async function conectarSinc(cfg: ConfigSinc): Promise<void> {
   else if (app.config.usandoExemplo) {
     throw new Error('A nuvem ainda está vazia e este aparelho está com dados de exemplo. Conecte primeiro o aparelho que tem os seus dados.');
   }
+  await cofre.gravarExtra('sinc', cfg);
+  ligarSinc(cfg);
+  sincSujo = true;
+  await sincronizar();
+  if (app.sinc.estado === 'erro') throw new Error(app.sinc.mensagem);
+}
+
+/**
+ * Troca a chave do GitHub (ex.: quando venceu), sem desligar nada. Aceita a chave nova
+ * ("github_pat_…") ou o código de conexão copiado de outro aparelho já com a chave nova.
+ */
+export async function trocarChaveSinc(entrada: string): Promise<void> {
+  if (!sincCfg) throw new Error('A sincronização não está ligada neste aparelho.');
+  let token = entrada.trim();
+  let repo = sincCfg.repo;
+  if (token.startsWith('{')) {
+    const c = await lerArquivoConexao(token, sincCfg.senha);
+    token = c.token;
+    repo = limparRepo(c.repo);
+  }
+  if (!token) throw new Error('Cole a chave nova.');
+  const info = await new GitHub(repo, token).info();
+  if (!info.privado) throw new Error('O repositório precisa ser PRIVADO.');
+  if (!info.podeGravar) throw new Error('A chave não pode gravar neste repositório. Confira a permissão "Contents: Read and write".');
+  const cfg: ConfigSinc = { ...sincCfg, repo, token };
   await cofre.gravarExtra('sinc', cfg);
   ligarSinc(cfg);
   sincSujo = true;

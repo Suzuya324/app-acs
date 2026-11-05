@@ -40,8 +40,15 @@ alteração, a cada minuto (com o app aberto) e antes de trancar. Sem internet, 
 Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
 "✓ Sincronizado com os outros aparelhos".
 
-**Se a chave vencer:** crie outra no GitHub (passo 2) e, em Ajustes, toque em "Desligar neste
-aparelho" e conecte de novo.
+**Se a chave vencer** (o GitHub avisa por e-mail; o app mostra "⚠️ A sincronização parou"):
+1. No GitHub: **github.com/settings/personal-access-tokens** → **facilitador** → **Regenerate token**
+   → copie a chave nova.
+2. No celular: **Ajustes → Sincronizar aparelhos → "Trocar a chave do GitHub"** → cole → **Trocar a chave**.
+3. Nos outros aparelhos: no celular, toque em **"Copiar código para ligar outro aparelho"**, mande para
+   você mesmo e, no outro aparelho, cole o código no mesmo campo **"Trocar a chave"**.
+
+> O arquivo/código de conexão **não é backup**: só liga a sincronização. O backup é o arquivo
+> `backup-facilitador-AAAA-MM-DD`, criado em **Ajustes → Backup → Fazer backup agora**.
 
 ---
 

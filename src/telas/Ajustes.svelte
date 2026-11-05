@@ -56,7 +56,7 @@
       confirmaR = false;
       mostrarAviso('Backup restaurado ✓', 4000);
     } catch (e) {
-      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui restaurar.', 5000);
+      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui restaurar.', 9000);
     }
   }
 
@@ -73,7 +73,7 @@
       senhaJ = '';
       mostrarAviso('Backup juntado ✓', 3500);
     } catch (e) {
-      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui juntar.', 5000);
+      mostrarAviso(e instanceof SenhaBackupErrada || e instanceof ArquivoInvalido ? e.message : 'Não consegui juntar.', 9000);
     } finally {
       juntando = false;
     }
