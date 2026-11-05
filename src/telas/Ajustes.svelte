@@ -182,6 +182,7 @@
     {app.config.usandoExemplo ? 'Usando dados de exemplo (inventados).' : `${app.familias.length} famílias cadastradas.`}
   </p>
   <button class="botao secundario largo" onclick={() => ir('importar')}>Importar minha área (CSV)</button>
+  <button class="botao secundario largo" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista (hipertensos, diabéticos, acamados…)</button>
   <button class="botao secundario largo espaco-b" onclick={() => ir('lixeira')}>
     Lixeira ({app.lixeira.filter((i) => !i.restauradoEm).length})
   </button>

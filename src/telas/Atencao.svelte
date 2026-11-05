@@ -24,6 +24,7 @@
 
 <h1>Atenção</h1>
 <p class="suave">Quem precisa de visita ou cuidado e quem mudou de idade. Toque no nome para abrir a família.</p>
+<button class="botao secundario largo colar" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista do Fast</button>
 
 {#if avisos.length === 0}
   <p class="cartao ok">✓ Nada para olhar agora.</p>
@@ -58,6 +59,9 @@
 
 <style>
   .voltar {
+    margin-bottom: 12px;
+  }
+  .colar {
     margin-bottom: 12px;
   }
   .ok {

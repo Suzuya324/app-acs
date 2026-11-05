@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
-  import { app, enderecoCurto, responsavel, salvarConfig } from '../lib/estado.svelte';
-  import { analisarNumeros, emIntervalos, escreverProntuario, lerNumeros, microPrincipal, microsEncontradas, proximoLivre } from '../lib/numeros';
+  import { app, enderecoCurto, responsavel, salvarConfig, tirarFamiliasDaArea } from '../lib/estado.svelte';
+  import { analisarNumeros, emIntervalos, escreverProntuario, lerNumeros, microPrincipal, microsEncontradas, partesProntuario, proximoLivre } from '../lib/numeros';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const micros = $derived(microsEncontradas(app.familias));
@@ -11,6 +11,42 @@
   const pastas = $derived(lerNumeros(app.config.pastasNaColmeia));
   const a = $derived(analisarNumeros(app.familias, micro, pastas));
   const proximo = $derived(escreverProntuario(micro, proximoLivre(a), a.digitos, a.prefixo));
+
+  // ---- Tirar da área as famílias de outra micro ----
+  const porMicro = $derived.by(() => {
+    const m = new Map<string, typeof a.outraMicro>();
+    for (const f of a.outraMicro) {
+      const k = partesProntuario(f.prontuario)?.micro ?? '?';
+      m.set(k, [...(m.get(k) ?? []), f]);
+    }
+    return [...m].sort((x, y) => y[1].length - x[1].length);
+  });
+  let microsParaTirar = $state<string[]>([]);
+  let jaMarcou = false;
+  $effect(() => {
+    // Na primeira vez, já deixa marcada a micro com mais famílias (as poucas podem ser erro de digitação).
+    if (!jaMarcou && porMicro.length) {
+      jaMarcou = true;
+      microsParaTirar = [porMicro[0][0]];
+    }
+  });
+  const paraTirar = $derived(porMicro.filter(([k]) => microsParaTirar.includes(k)).flatMap(([, fs]) => fs));
+  let tirando = $state(false);
+  async function tirar() {
+    const n = paraTirar.length;
+    if (!n) return;
+    const ok = confirm(
+      `Tirar ${n} ${n === 1 ? 'família' : 'famílias'} da sua área?\n\nElas vão para a Lixeira (Ajustes → Lixeira), junto com as VDs delas, e saem da meta, do mapa e das sugestões. Dá para restaurar depois.`,
+    );
+    if (!ok) return;
+    tirando = true;
+    try {
+      await tirarFamiliasDaArea(paraTirar.map((f) => f.id), `prontuário de outra micro`);
+      app.aviso = `${n} ${n === 1 ? 'família tirada' : 'famílias tiradas'} da área ✓`;
+    } finally {
+      tirando = false;
+    }
+  }
 
   async function guardarPastas() {
     app.config.pastasNaColmeia = textoPastas.trim();
@@ -116,10 +152,26 @@
   </section>
 
   {#if a.outraMicro.length}
-    <section class="cartao">
+    <section class="cartao" id="outra-micro">
+      <h2>Com prontuário de outra micro ({a.outraMicro.length})</h2>
+      <p class="suave pequeno">
+        Famílias do app com número que não é da micro {micro}. Se elas são de outro ACS, tire da sua área para não
+        ir nessas casas à toa. Vão para a Lixeira e dá para restaurar.
+      </p>
+      {#each porMicro as [k, fs] (k)}
+        <label class="opcao">
+          <input type="checkbox" value={k} bind:group={microsParaTirar} />
+          <span>Micro {k}: <strong>{fs.length}</strong> {fs.length === 1 ? 'família' : 'famílias'}</span>
+        </label>
+      {/each}
+      {#if porMicro.some(([, fs]) => fs.length <= 3)}
+        <p class="suave pequeno">Micro com poucas famílias pode ser erro de digitação no Fast: confira antes de tirar.</p>
+      {/if}
+      <button class="botao perigo secundario largo" disabled={!paraTirar.length || tirando} onclick={tirar}>
+        Tirar {paraTirar.length} {paraTirar.length === 1 ? 'família' : 'famílias'} da minha área
+      </button>
       <details>
-        <summary>Com prontuário de outra micro ({a.outraMicro.length})</summary>
-        <p class="suave pequeno">Famílias do app com número que não é da micro {micro}. Confira no sistema se está certo.</p>
+        <summary>Ver as famílias</summary>
         <ul class="lista">
           {#each a.outraMicro as f (f.id)}
             <li><button class="item-link" onclick={() => ir(`editar-familia/${f.id}`)}><strong>{f.prontuario}</strong> · {enderecoCurto(f)}<br /><span class="suave pequeno">{responsavel(f)}</span></button></li>
@@ -206,6 +258,18 @@
   textarea {
     width: 100%;
     font-size: 1.05rem;
+  }
+  .opcao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    cursor: pointer;
+  }
+  .opcao input {
+    width: 24px;
+    height: 24px;
+    accent-color: var(--primaria);
   }
   .sem-numero {
     display: flex;
