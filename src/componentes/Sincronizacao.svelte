@@ -62,6 +62,33 @@
     if (ok) mostrarAviso('Arquivo de conexão salvo. Leve para o outro aparelho e apague depois.', 5000);
   }
 
+  /** Código de conexão já pronto (a criptografia leva ~1 s; o celular só deixa copiar logo depois do toque). */
+  let codigo = $state('');
+  $effect(() => {
+    if (app.sinc.estado === 'desligada' || !app.sinc.repo) {
+      codigo = '';
+      return;
+    }
+    let vivo = true;
+    void arquivoDeConexao().then((t) => {
+      if (vivo) codigo = t ?? '';
+    });
+    return () => {
+      vivo = false;
+    };
+  });
+
+  async function copiarCodigo() {
+    const t = codigo;
+    if (!t) return;
+    try {
+      await navigator.clipboard.writeText(t);
+      mostrarAviso('Código copiado ✓ Mande para você mesmo (ex.: WhatsApp) e cole no outro aparelho.', 6000);
+    } catch {
+      mostrarAviso('Não consegui copiar. Use “Salvar arquivo para ligar outro aparelho”.', 5000);
+    }
+  }
+
   async function desligar() {
     if (!confirm('Desligar a sincronização NESTE aparelho? Os dados daqui e da nuvem continuam.')) return;
     await desligarSinc();
@@ -93,7 +120,9 @@
     </p>
     <div class="botoes">
       <button class="botao largo" disabled={app.sinc.estado === 'sincronizando'} onclick={() => sincronizar()}>Sincronizar agora</button>
+      <button class="botao secundario largo" disabled={!codigo} onclick={copiarCodigo}>{codigo ? 'Copiar código para ligar outro aparelho' : 'Preparando o código…'}</button>
       <button class="botao secundario largo" onclick={salvarConexao}>Salvar arquivo para ligar outro aparelho</button>
+      <p class="suave pequeno">O código e o arquivo vão trancados com a senha de sincronização: pode mandar pelo WhatsApp para você mesmo. Apague depois.</p>
       <button class="botao perigo secundario largo" onclick={desligar}>Desligar neste aparelho</button>
     </div>
   {:else}
@@ -119,15 +148,16 @@
         </li>
         <li>Aqui embaixo: cole o repositório e a chave, crie a <strong>senha de sincronização</strong> e toque em Conectar.</li>
         <li>
-          Nos outros aparelhos: neste aparelho, toque em “Salvar arquivo para ligar outro aparelho”, leve o arquivo e use
-          “Tenho o arquivo de conexão” (aí só digita a senha).
+          Nos outros aparelhos: neste aparelho, toque em “Copiar código para ligar outro aparelho” e mande para você
+          mesmo (ex.: WhatsApp). No outro aparelho, escolha “Tenho o código ou o arquivo de conexão”, cole o código e
+          digite a senha.
         </li>
       </ol>
     </details>
 
     <div class="modo" role="radiogroup" aria-label="Como conectar">
       <label><input type="radio" bind:group={modo} value="manual" /> Primeiro aparelho (repositório e chave)</label>
-      <label><input type="radio" bind:group={modo} value="arquivo" /> Tenho o arquivo de conexão</label>
+      <label><input type="radio" bind:group={modo} value="arquivo" /> Tenho o código ou o arquivo de conexão</label>
     </div>
 
     {#if modo === 'manual'}
@@ -136,8 +166,13 @@
     {:else}
       <label class="botao secundario largo arquivo">
         <input type="file" onchange={lerConexao} />
-        {textoConexao ? 'Arquivo escolhido ✓' : 'Escolher arquivo de conexão'}
+        {textoConexao ? 'Código/arquivo pronto ✓' : 'Escolher arquivo de conexão'}
       </label>
+      <label class="campo colar">
+        <span>Ou cole aqui o código de conexão</span>
+        <textarea rows="3" bind:value={textoConexao} placeholder="Cole o código que você copiou no outro aparelho"></textarea>
+      </label>
+      <p class="suave pequeno">No aparelho que já está ligado: Ajustes → Sincronizar aparelhos → “Copiar código para ligar outro aparelho”.</p>
     {/if}
 
     <label class="campo">
@@ -215,6 +250,12 @@
     width: 22px;
     height: 22px;
     accent-color: var(--primaria);
+  }
+  .colar {
+    margin: 4px 0 8px;
+  }
+  .colar textarea {
+    width: 100%;
   }
   .arquivo {
     position: relative;
