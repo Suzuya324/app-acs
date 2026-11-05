@@ -323,6 +323,27 @@ export const restaurarDaLixeira = (entradaId: string) =>
     await gravarTudo();
   });
 
+/** Restaura vários itens da lixeira de uma vez (ex.: as famílias tiradas da área por engano). */
+export const restaurarVariosDaLixeira = (entradaIds: string[]) =>
+  comDesfazer(`Restaurar ${entradaIds.length} itens`, async () => {
+    let d = dadosAtuais();
+    let n = 0;
+    for (const id of entradaIds) {
+      const item = d.lixeira?.find((i) => i.id === id);
+      if (!item || item.restauradoEm) continue;
+      try {
+        d = lxRestaurar(d, id);
+        n++;
+        app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
+      } catch {
+        /* família do item ainda na lixeira: fica para depois */
+      }
+    }
+    aplicar(d);
+    await gravarTudo();
+    return n;
+  });
+
 /** Tira da área, de uma vez, as famílias que não são do ACS (vão para a lixeira; dá para restaurar). */
 export const tirarFamiliasDaArea = (familiaIds: string[], motivo: string) =>
   comDesfazer(`Tirar ${familiaIds.length} famílias da área`, async () => {

@@ -51,21 +51,19 @@
     return [...m].sort((x, y) => y[1].length - x[1].length);
   });
   let microsParaTirar = $state<string[]>([]);
-  let jaMarcou = false;
-  $effect(() => {
-    // Na primeira vez, já deixa marcada a micro com mais famílias (as poucas podem ser erro de digitação).
-    if (!jaMarcou && porMicro.length) {
-      jaMarcou = true;
-      microsParaTirar = [porMicro[0][0]];
-    }
-  });
+  /** Ruas de cada micro, para o ACS ver de onde são as famílias antes de tirar. */
+  const ruasDe = (fs: typeof a.outraMicro) => {
+    const n = new Map<string, number>();
+    for (const f of fs) n.set(f.rua || '(sem rua)', (n.get(f.rua || '(sem rua)') ?? 0) + 1);
+    return [...n].sort((x, y) => y[1] - x[1]).map(([r, q]) => `${r} (${q})`).join(', ');
+  };
   const paraTirar = $derived(porMicro.filter(([k]) => microsParaTirar.includes(k)).flatMap(([, fs]) => fs));
   let tirando = $state(false);
   async function tirar() {
     const n = paraTirar.length;
     if (!n) return;
     const ok = confirm(
-      `Tirar ${n} ${n === 1 ? 'família' : 'famílias'} da sua área?\n\nElas vão para a Lixeira (Ajustes → Lixeira), junto com as VDs delas, e saem da meta, do mapa e das sugestões. Dá para restaurar depois.`,
+      `Tirar ${n} ${n === 1 ? 'família' : 'famílias'} da sua área?\n\nRuas: ${ruasDe(paraTirar)}\n\nElas vão para a Lixeira (Ajustes → Lixeira), junto com as VDs delas, e saem da meta, do mapa e das sugestões. Dá para restaurar depois.`,
     );
     if (!ok) return;
     tirando = true;
@@ -217,10 +215,14 @@
         Famílias do app com número que não é da micro {micro}. Se elas são de outro ACS, tire da sua área para não
         ir nessas casas à toa. Vão para a Lixeira e dá para restaurar.
       </p>
+      <p class="alerta pequeno">
+        Atenção: uma rua inteira com outra micro pode ser <strong>sua</strong> (no Fast ela pode estar cadastrada em outra
+        micro). Olhe o nome da rua antes de marcar.
+      </p>
       {#each porMicro as [k, fs] (k)}
         <label class="opcao">
           <input type="checkbox" value={k} bind:group={microsParaTirar} />
-          <span>Micro {k}: <strong>{fs.length}</strong> {fs.length === 1 ? 'família' : 'famílias'}</span>
+          <span>Micro {k}: <strong>{fs.length}</strong> {fs.length === 1 ? 'família' : 'famílias'}<br /><span class="suave pequeno">{ruasDe(fs)}</span></span>
         </label>
       {/each}
       {#if porMicro.some(([, fs]) => fs.length <= 3)}
