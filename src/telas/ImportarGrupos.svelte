@@ -1,13 +1,15 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
   import { formatarData } from '../lib/datas';
-  import { app, enderecoCurto, marcarGruposEmLote } from '../lib/estado.svelte';
-  import { casarComMoradores, gruposQueFaltam, lerListaGrupos, type Casamento } from '../lib/importar-grupos';
+  import { app, enderecoCurto, marcarGruposEmLote, mostrarAviso } from '../lib/estado.svelte';
+  import { casarComMoradores, gruposQueFaltam, lerArquivoGrupos, type Casamento } from '../lib/importar-grupos';
+  import { decodificar } from '../lib/importar-csv';
   import { NOMES_GRUPO } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Grupo } from '../lib/tipos';
 
   const OPCOES: { valor: Grupo | ''; rotulo: string }[] = [
+    { valor: '', rotulo: 'Cada linha diz (HAS, DM, acamado…)' },
     { valor: 'hipertenso', rotulo: 'Hipertensos' },
     { valor: 'diabetico', rotulo: 'Diabéticos' },
     { valor: 'acamado', rotulo: 'Acamados' },
@@ -17,20 +19,32 @@
     { valor: 'idoso', rotulo: 'Idosos' },
     { valor: 'deficiencia', rotulo: 'Pessoas com deficiência' },
     { valor: 'saude_mental', rotulo: 'Saúde mental' },
-    { valor: '', rotulo: 'Cada linha diz (HAS, DM, acamado…)' },
   ];
 
-  let grupo = $state<Grupo | ''>('hipertenso');
+  let grupo = $state<Grupo | ''>('');
   let colado = $state('');
   let casamentos = $state<Casamento[] | null>(null);
   /** Escolha para "parecido" e "vários": índice do candidato, ou -1 = nenhum. */
   let escolha = $state<Record<number, number>>({});
   let salvando = $state(false);
 
-  function conferir() {
-    const linhas = lerListaGrupos(colado, grupo || null);
-    casamentos = casarComMoradores(linhas, app.familias);
+  let semCondicao = $state(0);
+  let nomeArquivo = $state('');
+
+  function conferir(texto = colado) {
+    const r = lerArquivoGrupos(texto, grupo || null);
+    semCondicao = r.semCondicao;
+    casamentos = casarComMoradores(r.linhas, app.familias);
     escolha = {};
+  }
+
+  async function abrirArquivo(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const arq = input.files?.[0];
+    input.value = '';
+    if (!arq) return;
+    nomeArquivo = arq.name;
+    conferir(decodificar(new Uint8Array(await arq.arrayBuffer())));
   }
 
   const nomeGrupos = (gs: Grupo[]) => gs.map((g) => NOMES_GRUPO[g]).join(', ');
@@ -66,7 +80,7 @@
     try {
       const n = aMarcar.length;
       await marcarGruposEmLote(aMarcar.map(({ familiaId, moradorId, grupos }) => ({ familiaId, moradorId, grupos })));
-      app.aviso = `Grupos marcados em ${n} ${n === 1 ? 'pessoa' : 'pessoas'} ✓`;
+      mostrarAviso(`Grupos marcados em ${n} ${n === 1 ? 'pessoa' : 'pessoas'} ✓`);
       casamentos = null;
       colado = '';
     } finally {
@@ -91,11 +105,17 @@
         {#each OPCOES as o (o.valor)}<option value={o.valor}>{o.rotulo}</option>{/each}
       </select>
     </label>
+    <label class="botao largo arquivo">
+      <input type="file" accept=".json,.csv,.txt,.tsv,text/plain,text/csv,application/json" onchange={abrirArquivo} />
+      Escolher arquivo (JSON, CSV ou TXT)
+    </label>
+    <p class="suave pequeno centro">ou</p>
     <label class="campo">
       <span>Cole a lista (uma pessoa por linha; com a data de nascimento fica mais certo)</span>
       <textarea rows="8" bind:value={colado} placeholder="Ex.: JOANA TESTE DA SILVA   10/03/1950   HAS"></textarea>
     </label>
-    <button class="botao largo" disabled={!colado.trim()} onclick={conferir}>Conferir</button>
+    <button class="botao secundario largo" disabled={!colado.trim()} onclick={() => conferir()}>Conferir a lista colada</button>
+    <p class="suave pequeno">O arquivo é lido só no celular. Se ele já diz a condição de cada pessoa (HAS, DM, acamado, gestante…), escolha “Cada linha diz”.</p>
   </section>
 {:else}
   {@const achados = de('achado')}
@@ -103,11 +123,13 @@
   {@const varios = de('varios')}
   {@const nao = de('nao_achado')}
   <section class="cartao destaque">
+    {#if nomeArquivo}<p class="suave pequeno">Arquivo: {nomeArquivo}</p>{/if}
     <p><strong>{casamentos.length}</strong> {casamentos.length === 1 ? 'pessoa lida' : 'pessoas lidas'} na lista.</p>
     <ul class="resumo">
-      <li><strong>{achados.length}</strong> {achados.length === 1 ? 'reconhecida' : 'reconhecidas'}{jaTinham.length ? ` (${jaTinham.length} já estavam no grupo)` : ''}</li>
+      <li><strong>{achados.length}</strong> {achados.length === 1 ? 'reconhecida' : 'reconhecidas'}{jaTinham.length ? ` (${jaTinham.length} sem nada novo para marcar)` : ''}</li>
       {#if parecidos.length}<li><strong>{parecidos.length}</strong> com nome parecido: confira abaixo</li>{/if}
       {#if varios.length}<li><strong>{varios.length}</strong> com mais de uma pessoa possível: escolha abaixo</li>{/if}
+      {#if semCondicao}<li><strong>{semCondicao}</strong> sem condição reconhecida ({semCondicao === 1 ? 'ignorada' : 'ignoradas'}). Se a lista toda é de um grupo, escolha o grupo em “Esta lista é de”.</li>{/if}
       {#if nao.length}<li><strong>{nao.length}</strong> não {nao.length === 1 ? 'encontrada' : 'encontradas'} na sua área</li>{/if}
     </ul>
     {#if casamentos.length === 0}
@@ -165,7 +187,7 @@
   {/if}
 
   <div class="linha-botoes">
-    <button class="botao secundario" onclick={() => (casamentos = null)}>Voltar e editar</button>
+    <button class="botao secundario" onclick={() => { casamentos = null; nomeArquivo = ''; }}>Voltar</button>
     <button class="botao" disabled={!aMarcar.length || salvando} onclick={salvar}>Marcar {aMarcar.length} {aMarcar.length === 1 ? 'pessoa' : 'pessoas'}</button>
   </div>
 {/if}
@@ -173,6 +195,20 @@
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .arquivo {
+    position: relative;
+    cursor: pointer;
+  }
+  .arquivo input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .centro {
+    text-align: center;
+    margin: 6px 0;
   }
   textarea {
     width: 100%;

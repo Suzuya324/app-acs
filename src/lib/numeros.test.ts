@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analisarNumeros, emIntervalos, escreverProntuario, lerNumeros, microPrincipal, partesProntuario, proximoLivre } from './numeros';
+import { analisarNumeros, emIntervalos, numerosDaMicro, escreverProntuario, lerNumeros, microPrincipal, partesProntuario, proximoLivre } from './numeros';
 import type { Familia } from './tipos';
 
 const fam = (id: string, prontuario: string, extra: Partial<Familia> = {}): Familia => ({
@@ -60,6 +60,19 @@ describe('números de prontuário', () => {
     expect(a.outraMicro.map((x) => x.id)).toEqual(['c']);
     expect(a.semNumero.map((x) => x.id)).toEqual(['d', 'e']);
     expect(escreverProntuario('09', proximoLivre(a), a.digitos, a.prefixo)).toBe('0000.09.002');
+  });
+
+  it('lê os números em uso no Fast só da micro certa', () => {
+    const texto = 'Fulano Inventado 0000.09.004 10/03/1950\n0000.08.007\n09.010\n12-14';
+    expect(numerosDaMicro(texto, '09')).toEqual([4, 10, 12, 13, 14]);
+  });
+
+  it('número em uso no Fast não aparece como livre', () => {
+    const f = [fam('a', '09.001'), fam('b', '09.005')];
+    const a = analisarNumeros(f, '09', [], [2, 3, 8]);
+    expect(a.livres).toEqual([4, 6, 7]);
+    expect(a.soNoFast).toEqual([2, 3, 8]);
+    expect(proximoLivre(a)).toBe(4);
   });
 
   it('sem nenhum livre, o próximo é depois do maior', () => {

@@ -59,6 +59,22 @@ export function lerNumeros(texto: string): number[] {
   return [...nums].sort((x, y) => x - y);
 }
 
+/**
+ * Números da micro num texto (ex.: lista de prontuários em uso tirada do Fast).
+ * Prontuários de outra micro são ignorados; datas também. Números soltos e intervalos ("1-50") entram.
+ */
+export function numerosDaMicro(texto: string, micro: string): number[] {
+  const nums = new Set<number>();
+  let resto = texto.replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, ' '); // datas
+  resto = resto.replace(/\b(?:\d+\.)?\d{1,3}\.\d+\b/g, (pront) => {
+    const p = partesProntuario(pront);
+    if (p && p.micro === micro && p.numero > 0) nums.add(p.numero);
+    return ' ';
+  });
+  for (const n of lerNumeros(resto)) nums.add(n);
+  return [...nums].sort((a, b) => a - b);
+}
+
 /** Junta números em intervalos para mostrar curto: [1,2,3,5,7,8] → "1–3, 5, 7–8". */
 export function emIntervalos(nums: number[]): string {
   const s = [...new Set(nums)].sort((a, b) => a - b);
@@ -88,6 +104,8 @@ export interface AnaliseNumeros {
   livres: number[];
   /** Livres, mas ainda com pasta antiga na colmeia (de quem não é da sua área): liberam ao tirar a pasta. */
   livresComPasta: number[];
+  /** Em uso no Fast (lista colada), mas sem nenhuma família no app: não estão livres. */
+  soNoFast: number[];
   /** Conferência da colmeia (só quando as pastas foram digitadas). */
   colmeia: null | {
     /** Pastas na colmeia sem nenhuma família sua com esse número: tirar da colmeia. */
@@ -101,7 +119,7 @@ export interface AnaliseNumeros {
   prefixo: string;
 }
 
-export function analisarNumeros(familias: Familia[], micro: string, pastasNaColmeia: number[] = []): AnaliseNumeros {
+export function analisarNumeros(familias: Familia[], micro: string, pastasNaColmeia: number[] = [], emUsoNoFast: number[] = []): AnaliseNumeros {
   const usados = new Map<number, Familia[]>();
   const outraMicro: Familia[] = [];
   const semNumero: Familia[] = [];
@@ -123,12 +141,15 @@ export function analisarNumeros(familias: Familia[], micro: string, pastasNaColm
     contPrefixo.set(p.prefixo, (contPrefixo.get(p.prefixo) ?? 0) + 1);
   }
   const pastas = new Set(pastasNaColmeia);
-  const maior = Math.max(0, ...usados.keys(), ...pastas);
+  const fast = new Set(emUsoNoFast);
+  const maior = Math.max(0, ...usados.keys(), ...pastas, ...fast);
   const livres: number[] = [];
   const livresComPasta: number[] = [];
+  const soNoFast: number[] = [];
   for (let n = 1; n <= maior; n++) {
     if (usados.has(n)) continue;
-    (pastas.has(n) ? livresComPasta : livres).push(n);
+    if (fast.has(n)) soNoFast.push(n);
+    else (pastas.has(n) ? livresComPasta : livres).push(n);
   }
   const repetidos = [...usados].filter(([, fs]) => fs.length > 1).map(([numero, fs]) => ({ numero, familias: fs })).sort((a, b) => a.numero - b.numero);
   const colmeia = pastas.size
@@ -142,7 +163,7 @@ export function analisarNumeros(familias: Familia[], micro: string, pastasNaColm
     : null;
   const digitos = [...contDigitos].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 3;
   const prefixo = [...contPrefixo].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
-  return { micro, usados, repetidos, outraMicro, semNumero, maior, livres, livresComPasta, colmeia, digitos, prefixo };
+  return { micro, usados, repetidos, outraMicro, semNumero, maior, livres, livresComPasta, soNoFast, colmeia, digitos, prefixo };
 }
 
 /** Próximo número para uma pasta nova: o primeiro livre sem pasta; se não houver, o seguinte ao maior. */

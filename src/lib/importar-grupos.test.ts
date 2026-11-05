@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { casarComMoradores, lerListaGrupos } from './importar-grupos';
+import { casarComMoradores, gruposQueFaltam, lerArquivoGrupos, lerListaGrupos } from './importar-grupos';
 import type { Familia, Morador } from './tipos';
 
 const mor = (id: string, nome: string, nascimento = '', extra: Partial<Morador> = {}): Morador => ({
@@ -52,4 +52,44 @@ describe('marcar grupos colando uma lista', () => {
       'nao_achado:',
     ]);
   });
+});
+
+describe('ler arquivo de pacientes (JSON, CSV, TXT)', () => {
+  it('JSON com lista de pacientes, campos de condição e campos ignorados', () => {
+    const json = JSON.stringify({
+      unidade: 'Unidade Teste',
+      pacientes: [
+        { nome: 'Joana Teste da Silva', dataNascimento: '1950-03-10', nomeMae: 'Maria Inventada', condicoes: ['HAS', 'DM'], rua: 'Rua das Acácias' },
+        { nome_paciente: 'Pedro Exemplo Souza', dn: '02/01/1961', acamado: true, idoso: 'Sim', gestante: false },
+        { NOME: 'Ana Fictícia Prado', prioridade: 'Gestante', telefone: '0000-0000' },
+        { nome: 'Lúcio Inventado Reis', observacao: 'mudou-se' },
+      ],
+    });
+    const r = lerArquivoGrupos(json, null);
+    expect(r.formato).toBe('json');
+    expect(r.linhas).toEqual([
+      { nome: 'joana teste da silva', nascimento: '1950-03-10', grupos: ['hipertenso', 'diabetico'] },
+      { nome: 'pedro exemplo souza', nascimento: '1961-01-02', grupos: ['acamado', 'idoso'] },
+      { nome: 'ana ficticia prado', nascimento: '', grupos: ['gestante'] },
+    ]);
+    expect(r.semCondicao).toBe(1);
+  });
+
+  it('CSV com cabeçalho, aspas e vírgula', () => {
+    const csv = 'Nome,Data de nascimento,Condição,Endereço\n"JOANA TESTE DA SILVA",10/03/1950,"HAS, DM","Rua X, 10"\nPEDRO EXEMPLO SOUZA,02/01/1961,Acamado,Rua Y\n';
+    const r = lerArquivoGrupos(csv, null);
+    expect(r.formato).toBe('colunas');
+    expect(r.linhas.map((l) => `${l.nome}:${l.grupos.join(',')}`)).toEqual(['joana teste da silva:hipertenso,diabetico', 'pedro exemplo souza:acamado']);
+  });
+
+  it('TXT sem colunas usa a leitura livre', () => {
+    const r = lerArquivoGrupos('JOANA TESTE DA SILVA 10/03/1950 HAS\nPEDRO EXEMPLO SOUZA DM', null);
+    expect(r.formato).toBe('texto');
+    expect(r.linhas.map((l) => l.grupos.join(','))).toEqual(['hipertenso', 'diabetico']);
+  });
+});
+
+it('não marca gestante nem puérpera em homem', () => {
+  const h = mor('h', 'Pedro Exemplo', '', { sexo: 'M', grupos: ['hipertenso'] });
+  expect(gruposQueFaltam(h, ['gestante', 'hipertenso', 'diabetico'])).toEqual(['diabetico']);
 });
