@@ -220,6 +220,8 @@ export interface Config {
   pastasNaColmeia: string;
   /** Números de prontuário em uso no Fast (lidos de uma lista colada), por micro. Só números. */
   emUsoNoFast: { micro: string; numeros: string };
+  /** Dia da semana da reunião de equipe (0 = domingo … 3 = quarta … 6 = sábado; -1 = sem reunião fixa). */
+  diaReuniao: number;
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */
   alteradaEm?: string;
 }

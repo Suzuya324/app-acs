@@ -149,3 +149,12 @@ describe('ordem das casas na rua', () => {
     ]);
   });
 });
+
+describe('reunião de equipe', () => {
+  it('próxima quarta-feira (hoje, se hoje for quarta)', async () => {
+    const { proximoDiaDaSemana } = await import('./datas');
+    expect(proximoDiaDaSemana('2026-11-05', 3)).toBe('2026-11-11'); // quinta → próxima quarta
+    expect(proximoDiaDaSemana('2026-11-11', 3)).toBe('2026-11-11'); // quarta → hoje
+    expect(proximoDiaDaSemana('2026-11-08', 3)).toBe('2026-11-11'); // domingo
+  });
+});

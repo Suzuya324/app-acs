@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
-  import { formatarData, hojeISO } from '../lib/datas';
+  import { formatarData, hojeISO, proximoDiaDaSemana } from '../lib/datas';
   import { app, enderecoCurto, familiaPorId, resolverCaso } from '../lib/estado.svelte';
   import { NOMES_CATEGORIA_CASO } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -31,17 +31,10 @@
   const conta = (f: Filtro) =>
     f === 'todos' ? abertos.length : f === 'resolvidos' ? ativos.length - abertos.length : f === 'emulti' ? abertos.filter((c) => c.emulti?.trim()).length : abertos.filter((c) => c.categoria === f).length;
 
-  /** 3ª terça-feira do mês (reunião de equipe), a próxima a partir de hoje. */
-  const reuniao = $derived.by(() => {
-    const hoje = hojeISO();
-    for (let m = 0; m < 2; m++) {
-      const d = new Date(Number(hoje.slice(0, 4)), Number(hoje.slice(5, 7)) - 1 + m, 1);
-      d.setDate(1 + ((2 - d.getDay() + 7) % 7) + 14);
-      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (iso >= hoje) return iso;
-    }
-    return '';
-  });
+  /** Próxima reunião de equipe (dia da semana escolhido em Ajustes; padrão: quarta). */
+  const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  const diaReuniao = $derived(app.config.diaReuniao ?? 3);
+  const reuniao = $derived(diaReuniao >= 0 ? proximoDiaDaSemana(hojeISO(), diaReuniao) : '');
 </script>
 
 <button class="botao secundario pequeno voltar" onclick={() => voltar('')}><Icone nome="voltar" /> Voltar</button>
@@ -49,7 +42,10 @@
 <h1>Casos</h1>
 <p class="suave">Situações para acompanhar de perto. Para abrir um caso novo, vá na família e toque em “Abrir caso”.</p>
 {#if reuniao && conta('npv') + conta('urgente') > 0}
-  <p class="alerta pequeno">Reunião de equipe (3ª terça): <strong>{formatarData(reuniao)}</strong>. Leve os casos urgentes e os de NPV.</p>
+  <p class="alerta pequeno">
+    Reunião de equipe (toda {DIAS[diaReuniao]}):
+    <strong>{reuniao === hojeISO() ? 'hoje' : `${DIAS[diaReuniao]}, ${formatarData(reuniao)}`}</strong>. Leve os casos urgentes e os de NPV.
+  </p>
 {/if}
 
 <div class="chips" role="tablist" aria-label="Filtrar casos">
