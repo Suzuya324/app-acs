@@ -852,7 +852,7 @@ async function carregarSinc() {
 function marcarParaSincronizar() {
   if (!sincCfg) return;
   sincSujo = true;
-  agendarSinc(15_000);
+  agendarSinc(5_000);
 }
 
 function agendarSinc(ms: number) {
@@ -902,7 +902,11 @@ async function rodarSinc(): Promise<void> {
   const vivo = () => sincGh === gh && app.fase === 'aberto';
   try {
     for (let tentativa = 0; tentativa < 3; tentativa++) {
-      const remoto = await gh.ler();
+      // Primeiro só a versão (rápido): se nada mudou de nenhum lado, termina aqui.
+      const versao = await gh.versao();
+      if (!vivo()) return;
+      if (versao && versao === sincUltimaVersao && !sincSujo) break;
+      const remoto = versao ? await gh.lerVersao(versao) : null;
       if (!vivo()) return;
       if (remoto && remoto.commit !== sincUltimaVersao) {
         const aberto = await abrirSinc(remoto.texto, chaves);
@@ -930,8 +934,8 @@ async function rodarSinc(): Promise<void> {
       sincSal = sal;
       // Outro aparelho gravou enquanto isso? Então junta de novo antes de gravar.
       if ((await gh.versao()) !== (remoto?.commit ?? null)) continue;
-      const versao = await gh.gravar(texto, cfg.aparelho);
-      if (sincGh === gh) sincUltimaVersao = versao;
+      const gravada = await gh.gravar(texto, cfg.aparelho);
+      if (sincGh === gh) sincUltimaVersao = gravada;
       sincSujo = false;
       break;
     }
@@ -991,12 +995,14 @@ export async function arquivoDeConexao(): Promise<string | null> {
   return sincCfg ? criarArquivoConexao(sincCfg) : null;
 }
 
-/** Sincroniza ao voltar a internet, ao voltar para o app, ao sair dele e a cada 3 minutos. */
+/** Sincroniza ao voltar a internet, ao voltar para o app, ao sair dele e a cada minuto (com o app na tela). */
 export function instalarSincronizacao() {
   window.addEventListener('online', () => void sincronizar());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void sincronizar();
     else if (sincSujo) void sincronizar();
   });
-  setInterval(() => void sincronizar(), 3 * 60_000);
+  setInterval(() => {
+    if (document.visibilityState === 'visible') void sincronizar();
+  }, 60_000);
 }

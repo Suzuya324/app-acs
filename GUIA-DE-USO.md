@@ -35,7 +35,7 @@ O app manda uma cópia **trancada** (só abre com a sua senha de sincronização
 4. Pronto: o aparelho fica com os seus dados. Apague o arquivo de conexão depois.
 
 **Como funciona no dia a dia:** sincroniza sozinho ao abrir o app, uns segundos depois de cada
-alteração, a cada 3 minutos e antes de trancar. Sem internet, guarda e manda quando voltar.
+alteração, a cada minuto (com o app aberto) e antes de trancar. Sem internet, guarda e manda quando voltar.
 Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
 "✓ Sincronizado com os outros aparelhos".
 

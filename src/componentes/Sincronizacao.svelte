@@ -88,7 +88,7 @@
     </p>
     <p class="suave pequeno">Este aparelho: <strong>{app.sinc.aparelho}</strong> · nuvem: {app.sinc.repo}</p>
     <p class="suave pequeno">
-      Sincroniza sozinho ao abrir o app, alguns segundos depois de cada alteração, a cada 3 minutos e antes de trancar.
+      Sincroniza sozinho ao abrir o app, alguns segundos depois de cada alteração, a cada minuto com o app aberto e antes de trancar.
       Nada é apagado: vale sempre a alteração mais recente.
     </p>
     <div class="botoes">
