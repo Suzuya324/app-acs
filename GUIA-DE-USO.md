@@ -67,6 +67,10 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
 - **Atenção** (no Início): gestantes, puérperas, crianças e acamados sem VD há 30 dias; hipertensos
   sem P.A. e diabéticos sem glicemia há 60 dias; aniversários da semana; quem fez 60 anos ou já
   passou de 2 anos (um toque ajusta o grupo).
+- **Marcar grupos de uma vez:** no Fast, copie a lista de hipertensos, diabéticos, acamados… →
+  no app, Ajustes → **"Marcar grupos colando uma lista"** → escolha de que é a lista → cole →
+  **Conferir**. Confira os nomes parecidos e toque em **Marcar**. Com a data de nascimento na lista,
+  o app acerta mais.
 - **Busca por grupo:** na Busca, digite "gestante", "acamado", "hipertenso", "diabético" ou "idoso".
 - **Mapa da área** (no Início): cada casa é um quadrado colorido. Verde: contou no mês; laranja:
   ninguém em casa; azul: revisita marcada; branco: falta. Toque numa cor da legenda para destacar.
@@ -77,6 +81,8 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
   60 a 75"): aparecem as pastas que não são de família sua (para separar) e as famílias sem pasta.
   Ao cadastrar família nova, o botão **"Usar o próximo número livre"** preenche o prontuário.
   Sempre confira no sistema antes de criar a pasta.
+- **Famílias de outro ACS** (prontuário de outra micro): na mesma tela, marque a micro e toque em
+  **"Tirar da minha área"**. Elas vão para a Lixeira (dá para restaurar) e saem da meta e do mapa.
 - **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
 
 ---

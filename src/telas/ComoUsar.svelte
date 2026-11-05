@@ -48,7 +48,7 @@
       <li><strong>Planejar a rua do dia</strong>: casas que faltam, na ordem dos números.</li>
       <li><strong>Mapa da área</strong>: cada casa é um quadrado colorido (verde: contou; laranja: ninguém em casa; azul: revisita marcada; branco: falta). Toque em uma cor da legenda para destacar só ela.</li>
       <li>No <strong>Painel</strong>: gráfico, meses anteriores, relatório de produção e lista de prontuários (PDF).</li>
-      <li><strong>Números livres para prontuário novo</strong> (Painel): mostra o próximo número livre da sua micro. Digitando os números das pastas da colmeia, mostra também as pastas que não são de família sua e as famílias sem pasta.</li>
+      <li><strong>Números livres para prontuário novo</strong> (Painel): mostra o próximo número livre da sua micro. Digitando os números das pastas da colmeia, mostra também as pastas que não são de família sua e as famílias sem pasta. Famílias com prontuário de outra micro podem ser tiradas da sua área de uma vez (vão para a Lixeira).</li>
     </ul>
   </details>
 </section>
@@ -59,7 +59,8 @@
     <ul>
       <li><strong>Atenção</strong> (no Início): gestantes, puérperas, crianças e acamados sem VD há 30 dias; hipertensos sem P.A. e diabéticos sem glicemia há 60 dias; aniversários da semana; quem fez 60 anos ou deixou de ser criança pequena (com botão para ajustar o grupo).</li>
       <li>Na <strong>Busca</strong>, digite um grupo (“gestante”, “acamado”, “hipertenso”, “diabético”, “idoso”) para ver todas as famílias com alguém dele.</li>
-      <li>Para entrar nesses lembretes, o morador precisa estar no grupo (Editar morador → Condições) e ter a data de nascimento.</li>
+      <li>Para entrar nesses lembretes, o morador precisa estar no grupo e ter a data de nascimento.</li>
+      <li><strong>Marcar grupos de uma vez:</strong> no Fast, copie a lista de hipertensos, diabéticos ou acamados e cole em Ajustes → <strong>Marcar grupos colando uma lista</strong>. O app acha cada pessoa e mostra o que vai marcar antes de salvar.</li>
     </ul>
   </details>
 </section>

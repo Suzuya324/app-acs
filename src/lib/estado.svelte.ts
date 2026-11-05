@@ -20,7 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import { novoId } from './ids';
-import type { Alteracao, Config, Familia, Morador, RascunhoVD, Revisita, Visita } from './tipos';
+import type { Alteracao, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -321,6 +321,39 @@ export const restaurarDaLixeira = (entradaId: string) =>
     aplicar(lxRestaurar(dadosAtuais(), entradaId));
     if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
     await gravarTudo();
+  });
+
+/** Tira da área, de uma vez, as famílias que não são do ACS (vão para a lixeira; dá para restaurar). */
+export const tirarFamiliasDaArea = (familiaIds: string[], motivo: string) =>
+  comDesfazer(`Tirar ${familiaIds.length} famílias da área`, async () => {
+    let d = dadosAtuais();
+    for (const id of familiaIds) {
+      const f = d.familias.find((x) => x.id === id);
+      if (!f) continue;
+      const descricao = `${enderecoCurto(f)} (${responsavel(f)}) – ${motivo}`;
+      d = lxExcluirFamilia(d, id, descricao);
+      app.historico.push(...criarAlteracoes(id, [`Família tirada da área (foi para a lixeira): ${descricao}`]));
+    }
+    aplicar(d);
+    await gravarTudo();
+  });
+
+/** Marca grupos em vários moradores de uma vez (ex.: lista de hipertensos colada do Fast). */
+export const marcarGruposEmLote = (itens: { familiaId: string; moradorId: string; grupos: Grupo[] }[]) =>
+  comDesfazer('Marcar grupos', async () => {
+    const quando = agora();
+    for (const it of itens) {
+      const f = app.familias.find((x) => x.id === it.familiaId);
+      const m = f?.moradores.find((x) => x.id === it.moradorId);
+      if (!f || !m) continue;
+      const novos = it.grupos.filter((g) => !m.grupos.includes(g));
+      if (!novos.length) continue;
+      const antes = $state.snapshot(m) as Morador;
+      m.grupos = [...m.grupos, ...novos];
+      f.atualizadoEm = quando;
+      app.historico.push(...criarAlteracoes(f.id, mudancasMorador(antes, $state.snapshot(m) as Morador), m.id));
+    }
+    await gravar({ familias: app.familias, historico: app.historico });
   });
 
 export function familiaPorId(id: string): Familia | undefined {
