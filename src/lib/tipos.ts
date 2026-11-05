@@ -171,4 +171,6 @@ export interface Config {
   relatoNomeCompleto: boolean;
   /** Escondeu o cartão "Primeiros passos" do Início. */
   primeirosPassosOcultos: boolean;
+  /** Números das pastas físicas na colmeia, digitados pelo ACS (ex.: "1-50, 52"). */
+  pastasNaColmeia: string;
 }

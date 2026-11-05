@@ -72,6 +72,11 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
   ninguém em casa; azul: revisita marcada; branco: falta. Toque numa cor da legenda para destacar.
 - **Lista de prontuários** (Painel): em ordem numérica, para imprimir ou salvar em PDF (folha deitada).
   Tem nomes: não mande para ninguém.
+- **Números livres para prontuário novo** (Painel): o app mostra o próximo número livre da sua micro
+  e os números sem uso. Em "Conferir a colmeia", digite só os **números** das pastas (ex.: "1-50, 52,
+  60 a 75"): aparecem as pastas que não são de família sua (para separar) e as famílias sem pasta.
+  Ao cadastrar família nova, o botão **"Usar o próximo número livre"** preenche o prontuário.
+  Sempre confira no sistema antes de criar a pasta.
 - **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
 
 ---

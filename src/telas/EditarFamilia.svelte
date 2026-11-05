@@ -3,6 +3,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { app, excluirFamiliaParaLixeira, familiaPorId, mostrarAviso, salvarFamilia } from '../lib/estado.svelte';
   import { novoId } from '../lib/ids';
+  import { analisarNumeros, escreverProntuario, lerNumeros, microPrincipal, partesProntuario, proximoLivre } from '../lib/numeros';
   import { NOMES_SITUACAO_CASA } from '../lib/rotulos';
   import { trocarPara, voltar } from '../lib/rotas.svelte';
   import type { Familia, SituacaoCasa } from '../lib/tipos';
@@ -32,6 +33,16 @@
   const atuais = $derived(f.moradores.filter((m) => m.situacao === 'mora'));
   const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((x) => x.rua)])].filter(Boolean));
   let salvando = $state(false);
+
+  /** Sugestão de número para pasta nova (quando o prontuário está vazio ou incompleto). */
+  const sugestao = $derived.by(() => {
+    if (partesProntuario(f.prontuario)) return '';
+    const outras = app.familias.filter((x) => x.id !== f.id);
+    const micro = microPrincipal(outras, app.config.micro);
+    if (!micro) return '';
+    const a = analisarNumeros(outras, micro, lerNumeros(app.config.pastasNaColmeia));
+    return escreverProntuario(micro, proximoLivre(a), a.digitos);
+  });
 
   async function excluir() {
     if (!confirm('Mandar esta família (e as VDs dela) para a lixeira? Dá para restaurar depois.')) return;
@@ -85,6 +96,12 @@
       <label class="campo"><span>Prontuário</span><input type="text" bind:value={f.prontuario} placeholder="00.0000" autocomplete="off" /></label>
       <label class="campo"><span>Nº na colmeia</span><input type="text" inputmode="numeric" bind:value={f.colmeia} autocomplete="off" /></label>
     </div>
+    {#if sugestao}
+      <button type="button" class="botao secundario pequeno sugestao" onclick={() => (f.prontuario = sugestao)}>
+        Usar o próximo número livre: {sugestao}
+      </button>
+      <p class="suave pequeno">Confira no sistema antes de criar a pasta.</p>
+    {/if}
     <label class="campo">
       <span>Situação da casa</span>
       <select bind:value={f.situacaoCasa}>
@@ -119,6 +136,9 @@
 {/if}
 
 <style>
+  .sugestao {
+    margin-top: -4px;
+  }
   .voltar {
     margin-bottom: 12px;
   }

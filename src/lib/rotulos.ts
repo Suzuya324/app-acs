@@ -30,6 +30,7 @@ export const CONFIG_PADRAO: Config = {
   urlFast: '',
   relatoNomeCompleto: false,
   primeirosPassosOcultos: false,
+  pastasNaColmeia: '',
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

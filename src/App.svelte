@@ -9,6 +9,7 @@
   import ComoUsar from './telas/ComoUsar.svelte';
   import Mapa from './telas/Mapa.svelte';
   import Prontuarios from './telas/Prontuarios.svelte';
+  import NumerosProntuario from './telas/NumerosProntuario.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
   import Desbloquear from './telas/Desbloquear.svelte';
@@ -51,7 +52,7 @@
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -124,6 +125,8 @@
     <Relatorio />
   {:else if rota.tela === 'mapa'}
     <Mapa />
+  {:else if rota.tela === 'numeros'}
+    <NumerosProntuario />
   {:else if rota.tela === 'prontuarios'}
     <Prontuarios />
   {:else if rota.tela === 'como-usar'}
