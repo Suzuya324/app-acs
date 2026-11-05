@@ -32,6 +32,7 @@ export const CONFIG_PADRAO: Config = {
   primeirosPassosOcultos: false,
   pastasNaColmeia: '',
   emUsoNoFast: { micro: '', numeros: '' },
+  diaReuniao: 3,
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

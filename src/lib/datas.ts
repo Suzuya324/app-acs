@@ -82,6 +82,12 @@ export function inicioDaSemana(iso: string): string {
   return somarDias(iso, -voltar);
 }
 
+/** Próxima data (a partir de hoje, contando hoje) que cai no dia da semana dado (0 = domingo … 6 = sábado). */
+export function proximoDiaDaSemana(iso: string, dia: number): string {
+  const atual = deISO(iso).getDay();
+  return somarDias(iso, (dia - atual + 7) % 7);
+}
+
 export function idade(nascimentoIso: string, referenciaIso: string): number | null {
   if (!nascimentoIso) return null;
   const n = deISO(nascimentoIso);

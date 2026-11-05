@@ -123,7 +123,7 @@ aparelho" e conecte de novo.
 - **Famílias de outro ACS** (prontuário de outra micro): na mesma tela, marque a micro e toque em
   **"Tirar da minha área"**. Elas vão para a Lixeira (dá para restaurar) e saem da meta e do mapa.
 - **Casos:** no Início, **Casos** lista o que acompanhar de perto (urgente, importante,
-  social/cadastro, NPV), com filtro de eMulti e a data da reunião de equipe (3ª terça). Para abrir um
+  social/cadastro, NPV), com filtro de eMulti e a data da próxima reunião de equipe (toda quarta; dá para mudar em Ajustes). Para abrir um
   caso: na família → **"Abrir caso"**. Para fechar: **"Resolvido"** (nada é apagado).
 - **Nível A/B/C:** cada casa tem um nível. **A** = voltar a cada 10 dias (alguém com 80 anos ou mais,
   ou com oxigênio, acamado, AVC/infarto, câncer, saúde mental, Alzheimer/paliativo); **B** = a cada

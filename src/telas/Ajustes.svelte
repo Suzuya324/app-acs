@@ -277,6 +277,15 @@
 <section class="cartao">
   <h2>Calendário e meta</h2>
   <label class="campo">
+    <span>Reunião de equipe (para o lembrete dos casos)</span>
+    <select bind:value={app.config.diaReuniao} onchange={salvarConfig}>
+      {#each ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'] as nome, i (i)}
+        <option value={i}>toda {nome}</option>
+      {/each}
+      <option value={-1}>sem reunião fixa</option>
+    </select>
+  </label>
+  <label class="campo">
     <span>A meta da unidade fecha</span>
     <select bind:value={app.config.diaInicioPeriodo} onchange={salvarConfig}>
       <option value={0}>no último dia útil do mês</option>
