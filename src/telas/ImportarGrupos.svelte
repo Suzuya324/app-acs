@@ -106,7 +106,7 @@
       </select>
     </label>
     <label class="botao largo arquivo">
-      <input type="file" accept=".json,.csv,.txt,.tsv,text/plain,text/csv,application/json" onchange={abrirArquivo} />
+      <input type="file" onchange={abrirArquivo} />
       Escolher arquivo (JSON, CSV ou TXT)
     </label>
     <p class="suave pequeno centro">ou</p>

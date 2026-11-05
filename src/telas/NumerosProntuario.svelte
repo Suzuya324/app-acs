@@ -156,7 +156,7 @@
     {/if}
     <p class="suave pequeno">Escolha o arquivo (TXT, CSV ou JSON) ou cole a lista. O app pega só os números de prontuário da micro {micro}; nomes não são guardados.</p>
     <label class="botao secundario largo arquivo">
-      <input type="file" accept=".txt,.csv,.json,text/plain,text/csv,application/json" onchange={arquivoFast} />
+      <input type="file" onchange={arquivoFast} />
       Escolher arquivo
     </label>
     <label class="campo">

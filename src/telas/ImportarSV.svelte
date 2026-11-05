@@ -12,14 +12,20 @@
   let salvando = $state(false);
   let pronto = $state(false);
 
+  let colado = $state('');
+
   async function abrir(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const arq = input.files?.[0];
     input.value = '';
     if (!arq) return;
+    preparar(decodificar(new Uint8Array(await arq.arrayBuffer())));
+  }
+
+  function preparar(texto: string) {
     erro = '';
     try {
-      arquivo = lerArquivoImportacao(decodificar(new Uint8Array(await arq.arrayBuffer())));
+      arquivo = lerArquivoImportacao(texto.trim());
       previa = prepararImportacao(
         arquivo,
         app.familias,
@@ -65,10 +71,20 @@
 {:else if !previa}
   <p class="suave">Escolha o arquivo que o Claude montou a partir do Sistema de Visitas. O app acha cada casa (pelo prontuário, endereço ou nome) e mostra tudo antes de salvar. Nada é duplicado.</p>
   <label class="botao largo arquivo">
-    <input type="file" accept=".json,application/json" onchange={abrir} />
+    <input type="file" onchange={abrir} />
     Escolher arquivo
   </label>
   {#if erro}<p class="alerta" role="alert">{erro}</p>{/if}
+  <details class="colar">
+    <summary>Não consegui escolher o arquivo</summary>
+    <p class="suave pequeno">Abra o arquivo no celular, toque e segure no texto → “Selecionar tudo” → “Copiar”, e cole aqui.</p>
+    <textarea rows="4" bind:value={colado} placeholder="Cole aqui o conteúdo do arquivo"></textarea>
+    <button class="botao secundario largo" disabled={!colado.trim()} onclick={() => preparar(colado)}>Conferir o texto colado</button>
+  </details>
+  <p class="suave pequeno">
+    Não achou o arquivo? Ele costuma ficar na pasta <strong>Download</strong> (no seletor, toque nos 3 risquinhos ☰ e
+    escolha “Downloads”). Se baixou pelo app do Claude, procure o nome <code>sistema-de-visitas-para-o-app</code>.
+  </p>
 {:else}
   <section class="cartao destaque">
     <p>Do <strong>{arquivo?.origem}</strong>:</p>
@@ -150,6 +166,16 @@
   .vd {
     padding: 8px 0;
     border-bottom: 1px solid var(--borda);
+  }
+  .colar {
+    margin: 12px 0;
+  }
+  .colar textarea {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  code {
+    overflow-wrap: anywhere;
   }
   .nao {
     padding-left: 20px;

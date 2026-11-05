@@ -150,7 +150,7 @@
   <section class="cartao">
     <label class="campo">
       <span>Arquivo do backup</span>
-      <input type="file" accept=".json,application/json" onchange={(e) => (arquivo = e.currentTarget.files?.[0] ?? null)} />
+      <input type="file" onchange={(e) => (arquivo = e.currentTarget.files?.[0] ?? null)} />
     </label>
     <label class="campo">
       <span>Senha do backup</span>
