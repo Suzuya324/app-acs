@@ -75,6 +75,7 @@
 
 <button class="botao largo relatorio" onclick={() => ir('relatorio')}>Relatório de produção (imprimir/PDF)</button>
 <button class="botao secundario largo prontuarios" onclick={() => ir('prontuarios')}>Lista de prontuários em ordem (PDF)</button>
+<button class="botao secundario largo prontuarios" onclick={() => ir('numeros')}>Números livres para prontuário novo</button>
 
 {#if painel.atual}
   <button class="botao secundario largo" onclick={() => ir('roteiro')}>Planejar a rua do dia ({painel.naoVisitadas.length} não visitadas)</button>

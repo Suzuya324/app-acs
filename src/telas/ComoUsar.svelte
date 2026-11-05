@@ -48,6 +48,7 @@
       <li><strong>Planejar a rua do dia</strong>: casas que faltam, na ordem dos números.</li>
       <li><strong>Mapa da área</strong>: cada casa é um quadrado colorido (verde: contou; laranja: ninguém em casa; azul: revisita marcada; branco: falta). Toque em uma cor da legenda para destacar só ela.</li>
       <li>No <strong>Painel</strong>: gráfico, meses anteriores, relatório de produção e lista de prontuários (PDF).</li>
+      <li><strong>Números livres para prontuário novo</strong> (Painel): mostra o próximo número livre da sua micro. Digitando os números das pastas da colmeia, mostra também as pastas que não são de família sua e as famílias sem pasta.</li>
     </ul>
   </details>
 </section>
