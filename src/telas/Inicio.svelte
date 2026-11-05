@@ -2,7 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
-  import { app, descartarRascunho, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
+  import { app, descartarRascunho, salvarConfig, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
@@ -19,6 +19,18 @@
   const aniversarios = $derived(atencao.filter((a) => a.tipo === 'aniversario').length);
   const totalPendencias = $derived(listarPendencias(app.familias).length);
   const precisaImportar = $derived(app.config.usandoExemplo || app.familias.length === 0);
+  const instalado = typeof matchMedia !== 'undefined' && (matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
+  const passos = $derived([
+    { feito: !precisaImportar, texto: 'Importar a sua área', ir: 'importar' },
+    { feito: app.visitas.length > 0, texto: 'Registrar a primeira VD', ir: 'busca' },
+    { feito: !!app.config.ultimoBackup, texto: 'Fazer o primeiro backup', ir: 'ajustes' },
+    { feito: instalado, texto: 'Instalar o app na tela do celular', ir: 'como-usar' },
+  ]);
+  const mostrarPassos = $derived(!app.config.primeirosPassosOcultos && passos.some((p) => !p.feito));
+  function esconderPassos() {
+    app.config.primeirosPassosOcultos = true;
+    salvarConfig();
+  }
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function haQuanto(data: string | null): string {
@@ -41,6 +53,24 @@
       <button class="botao pequeno" onclick={() => ir(r.visitaId ? `vd/${r.familiaId}/${r.visitaId}` : `vd/${r.familiaId}`)}>Continuar</button>
     </div>
   </div>
+{/if}
+
+{#if mostrarPassos}
+  <section class="cartao chamada" aria-labelledby="t-passos">
+    <h2 id="t-passos">Primeiros passos</h2>
+    <ul class="passos">
+      {#each passos as p (p.texto)}
+        <li class:feito={p.feito}>
+          <span class="marca" aria-hidden="true">{p.feito ? '✓' : '○'}</span>
+          {#if p.feito}<span>{p.texto}</span>{:else}<button class="link-simples passo" onclick={() => ir(p.ir)}>{p.texto} ›</button>{/if}
+        </li>
+      {/each}
+    </ul>
+    <div class="linha-botoes">
+      <button class="botao secundario pequeno" onclick={esconderPassos}>Esconder</button>
+      <button class="botao pequeno" onclick={() => ir('como-usar')}>Como usar o app</button>
+    </div>
+  </section>
 {/if}
 
 {#if precisaImportar}
@@ -166,6 +196,11 @@
   </ul>
 </section>
 
+<button class="item-link planejar" onclick={() => ir('mapa')}>
+  <span><strong>Mapa da área</strong><br /><span class="suave pequeno">todas as casas, coloridas pela situação no mês</span></span>
+  <Icone nome="casa" />
+</button>
+
 <button class="item-link planejar" onclick={() => ir('roteiro')}>
   <span><strong>Planejar a rua do dia</strong><br /><span class="suave pequeno">casas que faltam, na ordem dos números</span></span>
   <span class="num-pend">{painel.naoVisitadas.length}</span>
@@ -177,6 +212,31 @@
     flex-direction: column;
     gap: 8px;
     border: 2px solid var(--primaria);
+  }
+  .passos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .passos li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+  }
+  .passos li.feito {
+    color: var(--texto-suave);
+    text-decoration: line-through;
+  }
+  .marca {
+    width: 22px;
+    text-align: center;
+    font-weight: 800;
+    color: var(--primaria);
+  }
+  .passo {
+    border-bottom: 0;
+    padding: 6px 0;
   }
   .pendencias {
     display: flex;

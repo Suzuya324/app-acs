@@ -6,6 +6,9 @@
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
   import Atencao from './telas/Atencao.svelte';
+  import ComoUsar from './telas/ComoUsar.svelte';
+  import Mapa from './telas/Mapa.svelte';
+  import Prontuarios from './telas/Prontuarios.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
   import Desbloquear from './telas/Desbloquear.svelte';
@@ -46,9 +49,9 @@
       ? 'busca'
       : rota.tela === 'lancar'
         ? 'fila'
-        : rota.tela === 'importar' || rota.tela === 'lixeira'
+        : ['importar', 'lixeira', 'como-usar'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -119,6 +122,12 @@
     <Painel />
   {:else if rota.tela === 'relatorio'}
     <Relatorio />
+  {:else if rota.tela === 'mapa'}
+    <Mapa />
+  {:else if rota.tela === 'prontuarios'}
+    <Prontuarios />
+  {:else if rota.tela === 'como-usar'}
+    <ComoUsar />
   {:else if rota.tela === 'atencao'}
     <Atencao />
   {:else if rota.tela === 'roteiro'}

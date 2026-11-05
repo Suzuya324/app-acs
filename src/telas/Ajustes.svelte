@@ -174,6 +174,8 @@
 
 <h1>Ajustes</h1>
 
+<button class="botao secundario largo como-usar" onclick={() => ir('como-usar')}>Como usar o app (passo a passo)</button>
+
 <section class="cartao">
   <h2>Minha área</h2>
   <p class="suave pequeno">
@@ -398,6 +400,9 @@
 </section>
 
 <style>
+  .como-usar {
+    margin-bottom: 14px;
+  }
   .espaco-b {
     margin-top: 8px;
   }
