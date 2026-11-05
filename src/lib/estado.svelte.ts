@@ -20,6 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
+import { gruposDasEtiquetas, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -42,6 +43,8 @@ export const app = $state({
   lixeira: [] as ItemLixeira[],
   /** Casos para acompanhar. */
   casos: [] as Caso[],
+  /** Pacientes prioritários. */
+  prioritarios: [] as Prioritario[],
   /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
   desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
@@ -114,6 +117,7 @@ function carregar(d: Dados) {
   app.revisitas = d.revisitas ?? [];
   app.lixeira = d.lixeira ?? [];
   app.casos = d.casos ?? [];
+  app.prioritarios = d.prioritarios ?? [];
 }
 
 function dadosAtuais(): Dados {
@@ -126,6 +130,7 @@ function dadosAtuais(): Dados {
     revisitas: app.revisitas,
     lixeira: app.lixeira,
     casos: app.casos,
+    prioritarios: app.prioritarios,
   }) as Dados;
 }
 
@@ -209,6 +214,7 @@ export async function trancar() {
   app.revisitas = [];
   app.lixeira = [];
   app.casos = [];
+  app.prioritarios = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.busca = '';
@@ -226,6 +232,7 @@ export async function apagarTudo() {
   app.revisitas = [];
   app.lixeira = [];
   app.casos = [];
+  app.prioritarios = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.config = structuredClone(CONFIG_PADRAO);
@@ -298,6 +305,7 @@ export async function desfazerUltima() {
     revisitas: app.revisitas,
     lixeira: app.lixeira,
     casos: app.casos,
+    prioritarios: app.prioritarios,
   });
   mostrarAviso(`Desfeito: ${descricao}`);
 }
@@ -311,9 +319,10 @@ function aplicar(d: Dados) {
   app.lixeira = d.lixeira ?? [];
   app.rascunho = d.rascunho ?? null;
   app.casos = d.casos ?? app.casos;
+  app.prioritarios = d.prioritarios ?? app.prioritarios;
 }
 async function gravarTudo() {
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, rascunho: app.rascunho });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios, rascunho: app.rascunho });
 }
 
 export const excluirVisitaParaLixeira = (visitaId: string) =>
@@ -354,6 +363,59 @@ export const restaurarDaLixeira = (entradaId: string) =>
     aplicar(lxRestaurar(dadosAtuais(), entradaId));
     if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
     await gravarTudo();
+  });
+
+// ---------------- Prioritários ----------------
+
+/** Inclui nos moradores ligados os grupos que as etiquetas indicam (nunca tira o que já estava). */
+function aplicarGruposDosPrioritarios(lista: Prioritario[], tirar: Map<string, string[]> = new Map()) {
+  const quando = agora();
+  for (const p of lista) {
+    if (!p.familiaId || !p.moradorId) continue;
+    const f = app.familias.find((x) => x.id === p.familiaId);
+    const m = f?.moradores.find((x) => x.id === p.moradorId);
+    if (!f || !m) continue;
+    const antes = $state.snapshot(m) as Morador;
+    const sair = new Set(gruposDasEtiquetas(tirar.get(p.id) ?? []));
+    const ficam = gruposDasEtiquetas(p.etiquetas);
+    for (const g of ficam) sair.delete(g);
+    const grupos = [...new Set([...m.grupos.filter((g) => !sair.has(g)), ...ficam])];
+    if (grupos.join() === m.grupos.join()) continue;
+    m.grupos = grupos;
+    f.atualizadoEm = quando;
+    app.historico.push(...criarAlteracoes(f.id, mudancasMorador(antes, $state.snapshot(m) as Morador), m.id));
+  }
+}
+
+/** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */
+export const importarPrioritarios = (previa: PreviaPrioritarios, usarDaListaNova: Set<string>) =>
+  comDesfazer('Importar prioritários', async () => {
+    const quando = agora();
+    const porId = new Map(app.prioritarios.map((p) => [p.id, p] as const));
+    const entram = [
+      ...previa.novos,
+      ...previa.atualizados,
+      ...previa.conflitos.filter((c) => usarDaListaNova.has(c.atual.id)).map((c) => ({ ...c.novo, editadoEm: undefined })),
+    ].map((p) => ({ ...p, atualizadoEm: quando }));
+    for (const p of entram) porId.set(p.id, p);
+    app.prioritarios = [...porId.values()];
+    aplicarGruposDosPrioritarios(entram);
+    app.historico.push(...criarAlteracoes('', [`Lista de prioritários: ${previa.novos.length} novos, ${entram.length - previa.novos.length} atualizados`]));
+    await gravar({ prioritarios: app.prioritarios, familias: app.familias, historico: app.historico });
+  });
+
+/** Salva a edição feita à mão (nível, etiquetas, resumo, óbito). */
+export const salvarPrioritario = (p: Prioritario) =>
+  comDesfazer('Editar prioritário', async () => {
+    const i = app.prioritarios.findIndex((x) => x.id === p.id);
+    if (i < 0) return;
+    const antes = $state.snapshot(app.prioritarios[i]) as Prioritario;
+    const quando = agora();
+    app.prioritarios[i] = { ...p, editadoEm: quando, atualizadoEm: quando };
+    const tiradas = antes.etiquetas.filter((e) => !p.etiquetas.includes(e));
+    aplicarGruposDosPrioritarios([app.prioritarios[i]], new Map([[p.id, tiradas]]));
+    if (p.familiaId) app.historico.push(...criarAlteracoes(p.familiaId, [`Prioritário editado: ${p.nome} (nível ${p.nivel})`], p.moradorId));
+    await gravar({ prioritarios: app.prioritarios, familias: app.familias, historico: app.historico });
   });
 
 // ---------------- Casos ----------------
@@ -706,7 +768,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
   const { dados, resumo } = juntarDados(dadosAtuais(), outro);
   carregar(dados);
   app.historico.push(...criarAlteracoes('', [`Backup juntado: ${textoResumoJuncao(resumo)}`]));
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
   return resumo;
 }
 
@@ -714,7 +776,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
 }
 
 // ---------------- Bloqueio automático ----------------
@@ -868,7 +930,7 @@ async function aplicarDaNuvem(novo: Dados) {
     // O "Desfazer" antigo não vale mais (desfaria também o que veio dos outros aparelhos).
     ultimaAcao = null;
     app.desfazer = null;
-    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
   } finally {
     aplicandoRemoto = false;
   }

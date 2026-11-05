@@ -3,6 +3,8 @@
   import Icone from '../componentes/Icone.svelte';
   import MarcarRevisita from '../componentes/MarcarRevisita.svelte';
   import Prioridade from '../componentes/Prioridade.svelte';
+  import Etiqueta from '../componentes/Etiqueta.svelte';
+  import { etiquetasParaMostrar } from '../lib/prioritarios';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
@@ -28,6 +30,7 @@
   const atuais = $derived(familia?.moradores.filter((m) => m.situacao === 'mora') ?? []);
   const antigos = $derived(familia?.moradores.filter((m) => m.situacao !== 'mora') ?? []);
   const historico = $derived(historicoDaFamilia(id));
+  const prios = $derived(app.prioritarios.filter((p) => p.familiaId === id).sort((a, b) => a.nivel.localeCompare(b.nivel)));
   const casos = $derived(app.casos.filter((c) => c.familiaId === id).sort((a, b) => Number(!!a.resolvidoEm) - Number(!!b.resolvidoEm) || b.atualizadoEm.localeCompare(a.atualizadoEm)));
   let aberta = $state<string | null>(null);
   let confirmandoAusencia = $state(false);
@@ -77,6 +80,26 @@
     {#if familia.obs}<p class="obs"><strong>Obs.:</strong> {familia.obs}</p>{/if}
     {#if familia.atencao}<p class="alerta atencao"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
   </section>
+
+  {#if prios.length}
+    <section class="cartao prios">
+      <h2>Prioritários desta casa</h2>
+      <ul class="lista">
+        {#each prios as p (p.id)}
+          <li>
+            <button class="item-link prio" onclick={() => ir(`prioritarios/${p.id}`)}>
+              <span class="bola nivel-{p.nivel}" aria-label="Nível {p.nivel}"></span>
+              <span>
+                <strong>{p.nome.split(' ')[0]}</strong> <span class="suave pequeno">· nível {p.nivel}</span>
+                {#if p.obito}<span class="obito"> · óbito a confirmar</span>{/if}<br />
+                <span class="etqs">{#each etiquetasParaMostrar(p, hoje) as e (e)}<Etiqueta {e} />{/each}</span>
+              </span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   {#if familia.situacaoCasa === 'habitada'}<Prioridade {familia} />{/if}
 
@@ -247,6 +270,34 @@
   }
   .atencao {
     margin-top: 8px;
+  }
+  .prio {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bola {
+    flex: 0 0 14px;
+    height: 14px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--borda);
+  }
+  .bola.nivel-A {
+    background: var(--perigo);
+  }
+  .bola.nivel-B {
+    background: var(--ausencia);
+  }
+  .etqs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .obito {
+    color: var(--perigo);
+    font-weight: 800;
   }
   .caso-fam.resolvido {
     opacity: 0.6;

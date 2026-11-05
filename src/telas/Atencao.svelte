@@ -9,7 +9,7 @@
 
   const hoje = hojeISO();
   const avisos = $derived(calcularAtencao(app.familias, app.visitas, hoje));
-  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje));
+  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje, app.prioritarios));
   const grupos = $derived(ORDEM_ATENCAO.map((t) => ({ tipo: t, itens: avisos.filter((a) => a.tipo === t) })).filter((g) => g.itens.length));
 
   async function fazer(a: AvisoAtencao) {

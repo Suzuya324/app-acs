@@ -2,6 +2,7 @@
 import type { Armazenamento } from './armazenamento';
 import { bytesAleatorios, cifrar, decifrar, derivarChave, ITERACOES_PADRAO, type Cifrado } from './cripto';
 import type { ItemLixeira } from './lixeira';
+import type { Prioritario } from './prioritarios';
 import type { Alteracao, Caso, Config, Familia, RascunhoVD, Revisita, Visita } from './tipos';
 
 export interface Dados {
@@ -18,9 +19,11 @@ export interface Dados {
   lixeira?: ItemLixeira[];
   /** Casos para acompanhar (urgente, importante, social, NPV). */
   casos?: Caso[];
+  /** Pacientes prioritários (lista do ACS). */
+  prioritarios?: Prioritario[];
 }
 export type Parte = keyof Dados;
-const PARTES: Parte[] = ['config', 'familias', 'visitas', 'historico', 'rascunho', 'revisitas', 'lixeira', 'casos'];
+const PARTES: Parte[] = ['config', 'familias', 'visitas', 'historico', 'rascunho', 'revisitas', 'lixeira', 'casos', 'prioritarios'];
 
 interface InfoCofre {
   versao: 1;

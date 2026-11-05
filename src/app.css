@@ -16,6 +16,7 @@
   --ausente-realizada: #1f5fae;
   --ausencia: #a35a00;
   --recusa: #b42318;
+  --roxo: #6d3fb0;
   --sombra: 0 1px 2px rgb(0 0 0 / 8%), 0 2px 8px rgb(0 0 0 / 6%);
   --raio: 14px;
   color-scheme: light;
@@ -39,6 +40,8 @@
     --ausente-realizada: #79b2ff;
     --ausencia: #ffb24d;
     --recusa: #ff7b6e;
+  --roxo: #c3a2f5;
+    --roxo: #c3a2f5;
     --sombra: none;
     color-scheme: dark;
   }
