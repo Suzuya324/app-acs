@@ -7,7 +7,7 @@ import { lerBackup } from './backup';
 import { Cofre, PinErrado, type Dados } from './cofre';
 import { esperaAposErros } from './cripto';
 import { gerarDadosFicticios } from './dados-ficticios';
-import { hojeISO } from './datas';
+import { diferencaDias, hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
 import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
 import { juntarDados, textoResumoJuncao, type ResumoJuncao } from './juntar';
@@ -282,7 +282,11 @@ export function ordemDaVisita(id: string): number {
 
 /** "Ninguém em casa" com 1 toque: registra a ausência completa na data escolhida. */
 export function registrarAusencia(familiaId: string, data: string) {
+  const anterior = app.visitas
+    .filter((v) => v.familiaId === familiaId && v.data < data && diferencaDias(v.data, data) <= 30)
+    .sort((a, b) => b.data.localeCompare(a.data))[0];
   const relato = gerarRelato({
+    anterior: anterior ? { data: anterior.data, desfecho: anterior.desfecho } : undefined,
     desfecho: 'ausencia_completa',
     presentes: [],
     ausentes: [],

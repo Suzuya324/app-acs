@@ -92,6 +92,7 @@ export interface RascunhoVD {
   outrosTemas: string;
   relatoEditado: string | null;
   revisitasFeitas?: string[];
+  observacao?: string;
 }
 
 /** Um registro do histórico: o que mudou, quando e em qual família/morador. Nada é apagado. */
@@ -133,6 +134,8 @@ export interface Visita {
   lancadaNoFast: boolean;
   /** Revisitas resolvidas nesta VD (ids). */
   revisitasFeitas?: string[];
+  /** O que foi conversado / observado (escrito pelo ACS). */
+  observacao?: string;
   /** Última alteração (salvar, corrigir, marcar lançada) (ISO). Usado para juntar backups. */
   atualizadoEm?: string;
 }
@@ -164,4 +167,6 @@ export interface Config {
   diasSemCampo: { data: string; motivo: string }[];
   /** Endereço do Fast, só para o botão "Abrir o Fast" (nenhum dado é enviado). */
   urlFast: string;
+  /** Relato com o nome completo dos moradores (em vez de só o primeiro nome). */
+  relatoNomeCompleto: boolean;
 }

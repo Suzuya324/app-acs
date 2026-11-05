@@ -125,3 +125,40 @@ describe('gerador de relato (estilo curto)', () => {
     expect(juntarNomes(['A', 'B', 'C'])).toBe('A, B e C');
   });
 });
+
+describe('relato com nome completo (chave em Ajustes)', () => {
+  it('usa o nome completo em presentes, ausentes e sinais', () => {
+    const t = gerarRelato({ ...base, presentes: [fulana], ausentes: [ciclano], sinais: { '1': { pa: '120/80' } }, nomeCompleto: true });
+    expect(t).toBe('Realizada VD, presente Fulana Teste da Silva, ausente Ciclano Exemplo, P.A. de Fulana Teste da Silva 120x80.');
+  });
+  it('desligado continua só com o primeiro nome', () => {
+    expect(gerarRelato({ ...base, nomeCompleto: false })).toBe('Realizada VD, presentes Fulana e Ciclano.');
+  });
+});
+
+describe('relato com contexto', () => {
+  it('C) motivo diferente de "Outros" entra no texto', () => {
+    expect(gerarRelato({ ...base, motivo: 'Busca ativa' })).toBe('Realizada VD, presentes Fulana e Ciclano, motivo: busca ativa.');
+    expect(gerarRelato({ ...base, motivo: 'Outros' })).toBe('Realizada VD, presentes Fulana e Ciclano.');
+  });
+
+  it('D) o que foi conversado/observado entra antes das orientações', () => {
+    const t = gerarRelato({ ...base, observacao: 'Refere dor nas costas, aguarda resultado de exame.', orientacoes: 'consultas' });
+    expect(t).toBe('Realizada VD, presentes Fulana e Ciclano, refere dor nas costas, aguarda resultado de exame, orientados sobre consultas.');
+  });
+
+  it('B) continuidade com a VD anterior', () => {
+    expect(gerarRelato({ ...base, anterior: { data: '2026-10-28', desfecho: 'ausencia_completa' } })).toBe(
+      'Após tentativa sem sucesso em 28/10, realizada VD, presentes Fulana e Ciclano.',
+    );
+    expect(gerarRelato({ ...base, anterior: { data: '2026-10-15', desfecho: 'realizada' } })).toBe(
+      'Em continuidade à VD de 15/10, realizada VD, presentes Fulana e Ciclano.',
+    );
+  });
+
+  it('B) ninguém em casa de novo: avisa que é nova tentativa', () => {
+    expect(gerarRelato({ ...base, desfecho: 'ausencia_completa', anterior: { data: '2026-10-28', desfecho: 'ausencia_completa' } })).toBe(
+      'Realizada tentativa de VD, ninguém em casa, nova tentativa (anterior em 28/10).',
+    );
+  });
+});

@@ -252,6 +252,10 @@
 <!-- FAST -->
 <section class="cartao">
   <h2>Fast</h2>
+  <label class="opcao">
+    <input type="checkbox" bind:checked={app.config.relatoNomeCompleto} onchange={salvarConfig} />
+    <span>Relato com <strong>nome completo</strong> dos moradores<br /><span class="suave pequeno">Desligado: só o primeiro nome (“presentes Ana e João”).</span></span>
+  </label>
   <label class="campo">
     <span>Endereço do Fast (para o botão “Abrir o Fast”)</span>
     <input type="url" inputmode="url" bind:value={app.config.urlFast} placeholder="https://…" autocomplete="off" onchange={salvarUrlFast} />
