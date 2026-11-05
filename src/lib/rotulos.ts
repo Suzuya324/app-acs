@@ -1,4 +1,4 @@
-import type { Config, Grupo, SituacaoCasa, SituacaoMorador } from './tipos';
+import type { CategoriaCaso, Config, Grupo, SituacaoCasa, SituacaoMorador } from './tipos';
 
 export const CONFIG_PADRAO: Config = {
   nomeAcs: '',
@@ -44,7 +44,19 @@ export const NOMES_GRUPO: Record<Grupo, string> = {
   diabetico: 'Diabético',
   deficiencia: 'Pessoa com deficiência',
   saude_mental: 'Saúde mental',
+  oxigenio: 'Oxigênio',
+  avc: 'AVC/infarto',
+  cancer: 'Câncer',
+  cirurgia: 'Cirurgia',
+  alzheimer: 'Alzheimer/paliativo',
   outros: 'Outros',
+};
+
+export const NOMES_CATEGORIA_CASO: Record<CategoriaCaso, string> = {
+  urgente: 'Urgente',
+  importante: 'Importante',
+  social: 'Social / cadastro',
+  npv: 'NPV (levar para a equipe)',
 };
 
 export const NOMES_SITUACAO_MORADOR: Record<SituacaoMorador, string> = {

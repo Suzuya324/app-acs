@@ -19,9 +19,10 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
+import type { Previa } from './importar-sv';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
-import type { Alteracao, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
+import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -39,6 +40,8 @@ export const app = $state({
   revisitas: [] as Revisita[],
   /** Lixeira (excluídos por engano, podem ser restaurados). */
   lixeira: [] as ItemLixeira[],
+  /** Casos para acompanhar. */
+  casos: [] as Caso[],
   /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
   desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
@@ -110,6 +113,7 @@ function carregar(d: Dados) {
   app.rascunho = d.rascunho ?? null;
   app.revisitas = d.revisitas ?? [];
   app.lixeira = d.lixeira ?? [];
+  app.casos = d.casos ?? [];
 }
 
 function dadosAtuais(): Dados {
@@ -121,6 +125,7 @@ function dadosAtuais(): Dados {
     rascunho: app.rascunho,
     revisitas: app.revisitas,
     lixeira: app.lixeira,
+    casos: app.casos,
   }) as Dados;
 }
 
@@ -203,6 +208,7 @@ export async function trancar() {
   app.rascunho = null;
   app.revisitas = [];
   app.lixeira = [];
+  app.casos = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.busca = '';
@@ -219,6 +225,7 @@ export async function apagarTudo() {
   app.rascunho = null;
   app.revisitas = [];
   app.lixeira = [];
+  app.casos = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.config = structuredClone(CONFIG_PADRAO);
@@ -290,6 +297,7 @@ export async function desfazerUltima() {
     historico: app.historico,
     revisitas: app.revisitas,
     lixeira: app.lixeira,
+    casos: app.casos,
   });
   mostrarAviso(`Desfeito: ${descricao}`);
 }
@@ -302,9 +310,10 @@ function aplicar(d: Dados) {
   app.revisitas = d.revisitas ?? [];
   app.lixeira = d.lixeira ?? [];
   app.rascunho = d.rascunho ?? null;
+  app.casos = d.casos ?? app.casos;
 }
 async function gravarTudo() {
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, rascunho: app.rascunho });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, rascunho: app.rascunho });
 }
 
 export const excluirVisitaParaLixeira = (visitaId: string) =>
@@ -345,6 +354,76 @@ export const restaurarDaLixeira = (entradaId: string) =>
     aplicar(lxRestaurar(dadosAtuais(), entradaId));
     if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
     await gravarTudo();
+  });
+
+// ---------------- Casos ----------------
+
+/** Cria ou atualiza um caso. */
+export const salvarCaso = (c: Omit<Caso, 'id' | 'criadoEm' | 'atualizadoEm'> & { id?: string }) =>
+  comDesfazer(c.id ? 'Salvar caso' : 'Novo caso', async () => {
+    const quando = agora();
+    const i = c.id ? app.casos.findIndex((x) => x.id === c.id) : -1;
+    if (i >= 0) app.casos[i] = { ...app.casos[i], ...c, id: app.casos[i].id, atualizadoEm: quando };
+    else app.casos.push({ ...c, id: novoId('c'), criadoEm: quando, atualizadoEm: quando });
+    app.historico.push(...criarAlteracoes(c.familiaId, [`Caso ${i >= 0 ? 'atualizado' : 'aberto'}: ${c.titulo}`]));
+    await gravar({ casos: app.casos, historico: app.historico });
+  });
+
+/** Marca o caso como resolvido (ou reabre). Nada é apagado. */
+export const resolverCaso = (id: string, resolvido: boolean) =>
+  comDesfazer(resolvido ? 'Resolver caso' : 'Reabrir caso', async () => {
+    const c = app.casos.find((x) => x.id === id);
+    if (!c) return;
+    c.resolvidoEm = resolvido ? agora() : undefined;
+    c.atualizadoEm = agora();
+    app.historico.push(...criarAlteracoes(c.familiaId, [`Caso ${resolvido ? 'resolvido' : 'reaberto'}: ${c.titulo}`]));
+    await gravar({ casos: app.casos, historico: app.historico });
+  });
+
+/** Casos abertos de famílias que estão na área (a família pode estar na lixeira). */
+export function casosAbertos(): Caso[] {
+  const ids = new Set(app.familias.map((f) => f.id));
+  return app.casos.filter((c) => !c.resolvidoEm && ids.has(c.familiaId));
+}
+
+/** Traz VDs e relatos de outro lugar (ex.: Sistema de Visitas), já conferidos na prévia. */
+export const trazerImportacao = (previa: Previa, origem: string) =>
+  comDesfazer(`Trazer do ${origem}`, async () => {
+    const quando = agora();
+    app.visitas.push(...previa.visitas);
+    for (const [familiaId, relatos] of previa.relatos) {
+      const f = app.familias.find((x) => x.id === familiaId);
+      if (!f) continue;
+      f.relatosAnteriores = [...(f.relatosAnteriores ?? []), ...relatos];
+      f.atualizadoEm = quando;
+    }
+    for (const c of previa.condicoes) {
+      const f = app.familias.find((x) => x.id === c.familiaId);
+      const m = f?.moradores.find((x) => x.id === c.moradorId);
+      if (!f || !m) continue;
+      const antes = $state.snapshot(m) as Morador;
+      m.grupos = [...new Set([...m.grupos, ...c.grupos])];
+      if (c.nota) m.obs = m.obs.trim() ? `${m.obs.trim()}\n${c.nota}` : c.nota;
+      f.atualizadoEm = quando;
+      app.historico.push(...criarAlteracoes(f.id, mudancasMorador(antes, $state.snapshot(m) as Morador), m.id));
+    }
+    for (const n of previa.niveis) {
+      const f = app.familias.find((x) => x.id === n.familiaId);
+      if (!f) continue;
+      if (n.nivel) f.nivel = n.nivel;
+      if (n.atencao) f.atencao = f.atencao?.trim() ? `${f.atencao.trim()}\n${n.atencao}` : n.atencao;
+      if (n.ultimaVdFora) f.ultimaVdFora = n.ultimaVdFora;
+      f.atualizadoEm = quando;
+    }
+    app.casos.push(...previa.casos);
+    app.revisitas.push(...previa.revisitas);
+    const nRelatos = [...previa.relatos.values()].reduce((n, l) => n + l.length, 0);
+    app.historico.push(
+      ...criarAlteracoes('', [
+        `Trazido do ${origem}: ${previa.visitas.length} VDs, ${nRelatos} relatos, ${previa.casos.length} casos, ${previa.condicoes.length} pessoas com condições, ${previa.niveis.length} casas com nível/atenção e ${previa.revisitas.length} revisitas`,
+      ]),
+    );
+    await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, casos: app.casos, revisitas: app.revisitas });
   });
 
 /** Restaura vários itens da lixeira de uma vez (ex.: as famílias tiradas da área por engano). */
@@ -554,11 +633,11 @@ async function _salvarFamilia(nova: Familia): Promise<void> {
   const antiga = i >= 0 ? ($state.snapshot(app.familias[i]) as Familia) : null;
   const final: Familia = antiga ? { ...nova, moradores: antiga.moradores } : nova;
   const textos = mudancasFamilia(antiga, final);
-  if (!textos.length) return;
+  if (!textos.length && JSON.stringify(antiga) === JSON.stringify(final)) return;
   final.atualizadoEm = agora();
   if (i >= 0) app.familias[i] = final;
   else app.familias.push(final);
-  app.historico.push(...criarAlteracoes(final.id, textos));
+  if (textos.length) app.historico.push(...criarAlteracoes(final.id, textos));
   await gravar({ familias: app.familias, historico: app.historico });
 }
 
@@ -627,7 +706,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
   const { dados, resumo } = juntarDados(dadosAtuais(), outro);
   carregar(dados);
   app.historico.push(...criarAlteracoes('', [`Backup juntado: ${textoResumoJuncao(resumo)}`]));
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
   return resumo;
 }
 
@@ -635,7 +714,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
 }
 
 // ---------------- Bloqueio automático ----------------
@@ -789,7 +868,7 @@ async function aplicarDaNuvem(novo: Dados) {
     // O "Desfazer" antigo não vale mais (desfaria também o que veio dos outros aparelhos).
     ultimaAcao = null;
     app.desfazer = null;
-    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
+    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
   } finally {
     aplicandoRemoto = false;
   }

@@ -7,7 +7,7 @@
 // - VD pela metade: fica a deste aparelho.
 import type { Dados } from './cofre';
 import { aplicarLixeira, juntarLixeiras } from './lixeira';
-import type { Alteracao, Config, Familia, Revisita, Visita } from './tipos';
+import type { Alteracao, Caso, Config, Familia, Revisita, Visita } from './tipos';
 
 export interface ResumoJuncao {
   familiasNovas: number;
@@ -112,6 +112,7 @@ export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: 
     rascunho: daqui.rascunho ?? null,
     revisitas: r.lista,
     lixeira: juntarLixeiras(daqui.lixeira ?? [], dela.lixeira ?? []),
+    casos: juntarPorId<Caso>(daqui.casos ?? [], dela.casos ?? []).lista,
   });
   return {
     dados: juntos,

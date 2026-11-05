@@ -60,6 +60,8 @@
       <li><strong>Atenção</strong> (no Início): gestantes, puérperas, crianças e acamados sem VD há 30 dias; hipertensos sem P.A. e diabéticos sem glicemia há 60 dias; aniversários da semana; quem fez 60 anos ou deixou de ser criança pequena (com botão para ajustar o grupo).</li>
       <li>Na <strong>Busca</strong>, digite um grupo (“gestante”, “acamado”, “hipertenso”, “diabético”, “idoso”) para ver todas as famílias com alguém dele.</li>
       <li>Para entrar nesses lembretes, o morador precisa estar no grupo e ter a data de nascimento.</li>
+      <li><strong>Casos</strong> (no Início): urgente, importante, social/cadastro e NPV, com eMulti. Abra pela família (“Abrir caso”) e marque “Resolvido” quando acabar.</li>
+      <li><strong>Nível A/B/C</strong>: A volta a cada 10 dias (80+ ou condição grave), B a cada 30 (60+ ou doença crônica). Dá para marcar à mão em Editar família. A ficha e a VD mostram <strong>o que perguntar</strong>.</li>
       <li><strong>Marcar grupos de uma vez:</strong> em Ajustes → <strong>Marcar grupos colando uma lista</strong>, escolha o arquivo de pacientes prioritários (JSON, CSV ou TXT) ou cole a lista copiada do Fast. O app acha cada pessoa e mostra o que vai marcar antes de salvar.</li>
     </ul>
   </details>

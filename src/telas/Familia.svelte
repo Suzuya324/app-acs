@@ -2,6 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import MarcarRevisita from '../componentes/MarcarRevisita.svelte';
+  import Prioridade from '../componentes/Prioridade.svelte';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
@@ -15,7 +16,7 @@
     revisitasAbertas,
   } from '../lib/estado.svelte';
   import { prontuarioIncompleto } from '../lib/pendencias';
-  import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
+  import { NOMES_CATEGORIA_CASO, NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   let { id }: { id: string } = $props();
@@ -27,6 +28,7 @@
   const atuais = $derived(familia?.moradores.filter((m) => m.situacao === 'mora') ?? []);
   const antigos = $derived(familia?.moradores.filter((m) => m.situacao !== 'mora') ?? []);
   const historico = $derived(historicoDaFamilia(id));
+  const casos = $derived(app.casos.filter((c) => c.familiaId === id).sort((a, b) => Number(!!a.resolvidoEm) - Number(!!b.resolvidoEm) || b.atualizadoEm.localeCompare(a.atualizadoEm)));
   let aberta = $state<string | null>(null);
   let confirmandoAusencia = $state(false);
   let marcandoRevisita = $state(false);
@@ -73,6 +75,29 @@
       <p class="alerta">Prontuário incompleto: completar quando possível.</p>
     {/if}
     {#if familia.obs}<p class="obs"><strong>Obs.:</strong> {familia.obs}</p>{/if}
+    {#if familia.atencao}<p class="alerta atencao"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
+  </section>
+
+  {#if familia.situacaoCasa === 'habitada'}<Prioridade {familia} />{/if}
+
+  <section class="cartao">
+    <div class="cabecalho">
+      <h2>Casos ({casos.filter((c) => !c.resolvidoEm).length})</h2>
+      <button class="botao secundario pequeno" onclick={() => ir(`caso/${familia.id}`)}>Abrir caso</button>
+    </div>
+    {#if casos.length === 0}
+      <p class="suave pequeno">Nenhum caso. Use para situações que precisam de acompanhamento (urgente, importante, social/cadastro ou para levar à equipe).</p>
+    {/if}
+    <ul class="lista">
+      {#each casos as c (c.id)}
+        <li>
+          <button class="item-link caso-fam" class:resolvido={!!c.resolvidoEm} onclick={() => ir(`caso/${familia.id}/${c.id}`)}>
+            <strong>{NOMES_CATEGORIA_CASO[c.categoria]}{c.resolvidoEm ? ' (resolvido)' : ''}:</strong> {c.titulo}<br />
+            <span class="suave pequeno">{c.texto.slice(0, 140)}{c.texto.length > 140 ? '…' : ''}</span>
+          </button>
+        </li>
+      {/each}
+    </ul>
   </section>
 
   {#if familia.situacaoCasa === 'habitada'}
@@ -176,7 +201,8 @@
             <Desfecho valor={v.desfecho} />
           </button>
           {#if aberta === v.id}
-            <p class="relato">{v.relato}</p>
+            {#if v.relato}<p class="relato">{v.relato}</p>{:else}<p class="suave">(sem relato)</p>{/if}
+            {#if v.observacao && !v.relato}<p class="suave pequeno">{v.observacao}</p>{/if}
             <p class="suave pequeno">Motivo: {v.motivo} · {v.lancadaNoFast ? 'lançada no Fast' : 'pendente no Fast'}</p>
             <button class="botao secundario pequeno corrigir" onclick={() => ir(`vd/${familia.id}/${v.id}`)}>Corrigir esta VD</button>
           {/if}
@@ -184,6 +210,21 @@
       {/each}
     </ul>
   </section>
+
+  {#if familia.relatosAnteriores?.length}
+    {@const relatos = [...familia.relatosAnteriores].sort((a, b) => (b.data ?? '').localeCompare(a.data ?? ''))}
+    <section class="cartao">
+      <details open={relatos.length <= 3}>
+        <summary>Relatos anteriores ({relatos.length})</summary>
+        <p class="suave pequeno">Trazidos do {relatos[0].origem}. Só para consulta: não contam como VD.</p>
+        <ul class="lista">
+          {#each relatos as r (r.id)}
+            <li class="relato-ant"><strong>{r.titulo}</strong><p class="relato">{r.texto}</p></li>
+          {/each}
+        </ul>
+      </details>
+    </section>
+  {/if}
 
   <section class="cartao">
     <details>
@@ -203,6 +244,20 @@
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .atencao {
+    margin-top: 8px;
+  }
+  .caso-fam.resolvido {
+    opacity: 0.6;
+  }
+  .relato-ant {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .relato-ant .relato {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
   }
   .cabecalho {
     display: flex;

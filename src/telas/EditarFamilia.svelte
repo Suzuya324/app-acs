@@ -121,6 +121,22 @@
       </label>
     {/if}
     <label class="campo"><span>Observações</span><textarea rows="3" bind:value={f.obs}></textarea></label>
+    <label class="campo">
+      <span>Atenção (recado que aparece na ficha e na VD)</span>
+      <textarea rows="2" bind:value={f.atencao} placeholder="Ex.: cuidadora sobrecarregada; chamar pelo portão dos fundos"></textarea>
+    </label>
+    <label class="campo">
+      <span>Nível de prioridade</span>
+      <select value={f.nivel ?? ''} onchange={(e) => (f.nivel = (e.currentTarget.value || undefined) as 'A' | 'B' | undefined)}>
+        <option value="">Automático (pela idade e pelas condições)</option>
+        <option value="A">A – voltar a cada 10 dias</option>
+        <option value="B">B – voltar a cada 30 dias</option>
+      </select>
+    </label>
+    <label class="campo">
+      <span>Última VD feita fora do app (opcional, ex.: lançada só no Fast)</span>
+      <input type="date" bind:value={f.ultimaVdFora} />
+    </label>
   </section>
 
   <button class="botao largo" onclick={salvar} disabled={salvando}><Icone nome="ok" /> Salvar</button>

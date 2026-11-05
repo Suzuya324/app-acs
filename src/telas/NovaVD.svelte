@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte';
   import DicaDitado from '../componentes/DicaDitado.svelte';
+  import Prioridade from '../componentes/Prioridade.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { idadeTexto } from '../lib/dados-ficticios';
@@ -319,6 +320,8 @@
 {:else}
   <h1>{corrigindo ? 'Corrigir visita' : 'Nova visita'}</h1>
   <p class="suave endereco">{enderecoCurto(familia)}</p>
+  {#if familia.atencao}<p class="alerta"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
+  {#if !corrigindo}<Prioridade {familia} aberto />{/if}
   {#if inicio.restaurado}
     <p class="alerta">Você tinha começado esta visita: ela foi recuperada do jeito que estava.</p>
   {/if}
