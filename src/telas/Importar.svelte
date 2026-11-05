@@ -102,7 +102,7 @@ Acácias 12 FUNDOS (pront. 00.001)
         <li><strong>Sexo</strong>: M ou F. <strong>Data</strong>: dd/mm/aaaa.</li>
         <li>Salve como <strong>CSV</strong> e escolha o arquivo abaixo.</li>
       </ol>
-      <input type="file" accept=".csv,.txt,text/csv,text/plain" onchange={(e) => lerArquivo(e.currentTarget.files?.[0])} />
+      <input type="file" onchange={(e) => lerArquivo(e.currentTarget.files?.[0])} />
       <button class="botao secundario largo espaco" onclick={baixarModelo}>Baixar planilha modelo (dados inventados)</button>
     </details>
   </section>

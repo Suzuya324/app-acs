@@ -135,7 +135,7 @@
       <label class="campo"><span>Chave do GitHub</span><input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" /></label>
     {:else}
       <label class="botao secundario largo arquivo">
-        <input type="file" accept=".json,application/json" onchange={lerConexao} />
+        <input type="file" onchange={lerConexao} />
         {textoConexao ? 'Arquivo escolhido ✓' : 'Escolher arquivo de conexão'}
       </label>
     {/if}

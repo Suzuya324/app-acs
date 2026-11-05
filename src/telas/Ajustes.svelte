@@ -220,7 +220,7 @@
     </p>
     <label class="campo">
       <span>Arquivo do backup do outro aparelho</span>
-      <input type="file" accept=".json,application/json" onchange={(e) => (arquivoJ = e.currentTarget.files?.[0] ?? null)} />
+      <input type="file" onchange={(e) => (arquivoJ = e.currentTarget.files?.[0] ?? null)} />
     </label>
     <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaJ} autocomplete="off" /></label>
     <button class="botao largo" onclick={juntar} disabled={juntando}>{juntando ? 'Juntando…' : 'Juntar'}</button>
@@ -232,7 +232,7 @@
     <p class="alerta">Isso <strong>substitui todos os dados atuais</strong> pelos do backup.</p>
     <label class="campo">
       <span>Arquivo do backup</span>
-      <input type="file" accept=".json,application/json" onchange={(e) => (arquivoR = e.currentTarget.files?.[0] ?? null)} />
+      <input type="file" onchange={(e) => (arquivoR = e.currentTarget.files?.[0] ?? null)} />
     </label>
     <label class="campo"><span>Senha do backup</span><input type="password" bind:value={senhaR} autocomplete="off" /></label>
     <label class="opcao"><input type="checkbox" bind:checked={confirmaR} /> <span>Entendi que os dados atuais serão substituídos</span></label>
