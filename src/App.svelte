@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
-  import { app, desfazerUltima, iniciar, instalarBloqueioAutomatico, trancar } from './lib/estado.svelte';
+  import { app, desfazerUltima, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
@@ -37,6 +37,7 @@
   onMount(() => {
     iniciar();
     instalarBloqueioAutomatico();
+    instalarSincronizacao();
   });
 
   const pendentes = $derived(app.visitas.filter((v) => !v.lancadaNoFast).length);

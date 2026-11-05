@@ -78,3 +78,16 @@ describe('juntar backup do celular com o do computador', () => {
     expect(textoResumoJuncao(juntarDados(dados(), dados()).resumo)).toBe('Nada novo: os dois já estavam iguais');
   });
 });
+
+describe('juntar ajustes', () => {
+  it('vale o ajuste mais recente; o último backup fica o mais novo', () => {
+    const base = juntarDados(
+      { ...dados(), config: { ...dados().config, metaMensal: 180, alteradaEm: '2026-11-01T10:00:00Z', ultimoBackup: '2026-11-04' } },
+      { ...dados(), config: { ...dados().config, metaMensal: 210, alteradaEm: '2026-11-02T10:00:00Z', ultimoBackup: '2026-10-30' } },
+    );
+    expect(base.dados.config.metaMensal).toBe(210);
+    expect(base.dados.config.ultimoBackup).toBe('2026-11-04');
+    const semData = juntarDados(dados(), { ...dados(), config: { ...dados().config, metaMensal: 99 } });
+    expect(semData.dados.config.metaMensal).toBe(dados().config.metaMensal);
+  });
+});

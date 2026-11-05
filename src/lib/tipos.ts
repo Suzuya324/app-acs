@@ -175,4 +175,6 @@ export interface Config {
   pastasNaColmeia: string;
   /** Números de prontuário em uso no Fast (lidos de uma lista colada), por micro. Só números. */
   emUsoNoFast: { micro: string; numeros: string };
+  /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */
+  alteradaEm?: string;
 }

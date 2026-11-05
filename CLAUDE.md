@@ -31,8 +31,14 @@ a unidade, a micro ou as ruas da área (o repositório pode ser público).
 
 ## Privacidade e segurança (obrigatório, nunca negociável)
 O app guarda nomes, endereços e informações de saúde de pacientes (dados protegidos pela LGPD).
-- **Os dados ficam só no celular de cada ACS.** Nada de servidor, nuvem, Firebase, analytics, login
-  online ou qualquer envio de dados. A hospedagem só entrega os arquivos do app.
+- **Os dados ficam nos aparelhos do próprio ACS.** Nada de servidor próprio, Firebase, analytics, login
+  online ou envio de dados para terceiros. A hospedagem só entrega os arquivos do app.
+- **Única exceção (decisão do usuário): sincronização entre os aparelhos do ACS** (celular, tablet e
+  computador dele). Sai do aparelho só uma cópia **criptografada no próprio aparelho** com a "senha de
+  sincronização" (PBKDF2 + AES-GCM), guardada num repositório **privado** do GitHub do ACS, acessado com
+  uma chave (fine-grained token) restrita a esse repositório. O GitHub nunca vê dados legíveis. A chave e a
+  senha ficam só no aparelho, criptografadas com o PIN, e não entram em backup nem na nuvem. A CSP libera
+  apenas `https://api.github.com` além do próprio app.
 - **Nunca colocar dados reais de pacientes no repositório**: nem no código, nem em testes, nem em
   exemplos, commits, issues ou prints. O repositório pode ser público (GitHub Pages gratuito exige isso).
   Usar sempre nomes e endereços **fictícios**. Colocar `*.csv` no `.gitignore` (exceto a pasta de
@@ -43,7 +49,8 @@ O app guarda nomes, endereços e informações de saúde de pacientes (dados pro
   (Web Crypto: PBKDF2 ou equivalente + AES-GCM). Explicar ao usuário que PIN curto é mais fácil de
   quebrar e recomendar no mínimo 6 dígitos.
 - Bloqueio automático após alguns minutos sem uso e ao trocar de app.
-- Backup só manual, em arquivo **criptografado**, salvo/compartilhado pelo próprio usuário.
+- Backup em arquivo **criptografado**, salvo/compartilhado pelo próprio usuário (com a sincronização ligada,
+  vira uma garantia extra mensal).
 
 ## Tecnologia (padrão; propor mudança só com prós e contras)
 - **Vite + TypeScript + Svelte** (telas), testes com **Vitest**.
@@ -134,7 +141,7 @@ em ordem numérica em PDF paisagem, ditado por voz etc.).
 
 ## Fora do escopo
 - Qualquer integração, login automático, raspagem (scraping) ou envio de dados para o Fast, e-SUS ou
-  qualquer outro sistema.
+  qualquer outro sistema (a sincronização criptografada entre os aparelhos do próprio ACS não conta).
 - Compartilhar dados entre ACS. Cada um tem só a própria área, no próprio celular.
 - Reaproveitar código do Fast ou do e-SUS Território (as fichas públicas do e-SUS podem servir de
   referência para campos).

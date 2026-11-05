@@ -85,9 +85,10 @@
 
 <section class="cartao">
   <details>
-    <summary>8. Backup, celular e computador</summary>
+    <summary>8. Celular, tablet e computador (sincronizar) e backup</summary>
     <ul>
-      <li><strong>Backup toda semana</strong>: Ajustes → Backup. O app lembra no Início.</li>
+      <li><strong>Sincronizar:</strong> em Ajustes → <strong>Sincronizar aparelhos</strong>, conecte cada aparelho uma vez (o passo a passo está lá). Depois, tudo fica igual sozinho, sem backup manual. Vai para a nuvem só uma cópia trancada com a sua senha de sincronização.</li>
+      <li><strong>Backup</strong>: Ajustes → Backup. Com a sincronização ligada, uma vez por mês basta; sem ela, toda semana. O app lembra no Início.</li>
       <li>Para passar do celular para o computador (e voltar): faça backup num, leve o arquivo e use <strong>Juntar com um backup</strong> no outro. Juntar nunca apaga nada.</li>
       <li><strong>Restaurar</strong> substitui tudo: use só em celular novo ou depois de perder os dados.</li>
     </ul>

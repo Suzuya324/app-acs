@@ -19,6 +19,7 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
+import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
 
@@ -48,7 +49,18 @@ export const app = $state({
   /** Há uma versão nova do app esperando para ser aplicada. */
   novaVersao: false,
   erro: '',
+  /** Sincronização entre os aparelhos. */
+  sinc: {
+    estado: 'desligada' as EstadoSinc,
+    /** Última sincronização que deu certo (ISO). */
+    ultima: '',
+    mensagem: '',
+    repo: '',
+    aparelho: '',
+  },
 });
+
+export type EstadoSinc = 'desligada' | 'parada' | 'sincronizando' | 'ok' | 'offline' | 'erro';
 
 /** Número de VDs já feitas: usado para variar o modelo do relato. */
 export function contadorRelato(): number {
@@ -135,6 +147,7 @@ export async function criarCofre(pin: string, config: Config, origem: 'exemplo' 
   carregar(dados);
   app.fase = 'aberto';
   await pedirPersistencia();
+  void carregarSinc();
 }
 
 export type ResultadoDesbloqueio = { ok: true } | { ok: false; esperar: number; erros: number };
@@ -153,6 +166,7 @@ export async function desbloquear(pin: string): Promise<ResultadoDesbloqueio> {
     carregar(await cofre.abrir(pin));
     app.fase = 'aberto';
     marcarUso();
+    void carregarSinc();
     return { ok: true };
   } catch (e) {
     if (e instanceof PinErrado) {
@@ -178,6 +192,10 @@ export async function trancar() {
     // segue trancando mesmo assim
   }
   if (app.fase !== 'aberto') return;
+  // Manda o que mudou para os outros aparelhos antes de trancar (no máximo 8 s).
+  if (sincSujo || sincRodando) await Promise.race([sincronizar(), new Promise((ok) => setTimeout(ok, 8000))]);
+  if (app.fase !== 'aberto') return;
+  esquecerSinc();
   cofre.trancar();
   app.familias = [];
   app.visitas = [];
@@ -192,6 +210,8 @@ export async function trancar() {
 }
 
 export async function apagarTudo() {
+  esquecerSinc();
+  app.sinc.estado = 'desligada';
   await cofre.apagarTudo();
   app.familias = [];
   app.visitas = [];
@@ -211,13 +231,17 @@ export async function apagarTudo() {
 async function gravar(partes: Partial<Dados>) {
   try {
     await cofre.gravar($state.snapshot(partes) as Partial<Dados>);
+    // Mudou algo além da VD pela metade: avisa a sincronização.
+    if (!aplicandoRemoto && Object.keys(partes).some((k) => k !== 'rascunho')) marcarParaSincronizar();
   } catch (e) {
     console.error(e);
     mostrarAviso('⚠️ Não consegui salvar! Não feche o app e tente de novo.', 6000);
   }
 }
 
+/** Grava os ajustes mudados pelo ACS (a data vale para a junção entre aparelhos). */
 export function salvarConfig() {
+  app.config.alteradaEm = new Date().toISOString();
   return gravar({ config: app.config });
 }
 
@@ -694,3 +718,206 @@ export const juntarBackup = (texto: string, senha: string) => comDesfazer('Junta
 export const importarArea = (familias: Familia[]) => comDesfazer('Importar área', () => _importarArea(familias));
 
 export const confirmarSexo = (familiaId: string, moradorId: string, sexo: 'M' | 'F') => comDesfazer('Marcar sexo', () => _confirmarSexo(familiaId, moradorId, sexo));
+
+// ---------------- Sincronização entre aparelhos ----------------
+// Celular, tablet e computador do próprio ACS. Vai para a nuvem só uma cópia criptografada com a
+// senha de sincronização, num repositório PRIVADO do GitHub do ACS (ver lib/sinc.ts).
+
+let sincCfg: ConfigSinc | null = null;
+let sincGh: GitHub | null = null;
+let sincChaves: ChavesSinc | null = null;
+/** Sal do arquivo na nuvem (reaproveitado: a chave fica na memória). */
+let sincSal: string | null = null;
+/** Versão da nuvem que já está juntada neste aparelho. */
+let sincUltimaVersao: string | null = null;
+/** Mudou algo aqui que ainda não foi para a nuvem. */
+let sincSujo = false;
+let sincRodando = false;
+let sincDeNovo = false;
+/** A sincronização em andamento (para esperar por ela antes de trancar). */
+let sincPromessa: Promise<void> = Promise.resolve();
+let sincTimer: ReturnType<typeof setTimeout> | undefined;
+/** Gravando dados que vieram da nuvem (não conta como mudança daqui). */
+let aplicandoRemoto = false;
+
+function ligarSinc(cfg: ConfigSinc) {
+  sincCfg = cfg;
+  sincGh = new GitHub(cfg.repo, cfg.token);
+  sincChaves = new ChavesSinc(cfg.senha);
+  sincSal = null;
+  sincUltimaVersao = null;
+  app.sinc.repo = cfg.repo;
+  app.sinc.aparelho = cfg.aparelho;
+  app.sinc.estado = 'parada';
+  app.sinc.mensagem = '';
+}
+
+/** Tira a chave e a senha da memória (ao trancar). */
+function esquecerSinc() {
+  clearTimeout(sincTimer);
+  sincCfg = sincGh = sincChaves = null;
+  sincSal = sincUltimaVersao = null;
+}
+
+/** Depois de abrir o app: liga a sincronização, se este aparelho estiver conectado. */
+async function carregarSinc() {
+  const cfg = await cofre.lerExtra<ConfigSinc>('sinc');
+  if (!cfg) {
+    app.sinc.estado = 'desligada';
+    return;
+  }
+  ligarSinc(cfg);
+  await sincronizar();
+}
+
+function marcarParaSincronizar() {
+  if (!sincCfg) return;
+  sincSujo = true;
+  agendarSinc(15_000);
+}
+
+function agendarSinc(ms: number) {
+  clearTimeout(sincTimer);
+  sincTimer = setTimeout(() => void sincronizar(), ms);
+}
+
+/** Troca os dados deste aparelho pelos juntados com a nuvem (mantém a VD pela metade daqui). */
+async function aplicarDaNuvem(novo: Dados) {
+  aplicandoRemoto = true;
+  try {
+    carregar({ ...novo, rascunho: app.rascunho ? ($state.snapshot(app.rascunho) as RascunhoVD) : null });
+    // O "Desfazer" antigo não vale mais (desfaria também o que veio dos outros aparelhos).
+    ultimaAcao = null;
+    app.desfazer = null;
+    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
+  } finally {
+    aplicandoRemoto = false;
+  }
+}
+
+/**
+ * Sincroniza agora: busca a cópia da nuvem, junta com a deste aparelho (nada é apagado; vale a
+ * alteração mais recente) e manda de volta o resultado.
+ */
+export function sincronizar(): Promise<void> {
+  if (!sincCfg || !sincGh || !sincChaves || app.fase !== 'aberto') return Promise.resolve();
+  if (sincRodando) {
+    sincDeNovo = true;
+    return sincPromessa;
+  }
+  sincPromessa = rodarSinc();
+  return sincPromessa;
+}
+
+async function rodarSinc(): Promise<void> {
+  if (!sincCfg || !sincGh || !sincChaves) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    app.sinc.estado = 'offline';
+    app.sinc.mensagem = 'Sem internet agora. Sincroniza quando a conexão voltar.';
+    return;
+  }
+  sincRodando = true;
+  app.sinc.estado = 'sincronizando';
+  const [gh, chaves, cfg] = [sincGh, sincChaves, sincCfg];
+  /** Ainda conectado e destrancado? (o app pode trancar no meio de uma sincronização) */
+  const vivo = () => sincGh === gh && app.fase === 'aberto';
+  try {
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      const remoto = await gh.ler();
+      if (!vivo()) return;
+      if (remoto && remoto.commit !== sincUltimaVersao) {
+        const aberto = await abrirSinc(remoto.texto, chaves);
+        if (!vivo()) return;
+        sincSal = aberto.sal;
+        const aqui = dadosAtuais();
+        // Aparelho novo (dados de exemplo ou vazio): fica com os dados da nuvem, sem misturar.
+        const novo = app.config.usandoExemplo || app.familias.length === 0 ? aberto.dados : juntarDados(aqui, aberto.dados).dados;
+        if (!mesmoConteudo(novo, aqui)) {
+          await aplicarDaNuvem(novo);
+          mostrarAviso(`Dados atualizados com o ${aberto.aparelho || 'outro aparelho'} ✓`);
+        }
+        sincUltimaVersao = remoto.commit;
+        if (mesmoConteudo(dadosAtuais(), aberto.dados)) {
+          sincSujo = false;
+          break; // a nuvem já tem tudo
+        }
+      } else if (remoto && !sincSujo) {
+        break; // nada mudou de nenhum lado
+      }
+      if (app.config.usandoExemplo) {
+        throw new Error('Este aparelho está com dados de exemplo e a nuvem ainda está vazia. Conecte primeiro o aparelho que tem os seus dados.');
+      }
+      const { texto, sal } = await cifrarSinc(dadosAtuais(), chaves, cfg.aparelho, sincSal);
+      sincSal = sal;
+      // Outro aparelho gravou enquanto isso? Então junta de novo antes de gravar.
+      if ((await gh.versao()) !== (remoto?.commit ?? null)) continue;
+      const versao = await gh.gravar(texto, cfg.aparelho);
+      if (sincGh === gh) sincUltimaVersao = versao;
+      sincSujo = false;
+      break;
+    }
+    if (!vivo()) return;
+    app.sinc.estado = 'ok';
+    app.sinc.mensagem = '';
+    app.sinc.ultima = new Date().toISOString();
+  } catch (e) {
+    if (e instanceof ErroGitHub && e.status === 0) {
+      app.sinc.estado = 'offline';
+    } else {
+      app.sinc.estado = 'erro';
+      console.error(e);
+    }
+    app.sinc.mensagem = e instanceof Error ? e.message : String(e);
+  } finally {
+    sincRodando = false;
+    if (sincDeNovo) {
+      sincDeNovo = false;
+      agendarSinc(1000);
+    }
+  }
+}
+
+/**
+ * Conecta este aparelho à nuvem. Confere se o repositório é privado, se a chave pode gravar e se a
+ * senha bate com a dos outros aparelhos. Só então guarda a configuração (criptografada com o PIN).
+ */
+export async function conectarSinc(cfg: ConfigSinc): Promise<void> {
+  const gh = new GitHub(cfg.repo, cfg.token);
+  const info = await gh.info();
+  if (!info.privado) throw new Error('O repositório precisa ser PRIVADO. No GitHub: Settings do repositório → Change visibility → Private.');
+  if (!info.podeGravar) throw new Error('A chave não pode gravar neste repositório. Confira a permissão "Contents: Read and write".');
+  const remoto = await gh.ler();
+  if (remoto) await abrirSinc(remoto.texto, new ChavesSinc(cfg.senha)); // confere a senha (lança se estiver errada)
+  else if (app.config.usandoExemplo) {
+    throw new Error('A nuvem ainda está vazia e este aparelho está com dados de exemplo. Conecte primeiro o aparelho que tem os seus dados.');
+  }
+  await cofre.gravarExtra('sinc', cfg);
+  ligarSinc(cfg);
+  sincSujo = true;
+  await sincronizar();
+  if (app.sinc.estado === 'erro') throw new Error(app.sinc.mensagem);
+}
+
+/** Desliga a sincronização neste aparelho (os dados daqui e da nuvem continuam). */
+export async function desligarSinc() {
+  await cofre.gravarExtra('sinc', null);
+  esquecerSinc();
+  app.sinc.estado = 'desligada';
+  app.sinc.ultima = '';
+  app.sinc.mensagem = '';
+}
+
+/** Arquivo para ligar outro aparelho sem digitar a chave do GitHub (trancado com a senha de sincronização). */
+export async function arquivoDeConexao(): Promise<string | null> {
+  return sincCfg ? criarArquivoConexao(sincCfg) : null;
+}
+
+/** Sincroniza ao voltar a internet, ao voltar para o app, ao sair dele e a cada 3 minutos. */
+export function instalarSincronizacao() {
+  window.addEventListener('online', () => void sincronizar());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void sincronizar();
+    else if (sincSujo) void sincronizar();
+  });
+  setInterval(() => void sincronizar(), 3 * 60_000);
+}

@@ -36,6 +36,13 @@ export interface Tentativas {
 
 const VERIFICADOR = 'app-acs-ok';
 const chaveParte = (p: Parte) => `dados:${p}`;
+/**
+ * Itens extras do aparelho (ex.: chave e senha da sincronização). Ficam criptografados com o PIN,
+ * mas NÃO entram no backup nem na nuvem.
+ */
+export type Extra = 'sinc';
+const EXTRAS: Extra[] = ['sinc'];
+const chaveExtra = (e: Extra) => `extra:${e}`;
 
 export class PinErrado extends Error {
   constructor() {
@@ -59,15 +66,36 @@ export class Cofre {
     return this.chave !== null;
   }
 
-  /** Cria o cofre com um PIN novo e grava os dados iniciais. */
+  /** Cria o cofre com um PIN novo e grava os dados iniciais (mantém os extras, se o cofre estava aberto). */
   async criar(pin: string, dados: Dados): Promise<void> {
+    const extras: Partial<Record<Extra, unknown>> = {};
+    if (this.chave) for (const e of EXTRAS) extras[e] = await this.lerExtra(e);
     const sal = bytesAleatorios(16);
     const chave = await derivarChave(pin, sal, this.iteracoes);
     const info: InfoCofre = { versao: 1, sal, iteracoes: this.iteracoes, verificador: await cifrar(chave, VERIFICADOR) };
     const itens: Record<string, unknown> = { cofre: info, tentativas: { erros: 0, ultimoErro: 0 } };
     for (const p of PARTES) itens[chaveParte(p)] = await cifrar(chave, dados[p] ?? (p === 'config' || p === 'rascunho' ? null : []));
+    for (const e of EXTRAS) itens[chaveExtra(e)] = extras[e] == null ? null : await cifrar(chave, extras[e]);
     await this.armaz.gravar(itens);
     this.chave = chave;
+  }
+
+  /** Lê um item extra do aparelho (ou null). */
+  async lerExtra<T>(e: Extra): Promise<T | null> {
+    if (!this.chave) throw new Error('Cofre trancado');
+    const c = await this.armaz.ler<Cifrado | null>(chaveExtra(e));
+    if (!c) return null;
+    try {
+      return await decifrar<T>(this.chave, c);
+    } catch {
+      return null; // gravado com outra chave (não deveria acontecer): trata como vazio
+    }
+  }
+
+  /** Grava (ou apaga, com null) um item extra do aparelho. */
+  async gravarExtra(e: Extra, valor: unknown): Promise<void> {
+    if (!this.chave) throw new Error('Cofre trancado');
+    await this.armaz.gravar({ [chaveExtra(e)]: valor == null ? null : await cifrar(this.chave, valor) });
   }
 
   async tentativas(): Promise<Tentativas> {

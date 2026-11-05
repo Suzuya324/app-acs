@@ -19,6 +19,7 @@
     trocarPin,
   } from '../lib/estado.svelte';
   import { ir } from '../lib/rotas.svelte';
+  import Sincronizacao from '../componentes/Sincronizacao.svelte';
   import type { Desfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
@@ -189,6 +190,8 @@
 </section>
 
 <!-- BACKUP -->
+<Sincronizacao />
+
 <section class="cartao" id="backup">
   <h2>Backup</h2>
   <p>
