@@ -1,10 +1,11 @@
 // Números de prontuário: quais números da micro estão em uso pelas famílias do app, quais estão livres
 // para criar pasta física nova, e a conferência com as pastas que estão na colmeia.
 // Tudo calculado no aparelho; nada é enviado.
-import { prontuarioIncompleto } from './pendencias';
 import type { Familia } from './tipos';
 
 export interface PartesProntuario {
+  /** O que vem antes da micro, com o ponto (ex.: código da unidade "0000."), ou vazio. */
+  prefixo: string;
   /** Micro com 2 dígitos, ex.: "04". */
   micro: string;
   numero: number;
@@ -12,11 +13,14 @@ export interface PartesProntuario {
   digitos: number;
 }
 
-/** "04.123" → { micro: "04", numero: 123 }. Prontuário vazio ou incompleto ("04.") → null. */
+/**
+ * "04.123" → micro 04, família 123. Também aceita "0000.04.123" (unidade.micro.família).
+ * Prontuário vazio ou incompleto ("04.", "0000.04.") → null.
+ */
 export function partesProntuario(p: string): PartesProntuario | null {
-  const m = p.trim().match(/^(\d{1,3})\s*[.\-/]\s*(\d+)$/);
+  const m = p.trim().match(/^(?:(\d+)\s*([.\-/])\s*)?(\d{1,3})\s*[.\-/]\s*(\d+)$/);
   if (!m) return null;
-  return { micro: m[1].padStart(2, '0'), numero: Number(m[2]), digitos: m[2].length };
+  return { prefixo: m[1] ? `${m[1]}${m[2]}` : '', micro: m[3].padStart(2, '0'), numero: Number(m[4]), digitos: m[4].length };
 }
 
 /** Micros encontradas nos prontuários, da mais comum para a menos comum. */
@@ -93,6 +97,8 @@ export interface AnaliseNumeros {
   };
   /** Quantos dígitos usar ao escrever um número novo (o mais comum na micro). */
   digitos: number;
+  /** Começo usado antes da micro (o mais comum), ex.: "0000.", ou vazio. */
+  prefixo: string;
 }
 
 export function analisarNumeros(familias: Familia[], micro: string, pastasNaColmeia: number[] = []): AnaliseNumeros {
@@ -100,10 +106,12 @@ export function analisarNumeros(familias: Familia[], micro: string, pastasNaColm
   const outraMicro: Familia[] = [];
   const semNumero: Familia[] = [];
   const contDigitos = new Map<number, number>();
+  const contPrefixo = new Map<string, number>();
   for (const f of familias) {
     const p = partesProntuario(f.prontuario);
     if (!p) {
-      if (!f.prontuario.trim() || prontuarioIncompleto(f.prontuario)) semNumero.push(f);
+      // vazio, incompleto ("04.") ou num formato que não dá para ler
+      semNumero.push(f);
       continue;
     }
     if (p.micro !== micro) {
@@ -112,6 +120,7 @@ export function analisarNumeros(familias: Familia[], micro: string, pastasNaColm
     }
     usados.set(p.numero, [...(usados.get(p.numero) ?? []), f]);
     contDigitos.set(p.digitos, (contDigitos.get(p.digitos) ?? 0) + 1);
+    contPrefixo.set(p.prefixo, (contPrefixo.get(p.prefixo) ?? 0) + 1);
   }
   const pastas = new Set(pastasNaColmeia);
   const maior = Math.max(0, ...usados.keys(), ...pastas);
@@ -132,7 +141,8 @@ export function analisarNumeros(familias: Familia[], micro: string, pastasNaColm
       }
     : null;
   const digitos = [...contDigitos].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 3;
-  return { micro, usados, repetidos, outraMicro, semNumero, maior, livres, livresComPasta, colmeia, digitos };
+  const prefixo = [...contPrefixo].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+  return { micro, usados, repetidos, outraMicro, semNumero, maior, livres, livresComPasta, colmeia, digitos, prefixo };
 }
 
 /** Próximo número para uma pasta nova: o primeiro livre sem pasta; se não houver, o seguinte ao maior. */
@@ -140,7 +150,7 @@ export function proximoLivre(a: AnaliseNumeros): number {
   return a.livres[0] ?? a.maior + 1;
 }
 
-/** Escreve o prontuário no mesmo formato da micro: (04, 7, 3 dígitos) → "04.007". */
-export function escreverProntuario(micro: string, numero: number, digitos: number): string {
-  return `${micro}.${String(numero).padStart(digitos, '0')}`;
+/** Escreve o prontuário no mesmo formato da micro: (04, 7, 3 dígitos, "0000.") → "0000.04.007". */
+export function escreverProntuario(micro: string, numero: number, digitos: number, prefixo = ''): string {
+  return `${prefixo}${micro}.${String(numero).padStart(digitos, '0')}`;
 }

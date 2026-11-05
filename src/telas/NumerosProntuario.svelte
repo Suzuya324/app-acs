@@ -10,7 +10,7 @@
   let textoPastas = $state(app.config.pastasNaColmeia);
   const pastas = $derived(lerNumeros(app.config.pastasNaColmeia));
   const a = $derived(analisarNumeros(app.familias, micro, pastas));
-  const proximo = $derived(escreverProntuario(micro, proximoLivre(a), a.digitos));
+  const proximo = $derived(escreverProntuario(micro, proximoLivre(a), a.digitos, a.prefixo));
 
   async function guardarPastas() {
     app.config.pastasNaColmeia = textoPastas.trim();

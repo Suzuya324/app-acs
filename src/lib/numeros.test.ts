@@ -9,9 +9,12 @@ const fam = (id: string, prontuario: string, extra: Partial<Familia> = {}): Fami
 
 describe('números de prontuário', () => {
   it('lê o prontuário em partes', () => {
-    expect(partesProntuario('04.123')).toEqual({ micro: '04', numero: 123, digitos: 3 });
-    expect(partesProntuario('4.0007')).toEqual({ micro: '04', numero: 7, digitos: 4 });
+    expect(partesProntuario('04.123')).toEqual({ prefixo: '', micro: '04', numero: 123, digitos: 3 });
+    expect(partesProntuario('4.0007')).toEqual({ prefixo: '', micro: '04', numero: 7, digitos: 4 });
+    expect(partesProntuario('0000.09.045')).toEqual({ prefixo: '0000.', micro: '09', numero: 45, digitos: 3 });
     expect(partesProntuario('04.')).toBeNull();
+    expect(partesProntuario('0000.09.')).toBeNull();
+    expect(partesProntuario('-')).toBeNull();
     expect(partesProntuario('')).toBeNull();
   });
 
@@ -47,6 +50,16 @@ describe('números de prontuário', () => {
     expect(a.livres).toEqual([6, 7]); // sem família e sem pasta
     expect(a.livresComPasta).toEqual([3, 5, 8]); // liberam quando tirar a pasta
     expect(proximoLivre(a)).toBe(6);
+  });
+
+  it('formato unidade.micro.família: mantém o começo ao sugerir', () => {
+    const f = [fam('a', '0000.09.001'), fam('b', '0000.09.003'), fam('c', '0000.08.002'), fam('d', '-'), fam('e', '0000.09.')];
+    expect(microPrincipal(f)).toBe('09');
+    const a = analisarNumeros(f, '09');
+    expect(a.livres).toEqual([2]);
+    expect(a.outraMicro.map((x) => x.id)).toEqual(['c']);
+    expect(a.semNumero.map((x) => x.id)).toEqual(['d', 'e']);
+    expect(escreverProntuario('09', proximoLivre(a), a.digitos, a.prefixo)).toBe('0000.09.002');
   });
 
   it('sem nenhum livre, o próximo é depois do maior', () => {
