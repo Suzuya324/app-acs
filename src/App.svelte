@@ -5,6 +5,7 @@
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
+  import Atencao from './telas/Atencao.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
   import Desbloquear from './telas/Desbloquear.svelte';
@@ -47,7 +48,7 @@
         ? 'fila'
         : rota.tela === 'importar' || rota.tela === 'lixeira'
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -118,6 +119,8 @@
     <Painel />
   {:else if rota.tela === 'relatorio'}
     <Relatorio />
+  {:else if rota.tela === 'atencao'}
+    <Atencao />
   {:else if rota.tela === 'roteiro'}
     <Roteiro />
   {:else}

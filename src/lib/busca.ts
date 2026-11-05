@@ -1,4 +1,4 @@
-import type { Familia, Morador } from './tipos';
+import type { Familia, Grupo, Morador } from './tipos';
 
 /** Tira acentos, deixa minúsculo e remove pontuação extra. */
 export function normalizar(texto: string): string {
@@ -33,9 +33,32 @@ function todasComecam(busca: string[], alvo: string[]): boolean {
 export interface ResultadoBusca {
   familia: Familia;
   /** Por que esta família apareceu. */
-  motivo: 'endereco' | 'nome' | 'prontuario';
-  /** Moradores cujo nome bateu com a busca (quando motivo = nome). */
+  motivo: 'endereco' | 'nome' | 'prontuario' | 'grupo';
+  /** Moradores cujo nome bateu com a busca (motivo = nome) ou que estão no grupo (motivo = grupo). */
   moradores: Morador[];
+}
+
+/** Palavras que buscam um grupo (o começo já basta: "hipert", "diab", "acam"). */
+const PALAVRAS_GRUPO: [string, Grupo][] = [
+  ['gestantes', 'gestante'], ['gravidas', 'gestante'],
+  ['puerperas', 'puerpera'],
+  ['criancas', 'crianca'], ['bebes', 'crianca'],
+  ['idosos', 'idoso'], ['idosas', 'idoso'],
+  ['acamados', 'acamado'], ['acamadas', 'acamado'],
+  ['hipertensos', 'hipertenso'], ['hipertensas', 'hipertenso'], ['pressao alta', 'hipertenso'],
+  ['diabeticos', 'diabetico'], ['diabeticas', 'diabetico'],
+  ['deficiencia', 'deficiencia'], ['deficientes', 'deficiencia'], ['pcd', 'deficiencia'],
+  ['saude mental', 'saude_mental'], ['mental', 'saude_mental'],
+];
+
+/** Grupo buscado, ex.: "gestante", "hipertensos", "acam" (pelo menos 4 letras, ou "pcd"). */
+export function grupoDaBusca(consulta: string): Grupo | null {
+  const q = normalizar(consulta);
+  if (q.length < 3 || (q.length < 4 && q !== 'pcd')) return null;
+  for (const [palavra, grupo] of PALAVRAS_GRUPO) {
+    if (palavra.startsWith(q) || (q.startsWith(palavra.slice(0, -1)) && q.length <= palavra.length + 1)) return grupo;
+  }
+  return null;
 }
 
 /**
@@ -54,7 +77,21 @@ export function buscar(familias: Familia[], consulta: string): ResultadoBusca[] 
 
   const resultados: ResultadoBusca[] = [];
 
+  // 0) Grupo ("gestante", "acamados", "hipertens"…): famílias com moradores desse grupo.
+  const grupo = grupoDaBusca(q);
+  const jaNoGrupo = new Set<string>();
+  if (grupo) {
+    for (const f of familias) {
+      const doGrupo = f.moradores.filter((m) => m.situacao === 'mora' && m.grupos.includes(grupo));
+      if (doGrupo.length) {
+        resultados.push({ familia: f, motivo: 'grupo', moradores: doGrupo });
+        jaNoGrupo.add(f.id);
+      }
+    }
+  }
+
   for (const f of familias) {
+    if (jaNoGrupo.has(f.id)) continue;
     // 1) Endereço: texto bate com a rua e número bate com o número da casa.
     const palavrasRua = palavrasUteis(f.rua);
     const numCasa = normalizar(f.numero);

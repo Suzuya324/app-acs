@@ -52,3 +52,27 @@ describe('busca única', () => {
     expect(ids('   ')).toEqual([]);
   });
 });
+
+describe('busca por grupo', () => {
+  const comGrupo = (id: string, grupos: Familia['moradores'][number]['grupos'], situacao: 'mora' | 'mudou' = 'mora'): Familia => {
+    const f = fam(id, 'Rua Teste', id, '', ['Pessoa Inventada']);
+    f.moradores[0] = { ...f.moradores[0], grupos, situacao };
+    return f;
+  };
+  const lista = [comGrupo('g', ['gestante']), comGrupo('h', ['hipertenso', 'diabetico']), comGrupo('x', ['gestante'], 'mudou')];
+
+  it('acha pelo nome do grupo, no plural e pelo começo', () => {
+    for (const q of ['gestante', 'Gestantes', 'gest', 'grávida']) {
+      expect(buscar(lista, q).map((r) => `${r.familia.id}:${r.motivo}`)).toEqual(['g:grupo']);
+    }
+    expect(buscar(lista, 'hipert').map((r) => r.familia.id)).toEqual(['h']);
+    expect(buscar(lista, 'diabéticos').map((r) => r.familia.id)).toEqual(['h']);
+    expect(buscar(lista, 'pressão alta').map((r) => r.familia.id)).toEqual(['h']);
+  });
+
+  it('não confunde nomes curtos e não muda a busca por rua', () => {
+    expect(buscar(lista, 'ge').every((r) => r.motivo !== 'grupo')).toBe(true);
+    expect(ids('Acácias 90')).toEqual(['a', 'b']);
+    expect(ids('joana')).toEqual(['a', 'e']);
+  });
+});

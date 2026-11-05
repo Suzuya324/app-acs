@@ -3,6 +3,7 @@
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import { app, descartarRascunho, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
+  import { calcularAtencao } from '../lib/atencao';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -14,6 +15,8 @@
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
   const marcadas = $derived(app.revisitas && revisitasAbertas());
+  const atencao = $derived(calcularAtencao(app.familias, app.visitas, hoje));
+  const aniversarios = $derived(atencao.filter((a) => a.tipo === 'aniversario').length);
   const totalPendencias = $derived(listarPendencias(app.familias).length);
   const precisaImportar = $derived(app.config.usandoExemplo || app.familias.length === 0);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
@@ -84,6 +87,13 @@
   <div class="cartao mini"><strong>{painel.visitasSemana}</strong><span>na semana</span></div>
   <div class="cartao mini"><strong>{painel.totalVisitasMes}</strong><span>VDs no mês</span></div>
 </section>
+
+{#if atencao.length > 0}
+  <button class="item-link pendencias" onclick={() => ir('atencao')}>
+    <span><strong>Atenção</strong><br /><span class="suave pequeno">gestantes, acamados, P.A., glicemia, idades{aniversarios ? ` · ${aniversarios} aniversário(s) na semana` : ''}</span></span>
+    <span class="num-pend">{atencao.length}</span>
+  </button>
+{/if}
 
 {#if totalPendencias > 0}
   <button class="item-link pendencias" onclick={() => ir('pendencias')}>
