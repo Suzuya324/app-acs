@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
-  import { app, iniciar, instalarBloqueioAutomatico, trancar } from './lib/estado.svelte';
+  import { app, desfazerUltima, iniciar, instalarBloqueioAutomatico, trancar } from './lib/estado.svelte';
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
@@ -19,6 +19,7 @@
   import Fila from './telas/Fila.svelte';
   import Inicio from './telas/Inicio.svelte';
   import Lancar from './telas/Lancar.svelte';
+  import Lixeira from './telas/Lixeira.svelte';
   import NovaVD from './telas/NovaVD.svelte';
 
   const prefereEscuro = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
@@ -44,7 +45,7 @@
       ? 'busca'
       : rota.tela === 'lancar'
         ? 'fila'
-        : rota.tela === 'importar'
+        : rota.tela === 'importar' || rota.tela === 'lixeira'
         ? 'ajustes'
         : ['pendencias', 'painel', 'roteiro', 'relatorio'].includes(rota.tela)
           ? 'inicio'
@@ -99,6 +100,8 @@
     <Fila />
   {:else if rota.tela === 'lancar'}
     <Lancar />
+  {:else if rota.tela === 'lixeira'}
+    <Lixeira />
   {:else if rota.tela === 'ajustes'}
     <Ajustes />
   {:else if rota.tela === 'editar-familia'}
@@ -123,7 +126,12 @@
 </main>
 
 {#if app.aviso}
-  <div class="toast" class:sem-abas={app.fase !== 'aberto'} role="status">{app.aviso}</div>
+  <div class="toast" class:sem-abas={app.fase !== 'aberto'} role="status">
+    <span>{app.aviso}</span>
+    {#if app.desfazer && app.fase === 'aberto'}
+      <button class="desfazer" onclick={desfazerUltima}>Desfazer</button>
+    {/if}
+  </div>
 {/if}
 
 {#if app.fase === 'aberto'}
@@ -260,6 +268,23 @@
     border-radius: 12px;
     font-weight: 700;
     text-align: center;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .desfazer {
+    min-height: 40px;
+    padding: 4px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--fundo);
+    background: transparent;
+    color: var(--fundo);
+    font-weight: 800;
+    cursor: pointer;
   }
   .toast.sem-abas {
     bottom: 24px;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import Icone from '../componentes/Icone.svelte';
-  import { app, familiaPorId, mostrarAviso, salvarFamilia } from '../lib/estado.svelte';
+  import { app, excluirFamiliaParaLixeira, familiaPorId, mostrarAviso, salvarFamilia } from '../lib/estado.svelte';
   import { novoId } from '../lib/ids';
   import { NOMES_SITUACAO_CASA } from '../lib/rotulos';
   import { trocarPara, voltar } from '../lib/rotas.svelte';
@@ -32,6 +32,13 @@
   const atuais = $derived(f.moradores.filter((m) => m.situacao === 'mora'));
   const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((x) => x.rua)])].filter(Boolean));
   let salvando = $state(false);
+
+  async function excluir() {
+    if (!confirm('Mandar esta família (e as VDs dela) para a lixeira? Dá para restaurar depois.')) return;
+    await excluirFamiliaParaLixeira(f.id);
+    mostrarAviso('Família enviada para a lixeira');
+    trocarPara('busca');
+  }
 
   async function salvar() {
     f.rua = f.rua.trim();
@@ -101,6 +108,13 @@
   <button class="botao largo" onclick={salvar} disabled={salvando}><Icone nome="ok" /> Salvar</button>
   {#if !nova}
     <p class="suave pequeno nota">Tudo o que você mudar fica registrado no histórico da família.</p>
+    <section class="cartao excluir">
+      <p class="pequeno">
+        <strong>Cadastrou esta família por engano?</strong> Ela vai para a lixeira, junto com as VDs dela, e dá para
+        restaurar. Se a família <em>mudou-se</em>, não exclua: mude a situação dos moradores ou da casa.
+      </p>
+      <button class="botao perigo secundario largo" onclick={excluir}>Excluir família (vai para a lixeira)</button>
+    </section>
   {/if}
 {/if}
 
@@ -112,6 +126,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 10px;
+  }
+  .excluir {
+    margin-top: 20px;
+    border-color: var(--perigo);
   }
   .nota {
     margin-top: 10px;
