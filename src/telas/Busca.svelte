@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from '../componentes/Icone.svelte';
-  import { buscar } from '../lib/busca';
+  import { buscar, grupoDaBusca } from '../lib/busca';
   import { contaParaMeta } from '../lib/desfecho';
   import { dentroDoPeriodo, periodoDe } from '../lib/calendario';
   import { hojeISO } from '../lib/datas';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
-  import { NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
+  import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
 
   let campo: HTMLInputElement;
@@ -15,6 +15,8 @@
   });
 
   const resultados = $derived(buscar(app.familias, app.busca));
+  const grupo = $derived(grupoDaBusca(app.busca));
+  const noGrupo = $derived(resultados.filter((r) => r.motivo === 'grupo').reduce((n, r) => n + r.moradores.length, 0));
   const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((f) => f.rua)])]);
   const periodo = $derived(periodoDe(hojeISO(), app.config.diaInicioPeriodo));
   const visitadasNoMes = $derived(
@@ -30,7 +32,7 @@
     bind:this={campo}
     type="search"
     bind:value={app.busca}
-    placeholder="Ex.: Acácias 90, Joana, 00.0012"
+    placeholder="Ex.: Acácias 90, Joana, 00.0012, gestante"
     aria-label="Buscar por nome, rua e número ou prontuário"
     autocomplete="off"
     autocapitalize="none"
@@ -41,7 +43,7 @@
 <button class="botao secundario largo nova" onclick={() => ir('nova-familia')}><Icone nome="mais" /> Nova família</button>
 
 {#if !app.busca.trim()}
-  <p class="suave">Digite um <strong>nome</strong>, a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ipe 120”) ou o <strong>prontuário</strong>.</p>
+  <p class="suave">Digite um <strong>nome</strong>, a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ipe 120”) o <strong>prontuário</strong> ou um <strong>grupo</strong> (ex.: “gestante”, “acamado”, “hipertenso”, “diabético”, “idoso”).</p>
   <h2>Ruas da área</h2>
   {#if app.familias.length === 0}
     <p class="alerta">Ainda não há famílias cadastradas. O importador da sua área (planilha CSV) chega na Etapa 3.</p>
@@ -57,6 +59,9 @@
     {/each}
   </ul>
 {:else}
+  {#if grupo}
+    <p class="cartao grupo-achado"><strong>{NOMES_GRUPO[grupo]}:</strong> {noGrupo} {noGrupo === 1 ? 'pessoa' : 'pessoas'} em {resultados.filter((r) => r.motivo === 'grupo').length} famílias</p>
+  {/if}
   <p class="suave pequeno" aria-live="polite">
     {resultados.length === 0 ? 'Nada encontrado.' : resultados.length === 1 ? '1 família encontrada' : `${resultados.length} famílias encontradas`}
   </p>
@@ -70,7 +75,7 @@
             {#if visitadasNoMes.has(f.id)}<span class="visitada" title="Já visitada no mês"><Icone nome="ok" tamanho={18} /> no mês</span>{/if}
           </span>
           <span class="pequeno">
-            {#if r.motivo === 'nome'}
+            {#if r.motivo === 'nome' || r.motivo === 'grupo'}
               {r.moradores.map((m) => (m.situacao === 'mora' ? m.nome : `${m.nome} (${NOMES_SITUACAO_MORADOR[m.situacao].toLowerCase()})`)).join(', ')}
             {:else}
               {responsavel(f)}
@@ -90,6 +95,10 @@
 {/if}
 
 <style>
+  .grupo-achado {
+    border: 2px solid var(--primaria);
+    margin-bottom: 8px;
+  }
   .caixa-busca {
     position: sticky;
     top: 66px;

@@ -74,6 +74,7 @@
 </section>
 
 <button class="botao largo relatorio" onclick={() => ir('relatorio')}>Relatório de produção (imprimir/PDF)</button>
+<button class="botao secundario largo prontuarios" onclick={() => ir('prontuarios')}>Lista de prontuários em ordem (PDF)</button>
 
 {#if painel.atual}
   <button class="botao secundario largo" onclick={() => ir('roteiro')}>Planejar a rua do dia ({painel.naoVisitadas.length} não visitadas)</button>
@@ -82,6 +83,9 @@
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .prontuarios {
+    margin-top: 10px;
   }
   .relatorio {
     margin-bottom: 10px;

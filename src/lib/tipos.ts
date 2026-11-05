@@ -169,4 +169,6 @@ export interface Config {
   urlFast: string;
   /** Relato com o nome completo dos moradores (em vez de só o primeiro nome). */
   relatoNomeCompleto: boolean;
+  /** Escondeu o cartão "Primeiros passos" do Início. */
+  primeirosPassosOcultos: boolean;
 }

@@ -3,7 +3,7 @@
   import DicaDitado from '../componentes/DicaDitado.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { hojeISO } from '../lib/datas';
-  import { enderecoCurto, familiaPorId, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
+  import { enderecoCurto, excluirMoradorParaLixeira, familiaPorId, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
   import { novoId } from '../lib/ids';
   import { NOMES_GRUPO, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { voltar } from '../lib/rotas.svelte';
@@ -39,6 +39,13 @@
   }
 
   let salvando = $state(false);
+  async function excluir() {
+    if (!confirm(`Mandar ${m.nome} para a lixeira? Dá para restaurar depois.`)) return;
+    await excluirMoradorParaLixeira(familiaId, m.id);
+    mostrarAviso('Morador enviado para a lixeira');
+    voltar(`familia/${familiaId}`);
+  }
+
   async function salvar() {
     m.nome = m.nome.trim().replace(/\s+/g, ' ');
     if (!m.nome) return mostrarAviso('Digite o nome.');
@@ -112,6 +119,15 @@
   </section>
 
   <button class="botao largo" onclick={salvar} disabled={salvando}><Icone nome="ok" /> Salvar</button>
+  {#if !novo}
+    <section class="cartao excluir">
+      <p class="pequeno">
+        <strong>Cadastrou este morador por engano?</strong> Ele vai para a lixeira e dá para restaurar. Se ele
+        <em>mudou-se</em> ou <em>faleceu</em>, não exclua: mude a <strong>situação</strong> acima.
+      </p>
+      <button class="botao perigo secundario largo" onclick={excluir}>Excluir morador (vai para a lixeira)</button>
+    </section>
+  {/if}
 {/if}
 
 <style>
@@ -153,6 +169,10 @@
     gap: 12px;
     min-height: 52px;
     cursor: pointer;
+  }
+  .excluir {
+    margin-top: 20px;
+    border-color: var(--perigo);
   }
   .chips {
     display: flex;

@@ -11,6 +11,7 @@
     compartilhadosRecentes,
     corrigirVisita,
     descartarRascunho,
+    excluirVisitaParaLixeira,
     enderecoCurto,
     familiaPorId,
     guardarRascunho,
@@ -271,6 +272,16 @@
     voltar(`familia/${familiaId}`);
   }
 
+  async function excluirVD() {
+    if (!original || !confirm('Mandar esta VD para a lixeira? Dá para restaurar depois.')) return;
+    terminou = true;
+    clearTimeout(timer);
+    if (app.rascunho?.visitaId === original.id) await descartarRascunho();
+    await excluirVisitaParaLixeira(original.id);
+    mostrarAviso('VD enviada para a lixeira');
+    voltar(`familia/${familiaId}`);
+  }
+
   async function salvar() {
     if (!familia) return;
     terminou = true;
@@ -506,6 +517,13 @@
     </section>
   {/if}
 
+  {#if corrigindo && original}
+    <section class="cartao excluir-vd">
+      <p class="pequeno"><strong>Registrou esta VD por engano?</strong> Ela vai para a lixeira e dá para restaurar.</p>
+      <button class="botao perigo secundario largo" onclick={excluirVD}>Excluir esta VD (vai para a lixeira)</button>
+    </section>
+  {/if}
+
   <div class="rodape-salvar">
     <button class="botao largo" onclick={salvar} disabled={!data}><Icone nome="ok" /> {corrigindo ? 'Salvar correção' : 'Salvar VD'}</button>
   </div>
@@ -525,6 +543,9 @@
   }
   .pessoas li {
     margin-bottom: 8px;
+  }
+  .excluir-vd {
+    border-color: var(--perigo);
   }
   .revisitas {
     border: 2px solid var(--primaria);

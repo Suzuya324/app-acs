@@ -5,6 +5,7 @@
 // - Histórico: junta tudo, sem repetir.
 // - Ajustes e VD pela metade: ficam os deste aparelho.
 import type { Dados } from './cofre';
+import { aplicarLixeira, juntarLixeiras } from './lixeira';
 import type { Alteracao, Familia, Revisita, Visita } from './tipos';
 
 export interface ResumoJuncao {
@@ -94,15 +95,17 @@ export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: 
   const r = juntarRevisitas(daqui.revisitas ?? [], dela.revisitas ?? []);
   // VDs em ordem de data, mantendo a ordem de criação dentro do mesmo dia.
   const visitas = v.lista;
+  const juntos: Dados = aplicarLixeira({
+    config: daqui.config,
+    familias: f.lista,
+    visitas,
+    historico: juntarHistorico(daqui.historico ?? [], dela.historico ?? []),
+    rascunho: daqui.rascunho ?? null,
+    revisitas: r.lista,
+    lixeira: juntarLixeiras(daqui.lixeira ?? [], dela.lixeira ?? []),
+  });
   return {
-    dados: {
-      config: daqui.config,
-      familias: f.lista,
-      visitas,
-      historico: juntarHistorico(daqui.historico ?? [], dela.historico ?? []),
-      rascunho: daqui.rascunho ?? null,
-      revisitas: r.lista,
-    },
+    dados: juntos,
     resumo: {
       familiasNovas: f.novos,
       familiasAtualizadas: f.atualizados,

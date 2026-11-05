@@ -29,6 +29,7 @@ export const CONFIG_PADRAO: Config = {
   diasSemCampo: [],
   urlFast: '',
   relatoNomeCompleto: false,
+  primeirosPassosOcultos: false,
 };
 
 export const NOMES_GRUPO: Record<Grupo, string> = {

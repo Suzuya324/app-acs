@@ -174,12 +174,17 @@
 
 <h1>Ajustes</h1>
 
+<button class="botao secundario largo como-usar" onclick={() => ir('como-usar')}>Como usar o app (passo a passo)</button>
+
 <section class="cartao">
   <h2>Minha área</h2>
   <p class="suave pequeno">
     {app.config.usandoExemplo ? 'Usando dados de exemplo (inventados).' : `${app.familias.length} famílias cadastradas.`}
   </p>
   <button class="botao secundario largo" onclick={() => ir('importar')}>Importar minha área (CSV)</button>
+  <button class="botao secundario largo espaco-b" onclick={() => ir('lixeira')}>
+    Lixeira ({app.lixeira.filter((i) => !i.restauradoEm).length})
+  </button>
 </section>
 
 <!-- BACKUP -->
@@ -395,6 +400,9 @@
 </section>
 
 <style>
+  .como-usar {
+    margin-bottom: 14px;
+  }
   .espaco-b {
     margin-top: 8px;
   }

@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
-  import { app, iniciar, instalarBloqueioAutomatico, trancar } from './lib/estado.svelte';
+  import { app, desfazerUltima, iniciar, instalarBloqueioAutomatico, trancar } from './lib/estado.svelte';
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
+  import Atencao from './telas/Atencao.svelte';
+  import ComoUsar from './telas/ComoUsar.svelte';
+  import Mapa from './telas/Mapa.svelte';
+  import Prontuarios from './telas/Prontuarios.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
   import Desbloquear from './telas/Desbloquear.svelte';
@@ -19,6 +23,7 @@
   import Fila from './telas/Fila.svelte';
   import Inicio from './telas/Inicio.svelte';
   import Lancar from './telas/Lancar.svelte';
+  import Lixeira from './telas/Lixeira.svelte';
   import NovaVD from './telas/NovaVD.svelte';
 
   const prefereEscuro = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
@@ -44,9 +49,9 @@
       ? 'busca'
       : rota.tela === 'lancar'
         ? 'fila'
-        : rota.tela === 'importar'
+        : ['importar', 'lixeira', 'como-usar'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -99,6 +104,8 @@
     <Fila />
   {:else if rota.tela === 'lancar'}
     <Lancar />
+  {:else if rota.tela === 'lixeira'}
+    <Lixeira />
   {:else if rota.tela === 'ajustes'}
     <Ajustes />
   {:else if rota.tela === 'editar-familia'}
@@ -115,6 +122,14 @@
     <Painel />
   {:else if rota.tela === 'relatorio'}
     <Relatorio />
+  {:else if rota.tela === 'mapa'}
+    <Mapa />
+  {:else if rota.tela === 'prontuarios'}
+    <Prontuarios />
+  {:else if rota.tela === 'como-usar'}
+    <ComoUsar />
+  {:else if rota.tela === 'atencao'}
+    <Atencao />
   {:else if rota.tela === 'roteiro'}
     <Roteiro />
   {:else}
@@ -123,7 +138,12 @@
 </main>
 
 {#if app.aviso}
-  <div class="toast" class:sem-abas={app.fase !== 'aberto'} role="status">{app.aviso}</div>
+  <div class="toast" class:sem-abas={app.fase !== 'aberto'} role="status">
+    <span>{app.aviso}</span>
+    {#if app.desfazer && app.fase === 'aberto'}
+      <button class="desfazer" onclick={desfazerUltima}>Desfazer</button>
+    {/if}
+  </div>
 {/if}
 
 {#if app.fase === 'aberto'}
@@ -260,6 +280,23 @@
     border-radius: 12px;
     font-weight: 700;
     text-align: center;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .desfazer {
+    min-height: 40px;
+    padding: 4px 14px;
+    border-radius: 10px;
+    border: 2px solid var(--fundo);
+    background: transparent;
+    color: var(--fundo);
+    font-weight: 800;
+    cursor: pointer;
   }
   .toast.sem-abas {
     bottom: 24px;

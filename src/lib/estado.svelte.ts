@@ -11,6 +11,13 @@ import { diferencaDias, hojeISO } from './datas';
 import { CONFIG_PADRAO } from './rotulos';
 import { criarAlteracoes, mudancasFamilia, mudancasMorador, mudancasVisita } from './historico';
 import { juntarDados, textoResumoJuncao, type ResumoJuncao } from './juntar';
+import {
+  excluirFamilia as lxExcluirFamilia,
+  excluirMorador as lxExcluirMorador,
+  excluirVisita as lxExcluirVisita,
+  restaurar as lxRestaurar,
+  type ItemLixeira,
+} from './lixeira';
 import { gerarRelato } from './relato';
 import { novoId } from './ids';
 import type { Alteracao, Config, Familia, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -29,6 +36,10 @@ export const app = $state({
   rascunho: null as RascunhoVD | null,
   /** Revisitas marcadas (abertas, feitas e canceladas; nada é apagado). */
   revisitas: [] as Revisita[],
+  /** Lixeira (excluídos por engano, podem ser restaurados). */
+  lixeira: [] as ItemLixeira[],
+  /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
+  desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
@@ -46,6 +57,7 @@ export function contadorRelato(): number {
 
 let timerAviso: ReturnType<typeof setTimeout> | undefined;
 export function mostrarAviso(texto: string, ms = 2600) {
+  if (app.desfazer && app.desfazer.ate > Date.now()) ms = Math.max(ms, app.desfazer.ate - Date.now());
   app.aviso = texto;
   clearTimeout(timerAviso);
   timerAviso = setTimeout(() => (app.aviso = ''), ms);
@@ -85,6 +97,7 @@ function carregar(d: Dados) {
   app.historico = d.historico ?? [];
   app.rascunho = d.rascunho ?? null;
   app.revisitas = d.revisitas ?? [];
+  app.lixeira = d.lixeira ?? [];
 }
 
 function dadosAtuais(): Dados {
@@ -95,6 +108,7 @@ function dadosAtuais(): Dados {
     historico: app.historico,
     rascunho: app.rascunho,
     revisitas: app.revisitas,
+    lixeira: app.lixeira,
   }) as Dados;
 }
 
@@ -170,6 +184,9 @@ export async function trancar() {
   app.historico = [];
   app.rascunho = null;
   app.revisitas = [];
+  app.lixeira = [];
+  ultimaAcao = null;
+  app.desfazer = null;
   app.busca = '';
   app.fase = 'trancado';
 }
@@ -181,6 +198,9 @@ export async function apagarTudo() {
   app.historico = [];
   app.rascunho = null;
   app.revisitas = [];
+  app.lixeira = [];
+  ultimaAcao = null;
+  app.desfazer = null;
   app.config = structuredClone(CONFIG_PADRAO);
   app.fase = 'configurar';
   location.hash = '#/';
@@ -207,11 +227,107 @@ export async function trocarPin(novoPin: string) {
 
 const agora = () => new Date().toISOString();
 
+// ---------------- Desfazer ----------------
+
+/** Tempo que o botão "Desfazer" fica no aviso. */
+const TEMPO_DESFAZER = 8000;
+let ultimaAcao: { descricao: string; antes: Dados } | null = null;
+let profundidade = 0;
+let timerDesfazer: ReturnType<typeof setTimeout> | undefined;
+
+/** Executa uma ação guardando como os dados estavam antes, para poder desfazer. */
+async function comDesfazer<T>(descricao: string, acao: () => T | Promise<T>): Promise<T> {
+  if (profundidade > 0) return acao(); // ação dentro de outra: desfaz junto com a de fora
+  const antes = dadosAtuais();
+  profundidade++;
+  try {
+    const r = await acao();
+    ultimaAcao = { descricao, antes };
+    app.desfazer = { descricao, ate: Date.now() + TEMPO_DESFAZER };
+    clearTimeout(timerDesfazer);
+    timerDesfazer = setTimeout(() => (app.desfazer = null), TEMPO_DESFAZER);
+    return r;
+  } finally {
+    profundidade--;
+  }
+}
+
+/** Volta os dados para como estavam antes da última ação (ajustes e PIN não mudam). */
+export async function desfazerUltima() {
+  if (!ultimaAcao) return;
+  const { descricao, antes } = ultimaAcao;
+  ultimaAcao = null;
+  app.desfazer = null;
+  carregar({ ...antes, config: $state.snapshot(app.config) as Config, rascunho: app.rascunho });
+  app.historico.push(...criarAlteracoes('', [`Desfeito: ${descricao}`]));
+  await gravar({
+    familias: app.familias,
+    visitas: app.visitas,
+    historico: app.historico,
+    revisitas: app.revisitas,
+    lixeira: app.lixeira,
+  });
+  mostrarAviso(`Desfeito: ${descricao}`);
+}
+
+// ---------------- Lixeira ----------------
+
+function aplicar(d: Dados) {
+  app.familias = d.familias;
+  app.visitas = d.visitas;
+  app.revisitas = d.revisitas ?? [];
+  app.lixeira = d.lixeira ?? [];
+  app.rascunho = d.rascunho ?? null;
+}
+async function gravarTudo() {
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, rascunho: app.rascunho });
+}
+
+export const excluirVisitaParaLixeira = (visitaId: string) =>
+  comDesfazer('Excluir VD', async () => {
+    const v = app.visitas.find((x) => x.id === visitaId);
+    if (!v) return;
+    const f = familiaPorId(v.familiaId);
+    const descricao = `${v.data.split('-').reverse().join('/')}${f ? ` – ${enderecoCurto(f)}` : ''}`;
+    aplicar(lxExcluirVisita(dadosAtuais(), visitaId, descricao));
+    app.historico.push(...criarAlteracoes(v.familiaId, [`VD excluída (foi para a lixeira): ${descricao}`]));
+    await gravarTudo();
+  });
+
+export const excluirFamiliaParaLixeira = (familiaId: string) =>
+  comDesfazer('Excluir família', async () => {
+    const f = familiaPorId(familiaId);
+    if (!f) return;
+    const descricao = `${enderecoCurto(f)} (${responsavel(f)})`;
+    aplicar(lxExcluirFamilia(dadosAtuais(), familiaId, descricao));
+    app.historico.push(...criarAlteracoes(familiaId, [`Família excluída (foi para a lixeira): ${descricao}`]));
+    await gravarTudo();
+  });
+
+export const excluirMoradorParaLixeira = (familiaId: string, moradorId: string) =>
+  comDesfazer('Excluir morador', async () => {
+    const f = familiaPorId(familiaId);
+    const m = f?.moradores.find((x) => x.id === moradorId);
+    if (!f || !m) return;
+    const descricao = `${m.nome} – ${enderecoCurto(f)}`;
+    aplicar(lxExcluirMorador(dadosAtuais(), familiaId, moradorId, descricao));
+    app.historico.push(...criarAlteracoes(familiaId, [`Excluído (foi para a lixeira): ${m.nome}`], moradorId));
+    await gravarTudo();
+  });
+
+export const restaurarDaLixeira = (entradaId: string) =>
+  comDesfazer('Restaurar da lixeira', async () => {
+    const item = app.lixeira.find((i) => i.id === entradaId);
+    aplicar(lxRestaurar(dadosAtuais(), entradaId));
+    if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
+    await gravarTudo();
+  });
+
 export function familiaPorId(id: string): Familia | undefined {
   return app.familias.find((f) => f.id === id);
 }
 
-export function salvarVisita(v: Omit<Visita, 'id'>) {
+function _salvarVisita(v: Omit<Visita, 'id'>) {
   const id = novoId('v');
   app.visitas.push({ ...v, id, atualizadoEm: agora() });
   app.rascunho = null;
@@ -243,14 +359,14 @@ export function revisitasAbertas(familiaId?: string): Revisita[] {
     .sort((a, b) => a.ate.localeCompare(b.ate));
 }
 
-export async function marcarRevisita(familiaId: string, motivo: string, ate: string) {
+async function _marcarRevisita(familiaId: string, motivo: string, ate: string) {
   const r: Revisita = { id: novoId('r'), familiaId, motivo: motivo.trim(), ate, criadaEm: new Date().toISOString() };
   app.revisitas.push(r);
   app.historico.push(...criarAlteracoes(familiaId, [`Revisita marcada: ${r.motivo} (até ${ate.split('-').reverse().join('/')})`]));
   await gravar({ revisitas: app.revisitas, historico: app.historico });
 }
 
-export async function cancelarRevisita(id: string) {
+async function _cancelarRevisita(id: string) {
   const r = app.revisitas.find((x) => x.id === id);
   if (!r) return;
   r.canceladaEm = new Date().toISOString();
@@ -259,7 +375,7 @@ export async function cancelarRevisita(id: string) {
 }
 
 /** Corrige uma VD já salva e registra no histórico da família o que mudou. */
-export async function corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) {
+async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) {
   const i = app.visitas.findIndex((v) => v.id === id);
   if (i < 0) return;
   const antes = $state.snapshot(app.visitas[i]) as Visita;
@@ -281,7 +397,7 @@ export function ordemDaVisita(id: string): number {
 }
 
 /** "Ninguém em casa" com 1 toque: registra a ausência completa na data escolhida. */
-export function registrarAusencia(familiaId: string, data: string) {
+function _registrarAusencia(familiaId: string, data: string) {
   const anterior = app.visitas
     .filter((v) => v.familiaId === familiaId && v.data < data && diferencaDias(v.data, data) <= 30)
     .sort((a, b) => b.data.localeCompare(a.data))[0];
@@ -343,7 +459,7 @@ export async function descartarRascunho() {
   if (cofre.aberto) await gravar({ rascunho: null });
 }
 
-export function marcarLancada(id: string, lancada: boolean) {
+function _marcarLancada(id: string, lancada: boolean) {
   const v = app.visitas.find((x) => x.id === id);
   if (v) {
     v.lancadaNoFast = lancada;
@@ -355,7 +471,7 @@ export function marcarLancada(id: string, lancada: boolean) {
 // ---------------- Território (famílias e moradores) ----------------
 
 /** Cria ou atualiza uma família (sem mexer nos moradores) e registra no histórico o que mudou. */
-export async function salvarFamilia(nova: Familia): Promise<void> {
+async function _salvarFamilia(nova: Familia): Promise<void> {
   const i = app.familias.findIndex((f) => f.id === nova.id);
   const antiga = i >= 0 ? ($state.snapshot(app.familias[i]) as Familia) : null;
   const final: Familia = antiga ? { ...nova, moradores: antiga.moradores } : nova;
@@ -369,7 +485,7 @@ export async function salvarFamilia(nova: Familia): Promise<void> {
 }
 
 /** Cria ou atualiza um morador da família e registra no histórico o que mudou. */
-export async function salvarMorador(familiaId: string, novo: Morador, tornarResponsavel = false): Promise<void> {
+async function _salvarMorador(familiaId: string, novo: Morador, tornarResponsavel = false): Promise<void> {
   const f = app.familias.find((x) => x.id === familiaId);
   if (!f) return;
   const i = f.moradores.findIndex((m) => m.id === novo.id);
@@ -393,7 +509,7 @@ export async function salvarMorador(familiaId: string, novo: Morador, tornarResp
 }
 
 /** Troca os dados de exemplo (ou a área vazia) pela área importada do CSV. */
-export async function importarArea(familias: Familia[]): Promise<void> {
+async function _importarArea(familias: Familia[]): Promise<void> {
   const ruas = [...new Set([...app.config.ruas, ...familias.map((f) => f.rua).filter(Boolean)])];
   const quando = agora();
   app.familias = familias.map((f) => ({ ...f, atualizadoEm: quando }));
@@ -406,7 +522,7 @@ export async function importarArea(familias: Familia[]): Promise<void> {
 }
 
 /** Define o sexo de um morador (botões F/M em "o que falta completar"). */
-export async function confirmarSexo(familiaId: string, moradorId: string, sexo: 'M' | 'F') {
+async function _confirmarSexo(familiaId: string, moradorId: string, sexo: 'M' | 'F') {
   const m = familiaPorId(familiaId)?.moradores.find((x) => x.id === moradorId);
   if (!m) return;
   await salvarMorador(familiaId, { ...($state.snapshot(m) as Morador), sexo });
@@ -428,12 +544,12 @@ export async function registrarBackupFeito() {
 }
 
 /** Junta os dados de um backup com os deste aparelho, sem apagar nada. */
-export async function juntarBackup(texto: string, senha: string): Promise<ResumoJuncao> {
+async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao> {
   const outro = await lerBackup(texto, senha);
   const { dados, resumo } = juntarDados(dadosAtuais(), outro);
   carregar(dados);
   app.historico.push(...criarAlteracoes('', [`Backup juntado: ${textoResumoJuncao(resumo)}`]));
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
   return resumo;
 }
 
@@ -441,7 +557,7 @@ export async function juntarBackup(texto: string, senha: string): Promise<Resumo
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira });
 }
 
 // ---------------- Bloqueio automático ----------------
@@ -502,3 +618,25 @@ export function responsavel(f: Familia): string {
   const atuais = f.moradores.filter((m) => m.situacao === 'mora');
   return (atuais.find((m) => m.id === f.responsavelId) ?? atuais[0])?.nome ?? '(sem morador)';
 }
+
+export const salvarVisita = (v: Omit<Visita, 'id'>) => comDesfazer('Salvar VD', () => _salvarVisita(v));
+
+export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) => comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila));
+
+export const marcarLancada = (id: string, lancada: boolean) => comDesfazer('Marcar como lançada', () => _marcarLancada(id, lancada));
+
+export const registrarAusencia = (familiaId: string, data: string) => comDesfazer('Ninguém em casa', () => _registrarAusencia(familiaId, data));
+
+export const salvarFamilia = (nova: Familia) => comDesfazer('Salvar família', () => _salvarFamilia(nova));
+
+export const salvarMorador = (familiaId: string, novo: Morador, tornarResponsavel = false) => comDesfazer('Salvar morador', () => _salvarMorador(familiaId, novo, tornarResponsavel));
+
+export const marcarRevisita = (familiaId: string, motivo: string, ate: string) => comDesfazer('Marcar revisita', () => _marcarRevisita(familiaId, motivo, ate));
+
+export const cancelarRevisita = (id: string) => comDesfazer('Cancelar revisita', () => _cancelarRevisita(id));
+
+export const juntarBackup = (texto: string, senha: string) => comDesfazer('Juntar backup', () => _juntarBackup(texto, senha));
+
+export const importarArea = (familias: Familia[]) => comDesfazer('Importar área', () => _importarArea(familias));
+
+export const confirmarSexo = (familiaId: string, moradorId: string, sexo: 'M' | 'F') => comDesfazer('Marcar sexo', () => _confirmarSexo(familiaId, moradorId, sexo));

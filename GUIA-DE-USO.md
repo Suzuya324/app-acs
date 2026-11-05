@@ -51,7 +51,32 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
 
 ---
 
-## 4. Ditar por voz (sem o áudio sair do celular)
+## 4. Errei! Desfazer e lixeira
+
+- **Desfazer:** depois de salvar, corrigir, excluir, marcar como lançada ou juntar, o aviso de baixo
+  mostra o botão **"Desfazer"** por alguns segundos. Ele volta tudo como estava antes.
+- **Excluir** é só para o que foi cadastrado **por engano** (VD, família ou morador): o botão fica no
+  fim da tela de corrigir VD, editar família e editar morador. Quem **mudou-se** ou **faleceu** não se
+  exclui: mude a **situação**.
+- O excluído vai para **Ajustes → Lixeira**, onde dá para **Restaurar**. Nada é apagado de verdade.
+
+---
+
+## 5. Atenção, mapa e lista de prontuários
+
+- **Atenção** (no Início): gestantes, puérperas, crianças e acamados sem VD há 30 dias; hipertensos
+  sem P.A. e diabéticos sem glicemia há 60 dias; aniversários da semana; quem fez 60 anos ou já
+  passou de 2 anos (um toque ajusta o grupo).
+- **Busca por grupo:** na Busca, digite "gestante", "acamado", "hipertenso", "diabético" ou "idoso".
+- **Mapa da área** (no Início): cada casa é um quadrado colorido. Verde: contou no mês; laranja:
+  ninguém em casa; azul: revisita marcada; branco: falta. Toque numa cor da legenda para destacar.
+- **Lista de prontuários** (Painel): em ordem numérica, para imprimir ou salvar em PDF (folha deitada).
+  Tem nomes: não mande para ninguém.
+- **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
+
+---
+
+## 6. Ditar por voz (sem o áudio sair do celular)
 
 Em qualquer campo de texto do app, toque no **microfone do teclado** e fale. Como você fala de
 pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
@@ -63,7 +88,7 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 
 ---
 
-## 5. Rotina de segurança
+## 7. Rotina de segurança
 
 - **Backup toda semana** (na primeira semana de uso, todo dia). O app avisa na tela inicial.
 - Guarde **duas cópias** do backup: uma no celular e outra fora (Drive ou PC).
@@ -78,7 +103,7 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 
 ---
 
-## 6. Verificação em duas etapas (fazer uma vez)
+## 8. Verificação em duas etapas (fazer uma vez)
 
 ### GitHub (protege o código do app)
 1. Entre em **github.com** pelo navegador, com **"Site para computador"** ligado no celular.
