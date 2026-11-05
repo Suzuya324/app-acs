@@ -41,7 +41,7 @@
     const micro = microPrincipal(outras, app.config.micro);
     if (!micro) return '';
     const a = analisarNumeros(outras, micro, lerNumeros(app.config.pastasNaColmeia));
-    return escreverProntuario(micro, proximoLivre(a), a.digitos);
+    return escreverProntuario(micro, proximoLivre(a), a.digitos, a.prefixo);
   });
 
   async function excluir() {
