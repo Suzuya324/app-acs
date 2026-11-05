@@ -11,6 +11,8 @@
   import Prontuarios from './telas/Prontuarios.svelte';
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
+  import Casos from './telas/Casos.svelte';
+  import CasoForm from './telas/CasoForm.svelte';
   import NumerosProntuario from './telas/NumerosProntuario.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
@@ -49,13 +51,13 @@
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
   const abaAtiva = $derived(
-    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador'].includes(rota.tela)
+    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso'].includes(rota.tela)
       ? 'busca'
       : rota.tela === 'lancar'
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'casos'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -128,6 +130,10 @@
     <Relatorio />
   {:else if rota.tela === 'mapa'}
     <Mapa />
+  {:else if rota.tela === 'casos'}
+    <Casos />
+  {:else if rota.tela === 'caso'}
+    {#key `${rota.id}/${rota.sub}`}<CasoForm familiaId={rota.id} casoId={rota.sub} />{/key}
   {:else if rota.tela === 'importar-sv'}
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}

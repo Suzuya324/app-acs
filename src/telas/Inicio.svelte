@@ -4,6 +4,7 @@
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import { app, descartarRascunho, salvarConfig, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
+  import { casasParaRevisitar } from '../lib/nivel';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -18,6 +19,9 @@
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= (sincronizado ? 30 : 7)));
   const marcadas = $derived(app.revisitas && revisitasAbertas());
   const atencao = $derived(calcularAtencao(app.familias, app.visitas, hoje));
+  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje));
+  const casosAbertosLista = $derived(app.casos.filter((c) => !c.resolvidoEm && app.familias.some((f) => f.id === c.familiaId)));
+  const urgentes = $derived(casosAbertosLista.filter((c) => c.categoria === 'urgente').length);
   const aniversarios = $derived(atencao.filter((a) => a.tipo === 'aniversario').length);
   const totalPendencias = $derived(listarPendencias(app.familias).length);
   const precisaImportar = $derived(app.config.usandoExemplo || app.familias.length === 0);
@@ -127,6 +131,20 @@
   <div class="cartao mini"><strong>{painel.visitasSemana}</strong><span>na semana</span></div>
   <div class="cartao mini"><strong>{painel.totalVisitasMes}</strong><span>VDs no mês</span></div>
 </section>
+
+{#if casosAbertosLista.length > 0}
+  <button class="item-link pendencias" onclick={() => ir('casos')}>
+    <span><strong>Casos</strong><br /><span class="suave pequeno">{urgentes ? `${urgentes} urgente${urgentes === 1 ? '' : 's'} · ` : ''}acompanhar de perto, eMulti, NPV</span></span>
+    <span class="num-pend" class:urgente={urgentes > 0}>{casosAbertosLista.length}</span>
+  </button>
+{/if}
+
+{#if porNivel.length > 0}
+  <button class="item-link pendencias" onclick={() => ir('atencao')}>
+    <span><strong>Revisitar por prioridade</strong><br /><span class="suave pequeno">{porNivel.filter((x) => x.nivel === 'A').length} de nível A (10 dias) · {porNivel.filter((x) => x.nivel === 'B').length} de nível B (30 dias)</span></span>
+    <span class="num-pend">{porNivel.length}</span>
+  </button>
+{/if}
 
 {#if atencao.length > 0}
   <button class="item-link pendencias" onclick={() => ir('atencao')}>
@@ -253,6 +271,10 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+  }
+  .num-pend.urgente {
+    background: var(--perigo);
+    color: var(--cartao);
   }
   .num-pend {
     min-width: 44px;

@@ -62,6 +62,7 @@ export async function lerBackup(texto: string, senha: string): Promise<Dados> {
   dados.rascunho ??= null;
   if (!Array.isArray(dados.revisitas)) dados.revisitas = [];
   if (!Array.isArray(dados.lixeira)) dados.lixeira = [];
+  if (!Array.isArray(dados.casos)) dados.casos = [];
   return dados;
 }
 

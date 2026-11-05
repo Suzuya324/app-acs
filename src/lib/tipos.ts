@@ -15,6 +15,11 @@ export type Grupo =
   | 'diabetico'
   | 'deficiencia'
   | 'saude_mental'
+  | 'oxigenio'
+  | 'avc'
+  | 'cancer'
+  | 'cirurgia'
+  | 'alzheimer'
   | 'outros';
 
 export type SituacaoCasa =
@@ -57,6 +62,33 @@ export interface Familia {
   moradores: Morador[];
   /** Relatos antigos trazidos de outro lugar (ex.: Sistema de Visitas). Só leitura; não contam como VD. */
   relatosAnteriores?: RelatoAnterior[];
+  /** Nível de prioridade marcado à mão (A = voltar a cada 10 dias, B = a cada 30). Sem marcar: calculado. */
+  nivel?: 'A' | 'B';
+  /** Recado de atenção da casa (aparece na ficha e na VD). */
+  atencao?: string;
+  /** Data (aaaa-mm-dd) da última VD feita fora do app (ex.: lançada só no Fast), para calcular a próxima. */
+  ultimaVdFora?: string;
+}
+
+export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';
+
+/** Caso para acompanhar (urgente, importante, social/cadastro ou NPV), ligado a uma família. */
+export interface Caso {
+  id: string;
+  familiaId: string;
+  categoria: CategoriaCaso;
+  /** Quem (ex.: "Fulana, 76 anos"). */
+  titulo: string;
+  /** O que está acontecendo, o que já foi feito e o que falta. */
+  texto: string;
+  /** Encaminhamento para a eMulti (ex.: "Psicologia"), ou vazio. */
+  emulti?: string;
+  /** Ponto para levar à reunião de equipe (NPV), ou vazio. */
+  npv?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  /** Quando foi resolvido (ISO), se foi. */
+  resolvidoEm?: string;
 }
 
 export interface RelatoAnterior {

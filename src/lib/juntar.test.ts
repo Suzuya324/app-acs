@@ -91,3 +91,16 @@ describe('juntar ajustes', () => {
     expect(semData.dados.config.metaMensal).toBe(dados().config.metaMensal);
   });
 });
+
+describe('juntar casos', () => {
+  it('caso novo de um lado entra; o atualizado por último vence', () => {
+    const caso = (id: string, texto: string, atualizadoEm: string) => ({
+      id, familiaId: 'f1', categoria: 'urgente' as const, titulo: 'Pessoa Teste', texto, criadoEm: '2026-11-01T00:00:00Z', atualizadoEm,
+    });
+    const { dados: d } = juntarDados(
+      dados({ casos: [caso('c1', 'antigo', '2026-11-01T00:00:00Z')] }),
+      dados({ casos: [caso('c1', 'novo', '2026-11-03T00:00:00Z'), caso('c2', 'outro', '2026-11-02T00:00:00Z')] }),
+    );
+    expect(d.casos!.map((c) => `${c.id}:${c.texto}`).sort()).toEqual(['c1:novo', 'c2:outro']);
+  });
+});

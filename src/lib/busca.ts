@@ -49,12 +49,17 @@ const PALAVRAS_GRUPO: [string, Grupo][] = [
   ['diabeticos', 'diabetico'], ['diabeticas', 'diabetico'],
   ['deficiencia', 'deficiencia'], ['deficientes', 'deficiencia'], ['pcd', 'deficiencia'],
   ['saude mental', 'saude_mental'], ['mental', 'saude_mental'],
+  ['oxigenio', 'oxigenio'],
+  ['avc', 'avc'], ['infarto', 'avc'],
+  ['cancer', 'cancer'], ['oncologia', 'cancer'],
+  ['cirurgia', 'cirurgia'], ['operado', 'cirurgia'],
+  ['alzheimer', 'alzheimer'], ['demencia', 'alzheimer'], ['paliativo', 'alzheimer'],
 ];
 
 /** Grupo buscado, ex.: "gestante", "hipertensos", "acam" (pelo menos 4 letras, ou "pcd"). */
 export function grupoDaBusca(consulta: string): Grupo | null {
   const q = normalizar(consulta);
-  if (q.length < 3 || (q.length < 4 && q !== 'pcd')) return null;
+  if (q.length < 3 || (q.length < 4 && q !== 'pcd' && q !== 'avc')) return null;
   for (const [palavra, grupo] of PALAVRAS_GRUPO) {
     if (palavra.startsWith(q) || (q.startsWith(palavra.slice(0, -1)) && q.length <= palavra.length + 1)) return grupo;
   }

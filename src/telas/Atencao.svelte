@@ -1,13 +1,15 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
   import { calcularAtencao, NOMES_ATENCAO, ORDEM_ATENCAO, type AvisoAtencao } from '../lib/atencao';
-  import { hojeISO } from '../lib/datas';
+  import { casasParaRevisitar } from '../lib/nivel';
+  import { formatarData, hojeISO } from '../lib/datas';
   import { app, enderecoCurto, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Morador } from '../lib/tipos';
 
   const hoje = hojeISO();
   const avisos = $derived(calcularAtencao(app.familias, app.visitas, hoje));
+  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje));
   const grupos = $derived(ORDEM_ATENCAO.map((t) => ({ tipo: t, itens: avisos.filter((a) => a.tipo === t) })).filter((g) => g.itens.length));
 
   async function fazer(a: AvisoAtencao) {
@@ -25,6 +27,26 @@
 <h1>Atenção</h1>
 <p class="suave">Quem precisa de visita ou cuidado e quem mudou de idade. Toque no nome para abrir a família.</p>
 <button class="botao secundario largo colar" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista do Fast</button>
+
+{#if porNivel.length}
+  <section class="cartao">
+    <details open={porNivel.length <= 15}>
+      <summary>Revisitar por prioridade ({porNivel.length})</summary>
+      <p class="suave pequeno">Nível A: a cada 10 dias · Nível B: a cada 30 dias (pela idade, pelas condições ou marcado por você).</p>
+      <ul class="lista">
+        {#each porNivel as p (p.familia.id)}
+          <li class="linha">
+            <button class="item" onclick={() => ir(`familia/${p.familia.id}`)}>
+              <strong>Nível {p.nivel} · {enderecoCurto(p.familia)}</strong>
+              <span class="pequeno">{p.motivo}</span>
+              <span class="suave pequeno">{p.ultima ? `última VD ${formatarData(p.ultima)}` : 'sem VD registrada'}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </details>
+  </section>
+{/if}
 
 {#if avisos.length === 0}
   <p class="cartao ok">✓ Nada para olhar agora.</p>

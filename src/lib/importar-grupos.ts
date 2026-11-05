@@ -22,6 +22,11 @@ const SINAIS_GRUPO: [RegExp, Grupo][] = [
   [/\b(deficien\w*|pcd)\b/, 'deficiencia'],
   [/\bsaude mental\b/, 'saude_mental'],
   [/\bidos[oa]s?\b/, 'idoso'],
+  [/\b(oxigenio|o2)\b/, 'oxigenio'],
+  [/\b(avc|infarto)\b/, 'avc'],
+  [/\b(cancer|oncolog\w*|neoplasia)\b/, 'cancer'],
+  [/\b(cirurgia|pos operatorio|operad[oa])\b/, 'cirurgia'],
+  [/\b(alzheimer|demencia|paliativ\w*)\b/, 'alzheimer'],
   [/\b(crianca\w*|puericultura|menores? de (2|dois) anos)\b/, 'crianca'],
 ];
 

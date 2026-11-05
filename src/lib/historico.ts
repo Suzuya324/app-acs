@@ -28,6 +28,11 @@ export function mudancasFamilia(antes: Familia | null, depois: Familia): string[
     m.push(`Situação da casa: ${NOMES_SITUACAO_CASA[antes.situacaoCasa]} → ${NOMES_SITUACAO_CASA[depois.situacaoCasa]}`);
   }
   campo('Observações', antes.obs, depois.obs);
+  campo('Atenção', antes.atencao ?? '', depois.atencao ?? '');
+  if ((antes.nivel ?? '') !== (depois.nivel ?? '')) m.push(`Nível: ${antes.nivel ?? 'automático'} → ${depois.nivel ?? 'automático'}`);
+  if ((antes.ultimaVdFora ?? '') !== (depois.ultimaVdFora ?? '')) {
+    m.push(`Última VD fora do app: ${antes.ultimaVdFora ? formatarData(antes.ultimaVdFora) : '(vazio)'} → ${depois.ultimaVdFora ? formatarData(depois.ultimaVdFora) : '(vazio)'}`);
+  }
   if (antes.responsavelId !== depois.responsavelId) {
     const nome = (id: string) => depois.moradores.find((x) => x.id === id)?.nome ?? '(ninguém)';
     m.push(`Responsável: ${nome(antes.responsavelId)} → ${nome(depois.responsavelId)}`);

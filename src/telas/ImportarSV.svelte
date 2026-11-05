@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
-  import { formatarData } from '../lib/datas';
+  import { formatarData, hojeISO } from '../lib/datas';
   import { app, enderecoCurto, familiaPorId, mostrarAviso, trazerImportacao } from '../lib/estado.svelte';
   import { decodificar } from '../lib/importar-csv';
   import { lerArquivoImportacao, prepararImportacao, type ArquivoImportacao, type Previa } from '../lib/importar-sv';
@@ -20,7 +20,13 @@
     erro = '';
     try {
       arquivo = lerArquivoImportacao(decodificar(new Uint8Array(await arq.arrayBuffer())));
-      previa = prepararImportacao(arquivo, app.familias, app.visitas, { motivoPadrao: app.config.motivoPadrao, quando: new Date().toISOString() });
+      previa = prepararImportacao(
+        arquivo,
+        app.familias,
+        app.visitas,
+        { motivoPadrao: app.config.motivoPadrao, quando: new Date().toISOString(), hoje: hojeISO() },
+        { casos: app.casos, revisitas: app.revisitas },
+      );
     } catch (err) {
       erro = err instanceof Error ? err.message : String(err);
     }
@@ -38,7 +44,7 @@
     salvando = true;
     try {
       await trazerImportacao(previa, arquivo.origem);
-      mostrarAviso(`${previa.visitas.length} VDs e ${nRelatos} relatos trazidos ✓`, 5000);
+      mostrarAviso('Trazido do Sistema de Visitas ✓', 5000);
       pronto = true;
     } finally {
       salvando = false;
@@ -52,7 +58,7 @@
 
 {#if pronto}
   <section class="cartao ok">
-    <p><strong>Pronto!</strong> As VDs e os relatos já estão nas famílias. Se a sincronização estiver ligada, eles vão sozinhos para os outros aparelhos.</p>
+    <p><strong>Pronto!</strong> Tudo já está nas famílias (VDs, relatos, casos, condições, níveis e revisitas). Se a sincronização estiver ligada, eles vão sozinhos para os outros aparelhos.</p>
     <p class="alerta pequeno">Agora apague o arquivo do celular (pasta Download): ele tem informações de saúde e não é trancado.</p>
     <button class="botao largo" onclick={() => ir('')}>Ir para o início</button>
   </section>
@@ -69,6 +75,10 @@
     <ul class="resumo">
       <li><strong>{previa.visitas.length}</strong> {previa.visitas.length === 1 ? 'VD' : 'VDs'} para trazer{porMes.length ? ` (${porMes.map(([m, n]) => `${n} de ${m.slice(5)}/${m.slice(0, 4)}`).join(', ')})` : ''}</li>
       <li><strong>{nRelatos}</strong> {nRelatos === 1 ? 'relato anterior' : 'relatos anteriores'}{previa.relatos.size ? `, em ${previa.relatos.size} ${previa.relatos.size === 1 ? 'família' : 'famílias'}` : ''}</li>
+      {#if previa.casos.length}<li><strong>{previa.casos.length}</strong> {previa.casos.length === 1 ? 'caso' : 'casos'} (urgente, importante, social, NPV)</li>{/if}
+      {#if previa.condicoes.length}<li><strong>{previa.condicoes.length}</strong> {previa.condicoes.length === 1 ? 'pessoa' : 'pessoas'} com condições (diabetes, hipertensão…)</li>{/if}
+      {#if previa.niveis.length}<li><strong>{previa.niveis.length}</strong> {previa.niveis.length === 1 ? 'casa' : 'casas'} com nível A/B, atenção ou última VD</li>{/if}
+      {#if previa.revisitas.length}<li><strong>{previa.revisitas.length}</strong> {previa.revisitas.length === 1 ? 'casa para voltar' : 'casas para voltar'} (viram revisitas)</li>{/if}
       {#if previa.juntadas}<li><strong>{previa.juntadas}</strong> registros repetidos do mesmo dia juntados numa VD só</li>{/if}
       {#if previa.jaExistiam}<li><strong>{previa.jaExistiam}</strong> já estavam no app (não serão repetidos)</li>{/if}
       {#if previa.naoAchados.length}<li><strong>{previa.naoAchados.length}</strong> não {previa.naoAchados.length === 1 ? 'encontrado' : 'encontrados'} na sua área (ficam de fora)</li>{/if}
@@ -98,7 +108,7 @@
         <summary>Não encontrados ({previa.naoAchados.length})</summary>
         <p class="suave pequeno">Casas ou pessoas que não estão no app (podem ser de outra área ou ter sido tiradas). Ficam só no Sistema de Visitas.</p>
         <ul class="nao">
-          {#each previa.naoAchados as n, i (i)}<li>{n.rotulo} <span class="suave pequeno">({n.tipo === 'vd' ? 'VD' : 'relato'})</span></li>{/each}
+          {#each previa.naoAchados as n, i (i)}<li>{n.rotulo} <span class="suave pequeno">({({ vd: 'VD', relato: 'relato', caso: 'caso', condicoes: 'condições', nivel: 'nível', voltar: 'voltar' })[n.tipo]})</span></li>{/each}
         </ul>
       </details>
     </section>
@@ -106,7 +116,7 @@
 
   <div class="linha-botoes">
     <button class="botao secundario" onclick={() => (previa = arquivo = null)}>Voltar</button>
-    <button class="botao" disabled={salvando || (!previa.visitas.length && !nRelatos)} onclick={trazer}>
+    <button class="botao" disabled={salvando || (!previa.visitas.length && !nRelatos && !previa.casos.length && !previa.condicoes.length && !previa.niveis.length && !previa.revisitas.length)} onclick={trazer}>
       {salvando ? 'Trazendo…' : 'Trazer para o app'}
     </button>
   </div>

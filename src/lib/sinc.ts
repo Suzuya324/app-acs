@@ -148,6 +148,7 @@ export async function abrirSinc(texto: string, chaves: ChavesSinc): Promise<Aber
   dados.historico ??= [];
   dados.revisitas ??= [];
   dados.lixeira ??= [];
+  dados.casos ??= [];
   dados.rascunho = null;
   return { dados, sal: a.sal, iteracoes: a.iteracoes, atualizadoEm: a.atualizadoEm, aparelho: a.aparelho };
 }
@@ -163,6 +164,7 @@ export function mesmoConteudo(a: Dados, b: Dados): boolean {
       porId(d.historico),
       porId(d.revisitas),
       porId(d.lixeira),
+      porId(d.casos),
     ]);
   return canon(a) === canon(b);
 }

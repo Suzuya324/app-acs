@@ -122,8 +122,18 @@ aparelho" e conecte de novo.
   O app guarda só os números da sua micro e eles deixam de aparecer como livres.
 - **Famílias de outro ACS** (prontuário de outra micro): na mesma tela, marque a micro e toque em
   **"Tirar da minha área"**. Elas vão para a Lixeira (dá para restaurar) e saem da meta e do mapa.
+- **Casos:** no Início, **Casos** lista o que acompanhar de perto (urgente, importante,
+  social/cadastro, NPV), com filtro de eMulti e a data da reunião de equipe (3ª terça). Para abrir um
+  caso: na família → **"Abrir caso"**. Para fechar: **"Resolvido"** (nada é apagado).
+- **Nível A/B/C:** cada casa tem um nível. **A** = voltar a cada 10 dias (alguém com 80 anos ou mais,
+  ou com oxigênio, acamado, AVC/infarto, câncer, saúde mental, Alzheimer/paliativo); **B** = a cada
+  30 dias (60 anos ou mais, diabetes, hipertensão, cirurgia). Dá para marcar à mão em **Editar
+  família**, junto com o recado de **Atenção**. O Início mostra **"Revisitar por prioridade"**.
+- **O que perguntar:** a ficha da família e a tela da VD mostram o que perguntar conforme as
+  condições de cada pessoa.
 - **Trazer do Sistema de Visitas:** Ajustes → **"Trazer VDs e relatos do Sistema de Visitas"** →
-  escolha o arquivo que o Claude montou → confira o resumo → **Trazer para o app**. Nada se repete
+  escolha o arquivo que o Claude montou (VDs, relatos, casos, condições, níveis e "voltar") →
+  confira o resumo → **Trazer para o app**. Nada se repete
   (pode abrir o mesmo arquivo de novo). Depois, apague o arquivo do celular.
 - **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
 

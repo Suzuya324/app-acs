@@ -3,7 +3,7 @@
 // sozinho, sem duplicar (cada registro tem um id fixo). Tudo no aparelho.
 import { normalizar } from './busca';
 import { partesProntuario } from './numeros';
-import type { Desfecho, Familia, RelatoAnterior, Visita } from './tipos';
+import type { Caso, CategoriaCaso, Desfecho, Familia, Grupo, RelatoAnterior, Revisita, Visita } from './tipos';
 
 export const FORMATO_IMPORTACAO = 'facilitador-importacao';
 
@@ -44,11 +44,56 @@ export interface ItemRelato {
   data?: string;
 }
 
+export interface ItemCaso {
+  tipo: 'caso';
+  id: string;
+  casa: CasaRef;
+  categoria: CategoriaCaso;
+  titulo: string;
+  texto: string;
+  emulti?: string;
+  npv?: string;
+  /** Quando foi anotado (aaaa-mm-dd), se souber. */
+  data?: string;
+}
+
+/** Condições (grupos) e nota de uma pessoa. */
+export interface ItemCondicoes {
+  tipo: 'condicoes';
+  id: string;
+  casa: CasaRef;
+  pessoa: string;
+  grupos: Grupo[];
+  nota?: string;
+}
+
+/** Nível, recado de atenção e última VD (fora do app) de uma casa. */
+export interface ItemNivel {
+  tipo: 'nivel';
+  id: string;
+  casa: CasaRef;
+  nivel?: 'A' | 'B';
+  atencao?: string;
+  ultimaVd?: string;
+}
+
+/** Casa para voltar (vira revisita marcada). */
+export interface ItemVoltar {
+  tipo: 'voltar';
+  id: string;
+  casa: CasaRef;
+  motivo: string;
+  /** Anotado em (aaaa-mm-dd). */
+  data?: string;
+}
+
+export type ItemImportacao = ItemVD | ItemRelato | ItemCaso | ItemCondicoes | ItemNivel | ItemVoltar;
+
 export interface ArquivoImportacao {
   formato: typeof FORMATO_IMPORTACAO;
   versao: 1;
   origem: string;
-  itens: (ItemVD | ItemRelato)[];
+  itens: ItemImportacao[];
 }
 
 export class ArquivoImportacaoInvalido extends Error {
@@ -122,27 +167,37 @@ export function acharFamilia(casa: CasaRef, familias: Familia[]): Familia | null
 
 export interface Previa {
   visitas: Visita[];
+  casos: Caso[];
+  revisitas: Revisita[];
+  /** Grupos a incluir e nota, por morador. */
+  condicoes: { familiaId: string; moradorId: string; nome: string; grupos: Grupo[]; nota?: string }[];
+  /** Nível, atenção e última VD fora do app, por família (só o que muda). */
+  niveis: { familiaId: string; nivel?: 'A' | 'B'; atencao?: string; ultimaVdFora?: string }[];
   /** Relatos anteriores por família. */
   relatos: Map<string, RelatoAnterior[]>;
   /** Já estavam no app (mesmo id, ou VD da mesma família no mesmo dia). */
   jaExistiam: number;
   /** Registros do arquivo da mesma casa no mesmo dia: viraram uma VD só (relatos juntos). */
   juntadas: number;
-  naoAchados: { rotulo: string; tipo: 'vd' | 'relato' }[];
+  naoAchados: { rotulo: string; tipo: ItemImportacao['tipo'] }[];
 }
 
 export function prepararImportacao(
   arq: ArquivoImportacao,
   familias: Familia[],
   visitasAtuais: Visita[],
-  opcoes: { motivoPadrao: string; quando: string },
+  opcoes: { motivoPadrao: string; quando: string; hoje?: string },
+  existentes: { casos?: Caso[]; revisitas?: Revisita[] } = {},
 ): Previa {
+  const idsCaso = new Set((existentes.casos ?? []).map((c) => c.id));
+  const idsRevisita = new Set((existentes.revisitas ?? []).map((r) => r.id));
+  const hoje = opcoes.hoje ?? opcoes.quando.slice(0, 10);
   const idsVd = new Set(visitasAtuais.map((v) => v.id));
   const mesmoDia = new Set(visitasAtuais.map((v) => `${v.familiaId}|${v.data}`));
   const idsRelato = new Set(familias.flatMap((f) => (f.relatosAnteriores ?? []).map((r) => r.id)));
   /** Relatos que aparecem duas vezes no próprio arquivo (ex.: o mesmo paciente em dois casos). */
   const idsRelatoArquivo = new Set<string>();
-  const previa: Previa = { visitas: [], relatos: new Map(), jaExistiam: 0, juntadas: 0, naoAchados: [] };
+  const previa: Previa = { visitas: [], casos: [], revisitas: [], condicoes: [], niveis: [], relatos: new Map(), jaExistiam: 0, juntadas: 0, naoAchados: [] };
   /** VDs deste arquivo por família e dia (para juntar registros repetidos). */
   const doArquivo = new Map<string, Visita>();
   for (const it of arq.itens) {
@@ -190,6 +245,48 @@ export function prepararImportacao(
       };
       previa.visitas.push(v);
       doArquivo.set(chave, v);
+    } else if (it.tipo === 'caso') {
+      if (idsCaso.has(it.id)) {
+        previa.jaExistiam++;
+        continue;
+      }
+      idsCaso.add(it.id);
+      const criado = it.data ? `${it.data}T12:00:00.000Z` : opcoes.quando;
+      previa.casos.push({
+        id: it.id, familiaId: f.id, categoria: it.categoria, titulo: it.titulo, texto: it.texto,
+        emulti: it.emulti || undefined, npv: it.npv || undefined, criadoEm: criado, atualizadoEm: opcoes.quando,
+      });
+    } else if (it.tipo === 'condicoes') {
+      const alvo = chaveNome(it.pessoa);
+      const m = f.moradores.find((x) => chaveNome(x.nome) === alvo);
+      if (!m) {
+        previa.naoAchados.push({ rotulo: `${it.pessoa} (${it.casa.rotulo})`, tipo: it.tipo });
+        continue;
+      }
+      const novos = it.grupos.filter((g) => !m.grupos.includes(g));
+      const nota = it.nota?.trim() && !m.obs.includes(it.nota.trim()) ? it.nota.trim() : undefined;
+      if (!novos.length && !nota) {
+        previa.jaExistiam++;
+        continue;
+      }
+      previa.condicoes.push({ familiaId: f.id, moradorId: m.id, nome: m.nome, grupos: novos, nota });
+    } else if (it.tipo === 'nivel') {
+      const mudar: Previa['niveis'][number] = { familiaId: f.id };
+      if (it.nivel && it.nivel !== f.nivel) mudar.nivel = it.nivel;
+      if (it.atencao?.trim() && !(f.atencao ?? '').includes(it.atencao.trim())) mudar.atencao = it.atencao.trim();
+      if (it.ultimaVd && it.ultimaVd > (f.ultimaVdFora ?? '')) mudar.ultimaVdFora = it.ultimaVd;
+      if (Object.keys(mudar).length === 1) {
+        previa.jaExistiam++;
+        continue;
+      }
+      previa.niveis.push(mudar);
+    } else if (it.tipo === 'voltar') {
+      if (idsRevisita.has(it.id)) {
+        previa.jaExistiam++;
+        continue;
+      }
+      idsRevisita.add(it.id);
+      previa.revisitas.push({ id: it.id, familiaId: f.id, motivo: it.motivo, ate: hoje, criadaEm: it.data ? `${it.data}T12:00:00.000Z` : opcoes.quando });
     } else {
       if (idsRelatoArquivo.has(it.id)) continue;
       if (idsRelato.has(it.id)) {

@@ -67,3 +67,33 @@ describe('trazer do Sistema de Visitas', () => {
     expect(() => lerArquivoImportacao('{"formato":"app-acs-backup"}')).toThrow();
   });
 });
+
+describe('trazer casos, condições, níveis e voltar', () => {
+  const arq: ArquivoImportacao = {
+    formato: 'facilitador-importacao', versao: 1, origem: 'Sistema de Visitas',
+    itens: [
+      { tipo: 'caso', id: 'svc-1', casa: { pront: '09.1', rotulo: 'Acácias 12' }, categoria: 'urgente', titulo: 'Joana Teste Silva', texto: 'Caso inventado', emulti: 'Psicologia', data: '2026-10-07' },
+      { tipo: 'condicoes', id: 'svk-1', casa: { pront: '09.1', rotulo: 'Acácias 12' }, pessoa: 'JOANA TESTE SILVA', grupos: ['hipertenso', 'diabetico'], nota: 'Nota inventada' },
+      { tipo: 'condicoes', id: 'svk-2', casa: { pront: '09.1', rotulo: 'Acácias 12' }, pessoa: 'Pessoa Que Nao Mora', grupos: ['hipertenso'] },
+      { tipo: 'nivel', id: 'svn-1', casa: { pront: '09.2', rotulo: 'Acácias 12 c2' }, nivel: 'A', atencao: 'Recado inventado', ultimaVd: '2026-10-09' },
+      { tipo: 'voltar', id: 'svv-1', casa: { pront: '09.2', rotulo: 'Acácias 12 c2' }, motivo: 'Entregar guia', data: '2026-10-19' },
+    ],
+  };
+  it('prepara tudo e não repete ao abrir de novo', () => {
+    const p = prepararImportacao(arq, familias, [], { motivoPadrao: 'Outros', quando: '2026-11-05T10:00:00Z' });
+    expect(p.casos[0]).toMatchObject({ id: 'svc-1', familiaId: 'a', categoria: 'urgente', emulti: 'Psicologia', criadoEm: '2026-10-07T12:00:00.000Z' });
+    expect(p.condicoes).toEqual([{ familiaId: 'a', moradorId: 'a-0', nome: 'Joana Teste Silva', grupos: ['hipertenso', 'diabetico'], nota: 'Nota inventada' }]);
+    expect(p.naoAchados).toEqual([{ rotulo: 'Pessoa Que Nao Mora (Acácias 12)', tipo: 'condicoes' }]);
+    expect(p.niveis).toEqual([{ familiaId: 'b', nivel: 'A', atencao: 'Recado inventado', ultimaVdFora: '2026-10-09' }]);
+    expect(p.revisitas[0]).toMatchObject({ id: 'svv-1', familiaId: 'b', motivo: 'Entregar guia', ate: '2026-11-05' });
+
+    const depois = familias.map((f) =>
+      f.id === 'a'
+        ? { ...f, moradores: f.moradores.map((m) => ({ ...m, grupos: ['hipertenso', 'diabetico'] as Familia['moradores'][0]['grupos'], obs: 'Nota inventada' })) }
+        : f.id === 'b' ? { ...f, nivel: 'A' as const, atencao: 'Recado inventado', ultimaVdFora: '2026-10-09' } : f,
+    );
+    const p2 = prepararImportacao(arq, depois, [], { motivoPadrao: 'Outros', quando: '2026-11-06T10:00:00Z' }, { casos: p.casos, revisitas: p.revisitas });
+    expect([p2.casos.length, p2.condicoes.length, p2.niveis.length, p2.revisitas.length]).toEqual([0, 0, 0, 0]);
+    expect(p2.jaExistiam).toBe(4);
+  });
+});
