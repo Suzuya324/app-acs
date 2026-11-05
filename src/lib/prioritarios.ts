@@ -22,7 +22,7 @@ export interface Prioritario {
   /** Etiquetas de condição (ex.: "HAS", "DM", "GESTANTE?"). */
   etiquetas: string[];
   resumo: string;
-  /** Ex.: "12/08/2026 Kawan" (data e quem informou). */
+  /** Ex.: "12/08/2026 Agente" (data e quem informou). */
   ultimaInfo: string;
   /** Aviso "óbito a confirmar". */
   obito?: boolean;
