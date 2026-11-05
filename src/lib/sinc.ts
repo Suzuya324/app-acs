@@ -38,9 +38,20 @@ export class SenhaSincErrada extends Error {
   }
 }
 export class ArquivoSincInvalido extends Error {
-  constructor() {
-    super('O arquivo na nuvem não é do Facilitador de VDs.');
+  constructor(mensagem = 'O arquivo na nuvem não é do Facilitador de VDs.') {
+    super(mensagem);
   }
+}
+
+/** O arquivo escolhido para ligar o aparelho não é o de conexão. */
+function naoEConexao(texto: string): ArquivoSincInvalido {
+  const t = texto.trim();
+  const qual = t.includes('facilitador-importacao')
+    ? 'Esse é o arquivo do Sistema de Visitas, não o de conexão.'
+    : t.includes('app-acs-backup')
+      ? 'Esse é um arquivo de backup, não o de conexão.'
+      : 'Esse não é o arquivo de conexão.';
+  return new ArquivoSincInvalido(`${qual} No outro aparelho, toque em “Salvar arquivo para ligar outro aparelho” e use o arquivo conexao-facilitador.`);
 }
 export class ErroGitHub extends Error {
   constructor(
@@ -187,11 +198,11 @@ export async function criarArquivoConexao(cfg: ConfigSinc): Promise<string> {
 export async function lerArquivoConexao(texto: string, senha: string): Promise<{ repo: string; token: string }> {
   let a: { formato?: string; sal: string; iteracoes: number; iv: string; dados: string };
   try {
-    a = JSON.parse(texto);
+    a = JSON.parse(texto.trim());
   } catch {
-    throw new ArquivoSincInvalido();
+    throw naoEConexao(texto);
   }
-  if (a?.formato !== FORMATO_CONEXAO) throw new ArquivoSincInvalido();
+  if (a?.formato !== FORMATO_CONEXAO) throw naoEConexao(texto);
   const chave = await new ChavesSinc(senha).chave(a.sal, a.iteracoes);
   try {
     const b = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deBase64(a.iv) as BufferSource }, chave, deBase64(a.dados) as BufferSource);

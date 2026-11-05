@@ -26,13 +26,14 @@ O app manda uma cópia **trancada** (só abre com a sua senha de sincronização
 2. Cole o repositório (`seu-usuario/facilitador-dados`) e a chave.
 3. Crie a **senha de sincronização** (mínimo 10 caracteres) e guarde num lugar seguro.
 4. Nome do aparelho (ex.: Celular) → **Conectar**.
-5. Toque em **"Salvar arquivo para ligar outro aparelho"** (vai para Downloads).
+5. Toque em **"Copiar código para ligar outro aparelho"** e mande o código para você mesmo
+   (ex.: WhatsApp). Ele vai trancado com a senha. (Ou use "Salvar arquivo para ligar outro aparelho".)
 
 **Nos outros aparelhos** (tablet, computador)
-1. Leve o arquivo `conexao-facilitador.json` (ele é trancado com a senha).
-2. App → **Ajustes** → **Sincronizar aparelhos** → **"Tenho o arquivo de conexão"** → escolha o arquivo.
+1. App → **Ajustes** → **Sincronizar aparelhos** → **"Tenho o código ou o arquivo de conexão"**.
+2. Copie o código da mensagem e **cole** no campo "Ou cole aqui o código de conexão" (ou escolha o arquivo).
 3. Digite a mesma senha de sincronização, o nome do aparelho → **Conectar**.
-4. Pronto: o aparelho fica com os seus dados. Apague o arquivo de conexão depois.
+4. Pronto: o aparelho fica com os seus dados. Apague a mensagem/arquivo de conexão depois.
 
 **Como funciona no dia a dia:** sincroniza sozinho ao abrir o app, uns segundos depois de cada
 alteração, a cada minuto (com o app aberto) e antes de trancar. Sem internet, guarda e manda quando voltar.

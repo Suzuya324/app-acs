@@ -141,3 +141,11 @@ describe('sincronização', () => {
     expect(limparRepo('Fulano/facilitador-dados, ')).toBe('Fulano/facilitador-dados');
   });
 });
+
+describe('arquivo de conexão errado', () => {
+  it('diz qual arquivo foi escolhido por engano', async () => {
+    await expect(lerArquivoConexao('{"formato":"facilitador-importacao","versao":1,"itens":[]}', 'x')).rejects.toThrow(/Sistema de Visitas, não o de conexão/);
+    await expect(lerArquivoConexao('{"formato":"app-acs-backup"}', 'x')).rejects.toThrow(/backup, não o de conexão/);
+    await expect(lerArquivoConexao('qualquer coisa', 'x')).rejects.toThrow(/não é o arquivo de conexão/);
+  });
+});
