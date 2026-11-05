@@ -156,3 +156,11 @@ describe('extras do aparelho (sincronização)', () => {
     expect(await cofre.lerExtra('sinc')).toBeNull();
   });
 });
+
+describe('arquivo errado no lugar do backup', () => {
+  it('diz que é o de conexão ou o do Sistema de Visitas', async () => {
+    await expect(lerBackup('{"formato":"facilitador-conexao","versao":1}', 'x')).rejects.toThrow(/arquivo de conexão/);
+    await expect(lerBackup('{"formato":"facilitador-importacao","versao":1,"itens":[]}', 'x')).rejects.toThrow(/Sistema de Visitas/);
+    await expect(lerBackup('nada', 'x')).rejects.toThrow(ArquivoInvalido);
+  });
+});

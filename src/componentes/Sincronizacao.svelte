@@ -2,7 +2,7 @@
   // Quadro "Sincronizar aparelhos" (em Ajustes): liga, mostra como está e desliga a sincronização.
   import { entregarArquivo } from '../lib/arquivo';
   import { decodificar } from '../lib/importar-csv';
-  import { app, arquivoDeConexao, conectarSinc, desligarSinc, mostrarAviso, sincronizar } from '../lib/estado.svelte';
+  import { app, arquivoDeConexao, conectarSinc, desligarSinc, mostrarAviso, sincronizar, trocarChaveSinc } from '../lib/estado.svelte';
   import { lerArquivoConexao, limparRepo } from '../lib/sinc';
 
   const SUGESTOES_APARELHO = ['Celular', 'Tablet', 'Computador'];
@@ -89,6 +89,25 @@
     }
   }
 
+  // ---- Trocar a chave do GitHub ----
+  let chaveNova = $state('');
+  let trocando = $state(false);
+  let erroTroca = $state('');
+  const chaveVencida = $derived(app.sinc.estado === 'erro' && /chave/i.test(app.sinc.mensagem));
+  async function trocarChave() {
+    erroTroca = '';
+    trocando = true;
+    try {
+      await trocarChaveSinc(chaveNova);
+      chaveNova = '';
+      mostrarAviso('Chave trocada ✓ Sincronização funcionando.', 5000);
+    } catch (e) {
+      erroTroca = e instanceof Error ? e.message : String(e);
+    } finally {
+      trocando = false;
+    }
+  }
+
   async function desligar() {
     if (!confirm('Desligar a sincronização NESTE aparelho? Os dados daqui e da nuvem continuam.')) return;
     await desligarSinc();
@@ -123,6 +142,26 @@
       <button class="botao secundario largo" disabled={!codigo} onclick={copiarCodigo}>{codigo ? 'Copiar código para ligar outro aparelho' : 'Preparando o código…'}</button>
       <button class="botao secundario largo" onclick={salvarConexao}>Salvar arquivo para ligar outro aparelho</button>
       <p class="suave pequeno">O código e o arquivo vão trancados com a senha de sincronização: pode mandar pelo WhatsApp para você mesmo. Apague depois.</p>
+      <details class="trocar" open={chaveVencida}>
+        <summary>Trocar a chave do GitHub (quando vencer)</summary>
+        <ol class="pequeno">
+          <li>
+            No GitHub: <strong>github.com/settings/personal-access-tokens</strong> → <strong>facilitador</strong> →
+            <strong>Regenerate token</strong> → escolha a validade → copie a chave nova.
+          </li>
+          <li>Cole aqui e toque em <strong>Trocar a chave</strong>.</li>
+          <li>
+            Nos outros aparelhos: aqui, toque em “Copiar código para ligar outro aparelho”, mande para você mesmo e, lá,
+            cole o código neste mesmo campo (a chave antiga para de funcionar).
+          </li>
+        </ol>
+        <label class="campo">
+          <span>Chave nova (github_pat_…) ou código de conexão</span>
+          <input type="password" bind:value={chaveNova} autocomplete="off" />
+        </label>
+        {#if erroTroca}<p class="alerta" role="alert">{erroTroca}</p>{/if}
+        <button class="botao largo" disabled={!chaveNova.trim() || trocando} onclick={trocarChave}>{trocando ? 'Trocando…' : 'Trocar a chave'}</button>
+      </details>
       <button class="botao perigo secundario largo" onclick={desligar}>Desligar neste aparelho</button>
     </div>
   {:else}
@@ -250,6 +289,12 @@
     width: 22px;
     height: 22px;
     accent-color: var(--primaria);
+  }
+  .trocar {
+    margin: 4px 0;
+  }
+  .trocar ol {
+    padding-left: 20px;
   }
   .colar {
     margin: 4px 0 8px;

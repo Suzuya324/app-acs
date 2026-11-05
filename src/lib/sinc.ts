@@ -227,7 +227,7 @@ export interface InfoRepo {
 }
 
 const MENSAGENS: Record<number, string> = {
-  401: 'A chave do GitHub não vale (errada ou vencida). Crie outra e cole de novo.',
+  401: 'A chave do GitHub não vale (errada ou vencida). Crie uma nova no GitHub e use Ajustes → Sincronizar aparelhos → Trocar a chave.',
   403: 'A chave do GitHub não tem permissão para gravar neste repositório (precisa de "Contents: Read and write").',
   404: 'Não achei o repositório. Confira o nome (ex.: seu-usuario/facilitador-dados) e se a chave tem acesso a ele.',
 };
