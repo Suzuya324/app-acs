@@ -2,7 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
-  import { app, descartarRascunho, salvarConfig, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
+  import { app, descartarRascunho, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
   import { casasParaRevisitar } from '../lib/nivel';
   import { calcularPainel } from '../lib/meta';
@@ -52,7 +52,10 @@
   <button class="alerta lembrete sinc-erro" onclick={() => ir('ajustes')}>⚠️ A sincronização parou: {app.sinc.mensagem} Toque para ver.</button>
 {:else if app.sinc.estado !== 'desligada'}
   <p class="sinc suave pequeno" role="status">
-    {app.sinc.estado === 'sincronizando' ? '⟳ Sincronizando…' : app.sinc.estado === 'offline' ? 'Sem internet: sincroniza quando voltar' : '✓ Sincronizado com os outros aparelhos'}
+    <span>
+      {app.sinc.estado === 'sincronizando' ? '⟳ Sincronizando…' : app.sinc.estado === 'offline' ? 'Sem internet: sincroniza quando voltar' : `✓ Sincronizado${app.sinc.ultima ? ` às ${new Date(app.sinc.ultima).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}`}
+    </span>
+    <button class="link-simples agora" disabled={app.sinc.estado === 'sincronizando'} onclick={() => sincronizar()}>Sincronizar agora</button>
   </p>
 {/if}
 
@@ -293,6 +296,16 @@
   }
   .sinc {
     margin: -6px 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .agora {
+    width: auto;
+    border-bottom: 0;
+    padding: 6px 0;
+    font-size: 0.9rem;
   }
   .sinc-erro {
     width: 100%;

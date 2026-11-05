@@ -286,7 +286,11 @@ export class GitHub {
   /** Lê o arquivo de dados da nuvem (ou null se ainda não existe). */
   async ler(): Promise<Remoto | null> {
     const commit = await this.versao();
-    if (!commit) return null;
+    return commit ? this.lerVersao(commit) : null;
+  }
+
+  /** Lê o arquivo de uma versão (commit) já conhecida. */
+  async lerVersao(commit: string): Promise<Remoto | null> {
     const c = await this.api<{ tree: { sha: string } }>(`/git/commits/${commit}`);
     const t = await this.api<{ tree: { path: string; sha: string; type: string }[] }>(`/git/trees/${c.tree.sha}`);
     const item = t.tree.find((x) => x.path === ARQUIVO && x.type === 'blob');
