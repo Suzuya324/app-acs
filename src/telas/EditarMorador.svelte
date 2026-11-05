@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import DicaDitado from '../componentes/DicaDitado.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { hojeISO } from '../lib/datas';
   import { enderecoCurto, familiaPorId, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
@@ -107,6 +108,7 @@
 
   <section class="cartao">
     <label class="campo"><span>Observações</span><textarea rows="3" bind:value={m.obs}></textarea></label>
+    <DicaDitado />
   </section>
 
   <button class="botao largo" onclick={salvar} disabled={salvando}><Icone nome="ok" /> Salvar</button>

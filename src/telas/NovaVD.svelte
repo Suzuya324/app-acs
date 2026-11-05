@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte';
+  import DicaDitado from '../componentes/DicaDitado.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { copiarTexto } from '../lib/copiar';
   import { idadeTexto } from '../lib/dados-ficticios';
@@ -445,7 +446,8 @@
       <span>O que foi conversado / observado (opcional)</span>
       <textarea rows="3" bind:value={observacao} placeholder="Ex.: refere dor nas costas, aguarda resultado de exame"></textarea>
     </label>
-    <p class="suave pequeno">Entra no relato. Dica: toque no microfone do teclado para ditar.</p>
+    <p class="suave pequeno">Entra no relato.</p>
+    <DicaDitado />
     {#if anterior}
       <p class="suave pequeno">O relato vai citar a VD anterior de {formatarData(anterior.data)}.</p>
     {/if}
