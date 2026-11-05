@@ -51,7 +51,19 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
 
 ---
 
-## 4. Rotina de segurança
+## 4. Ditar por voz (sem o áudio sair do celular)
+
+Em qualquer campo de texto do app, toque no **microfone do teclado** e fale. Como você fala de
+pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
+- **Android (Gboard):** abra um campo de texto → **engrenagem** do teclado → **Digitação por voz** →
+  ative **Reconhecimento de fala offline** (ou "Digitação por voz mais rápida") → baixe
+  **Português (Brasil)**.
+- **iPhone:** Ajustes → Geral → Teclado → use o ditado **no dispositivo** (modelos mais novos).
+- **Para conferir:** ligue o **modo avião** e tente ditar. Se funcionar, está offline.
+
+---
+
+## 5. Rotina de segurança
 
 - **Backup toda semana** (na primeira semana de uso, todo dia). O app avisa na tela inicial.
 - Guarde **duas cópias** do backup: uma no celular e outra fora (Drive ou PC).
@@ -66,7 +78,7 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
 
 ---
 
-## 5. Verificação em duas etapas (fazer uma vez)
+## 6. Verificação em duas etapas (fazer uma vez)
 
 ### GitHub (protege o código do app)
 1. Entre em **github.com** pelo navegador, com **"Site para computador"** ligado no celular.
