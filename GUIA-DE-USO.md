@@ -2,12 +2,49 @@
 
 Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/**
 
-> Os dados ficam **só no aparelho**, criptografados com o PIN. Celular e PC têm cópias
-> separadas: para passar de um para o outro, use o **backup** e o **Juntar**.
+> Os dados ficam nos **seus aparelhos**, criptografados com o PIN. Com a **sincronização** ligada,
+> celular, tablet e computador ficam iguais sozinhos (seção 1). Sem ela, use o **backup** e o **Juntar**.
 
 ---
 
-## 1. Passar as VDs do celular para o PC
+## 1. Sincronizar celular, tablet e computador (fazer uma vez)
+
+O app manda uma cópia **trancada** (só abre com a sua senha de sincronização) para um cofre
+**privado** no seu GitHub. Os outros aparelhos pegam sozinhos. O GitHub não consegue ler nada.
+
+**No GitHub** (pelo navegador, com "Site para computador" ligado no celular)
+1. **Criar o cofre:** entre em **github.com/new** → "Repository name": `facilitador-dados` →
+   marque **Private** → **Create repository**.
+2. **Criar a chave:** entre em **github.com/settings/personal-access-tokens/new** →
+   "Token name": `facilitador` → "Expiration": a maior possível (anote a data para renovar) →
+   "Repository access": **Only select repositories** → escolha `facilitador-dados` →
+   "Permissions" → "Repository permissions" → **Contents: Read and write** → **Generate token** →
+   copie a chave (começa com `github_pat_`).
+
+**No primeiro aparelho** (o que tem os seus dados)
+1. App → **Ajustes** → quadro **Sincronizar aparelhos** → "Primeiro aparelho".
+2. Cole o repositório (`seu-usuario/facilitador-dados`) e a chave.
+3. Crie a **senha de sincronização** (mínimo 10 caracteres) e guarde num lugar seguro.
+4. Nome do aparelho (ex.: Celular) → **Conectar**.
+5. Toque em **"Salvar arquivo para ligar outro aparelho"** (vai para Downloads).
+
+**Nos outros aparelhos** (tablet, computador)
+1. Leve o arquivo `conexao-facilitador.json` (ele é trancado com a senha).
+2. App → **Ajustes** → **Sincronizar aparelhos** → **"Tenho o arquivo de conexão"** → escolha o arquivo.
+3. Digite a mesma senha de sincronização, o nome do aparelho → **Conectar**.
+4. Pronto: o aparelho fica com os seus dados. Apague o arquivo de conexão depois.
+
+**Como funciona no dia a dia:** sincroniza sozinho ao abrir o app, uns segundos depois de cada
+alteração, a cada 3 minutos e antes de trancar. Sem internet, guarda e manda quando voltar.
+Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
+"✓ Sincronizado com os outros aparelhos".
+
+**Se a chave vencer:** crie outra no GitHub (passo 2) e, em Ajustes, toque em "Desligar neste
+aparelho" e conecte de novo.
+
+---
+
+## 1b. Sem sincronização: passar as VDs do celular para o PC pelo backup
 
 **No celular**
 1. Abra o app → aba **Ajustes**.
@@ -40,7 +77,7 @@ Link do app (o mesmo no celular e no PC): **https://suzuya324.github.io/app-acs/
 
 ---
 
-## 3. Devolver para o celular o que foi lançado no PC
+## 3. Sem sincronização: devolver para o celular o que foi lançado no PC
 
 1. **No PC**: Ajustes → **Fazer backup agora** (o arquivo vai para a pasta Downloads do PC).
 2. Leve o arquivo para o celular (cabo USB ou Drive).
@@ -103,7 +140,8 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 
 ## 7. Rotina de segurança
 
-- **Backup toda semana** (na primeira semana de uso, todo dia). O app avisa na tela inicial.
+- **Backup:** com a sincronização ligada, um backup por mês basta (garantia extra). Sem ela, toda
+  semana. O app avisa na tela inicial.
 - Guarde **duas cópias** do backup: uma no celular e outra fora (Drive ou PC).
 - A **senha do backup** fica num lugar seguro, **separada do arquivo**. Sem ela, o backup não abre.
 - **Esqueceu o PIN?** Não tem como recuperar: apague tudo (tela do PIN → "Esqueci o PIN") e use

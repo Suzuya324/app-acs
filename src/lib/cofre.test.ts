@@ -139,3 +139,20 @@ describe('regras do PIN', () => {
     expect(esperaAposErros(20)).toBe(300);
   });
 });
+
+describe('extras do aparelho (sincronização)', () => {
+  it('ficam criptografados, sobrevivem à troca de PIN e não entram nos dados', async () => {
+    const armaz = armazenamentoMemoria();
+    const cofre = new Cofre(armaz, IT);
+    await cofre.criar('123456', dados());
+    await cofre.gravarExtra('sinc', { token: 'segredo-inventado' });
+    expect(JSON.stringify([...armaz.bruto.values()])).not.toContain('segredo-inventado');
+    await cofre.trocarPin('654321', dados());
+    cofre.trancar();
+    const d = await cofre.abrir('654321');
+    expect(JSON.stringify(d)).not.toContain('segredo-inventado');
+    expect(await cofre.lerExtra('sinc')).toEqual({ token: 'segredo-inventado' });
+    await cofre.gravarExtra('sinc', null);
+    expect(await cofre.lerExtra('sinc')).toBeNull();
+  });
+});

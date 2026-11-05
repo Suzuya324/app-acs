@@ -4,7 +4,8 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // Regra de segurança (CSP): o app só pode carregar coisas dele mesmo e
-// NÃO pode se conectar a nenhum outro endereço da internet.
+// NÃO pode se conectar a nenhum outro endereço da internet, exceto a API do GitHub
+// (sincronização entre os aparelhos do ACS, só com dados criptografados).
 // Só é aplicada no build final (o modo de desenvolvimento precisa de conexões locais).
 const CSP = [
   "default-src 'self'",
@@ -12,7 +13,8 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Única exceção: a API do GitHub, para a sincronização (só vai uma cópia CRIPTOGRAFADA).
+  "connect-src 'self' https://api.github.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'none'",

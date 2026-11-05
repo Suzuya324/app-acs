@@ -13,7 +13,9 @@
   const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoesPainel()));
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
-  const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= 7));
+  /** Com a sincronização funcionando, o backup em arquivo vira só uma garantia extra (1 vez por mês). */
+  const sincronizado = $derived(app.sinc.estado === 'ok' || (app.sinc.ultima !== '' && app.sinc.estado !== 'erro'));
+  const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= (sincronizado ? 30 : 7)));
   const marcadas = $derived(app.revisitas && revisitasAbertas());
   const atencao = $derived(calcularAtencao(app.familias, app.visitas, hoje));
   const aniversarios = $derived(atencao.filter((a) => a.tipo === 'aniversario').length);
@@ -41,6 +43,14 @@
 </script>
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
+
+{#if app.sinc.estado === 'erro'}
+  <button class="alerta lembrete sinc-erro" onclick={() => ir('ajustes')}>⚠️ A sincronização parou: {app.sinc.mensagem} Toque para ver.</button>
+{:else if app.sinc.estado !== 'desligada'}
+  <p class="sinc suave pequeno" role="status">
+    {app.sinc.estado === 'sincronizando' ? '⟳ Sincronizando…' : app.sinc.estado === 'offline' ? 'Sem internet: sincroniza quando voltar' : '✓ Sincronizado com os outros aparelhos'}
+  </p>
+{/if}
 
 {#if app.rascunho}
   {@const r = app.rascunho}
@@ -258,6 +268,15 @@
     flex-direction: column;
     gap: 8px;
     margin-bottom: 14px;
+  }
+  .sinc {
+    margin: -6px 0 10px;
+  }
+  .sinc-erro {
+    width: 100%;
+    text-align: left;
+    border: 0;
+    cursor: pointer;
   }
   .saudacao {
     margin: 4px 0 12px;

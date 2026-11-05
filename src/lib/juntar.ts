@@ -3,10 +3,11 @@
 //   mais recente (atualizadoEm). Sem data nos dois: fica a deste aparelho (e conta como conflito).
 // - Revisitas: feita ou cancelada num lado vale para os dois.
 // - Histórico: junta tudo, sem repetir.
-// - Ajustes e VD pela metade: ficam os deste aparelho.
+// - Ajustes: vale o mais recente (alteradaEm); sem data, ficam os deste aparelho.
+// - VD pela metade: fica a deste aparelho.
 import type { Dados } from './cofre';
 import { aplicarLixeira, juntarLixeiras } from './lixeira';
-import type { Alteracao, Familia, Revisita, Visita } from './tipos';
+import type { Alteracao, Config, Familia, Revisita, Visita } from './tipos';
 
 export interface ResumoJuncao {
   familiasNovas: number;
@@ -89,6 +90,14 @@ function juntarHistorico(daqui: Alteracao[], dela: Alteracao[]): Alteracao[] {
   return [...daqui, ...dela.filter((h) => !ids.has(h.id))].sort((a, b) => a.quando.localeCompare(b.quando));
 }
 
+/** Ajustes: vale o mais recente; a data do último backup fica a mais nova dos dois. */
+function juntarConfig(daqui: Config, dela: Config | undefined): Config {
+  if (!dela) return daqui;
+  const maisNova = (dela.alteradaEm ?? '') > (daqui.alteradaEm ?? '') ? dela : daqui;
+  const ultimoBackup = [daqui.ultimoBackup ?? '', dela.ultimoBackup ?? ''].sort().at(-1) ?? '';
+  return { ...maisNova, ultimoBackup };
+}
+
 export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: ResumoJuncao } {
   const f = juntarPorId<Familia>(daqui.familias, dela.familias);
   const v = juntarPorId<Visita>(daqui.visitas, dela.visitas, escolherVisitaSemData);
@@ -96,7 +105,7 @@ export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: 
   // VDs em ordem de data, mantendo a ordem de criação dentro do mesmo dia.
   const visitas = v.lista;
   const juntos: Dados = aplicarLixeira({
-    config: daqui.config,
+    config: juntarConfig(daqui.config, dela.config),
     familias: f.lista,
     visitas,
     historico: juntarHistorico(daqui.historico ?? [], dela.historico ?? []),
