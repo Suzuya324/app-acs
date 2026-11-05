@@ -10,6 +10,7 @@
   import Mapa from './telas/Mapa.svelte';
   import Prontuarios from './telas/Prontuarios.svelte';
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
+  import ImportarSV from './telas/ImportarSV.svelte';
   import NumerosProntuario from './telas/NumerosProntuario.svelte';
   import Busca from './telas/Busca.svelte';
   import Configurar from './telas/Configurar.svelte';
@@ -52,7 +53,7 @@
       ? 'busca'
       : rota.tela === 'lancar'
         ? 'fila'
-        : ['importar', 'lixeira', 'como-usar', 'importar-grupos'].includes(rota.tela)
+        : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv'].includes(rota.tela)
         ? 'ajustes'
         : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros'].includes(rota.tela)
           ? 'inicio'
@@ -127,6 +128,8 @@
     <Relatorio />
   {:else if rota.tela === 'mapa'}
     <Mapa />
+  {:else if rota.tela === 'importar-sv'}
+    <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
   {:else if rota.tela === 'numeros'}

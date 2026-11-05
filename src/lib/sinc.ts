@@ -325,6 +325,7 @@ export class GitHub {
 export function limparRepo(t: string): string {
   return t
     .trim()
+    .replace(/[\s,;'"]+/g, '')
     .replace(/^https?:\/\/github\.com\//i, '')
     .replace(/\/+$/, '')
     .replace(/\.git$/i, '')

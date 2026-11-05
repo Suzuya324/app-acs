@@ -176,7 +176,8 @@
             <Desfecho valor={v.desfecho} />
           </button>
           {#if aberta === v.id}
-            <p class="relato">{v.relato}</p>
+            {#if v.relato}<p class="relato">{v.relato}</p>{:else}<p class="suave">(sem relato)</p>{/if}
+            {#if v.observacao && !v.relato}<p class="suave pequeno">{v.observacao}</p>{/if}
             <p class="suave pequeno">Motivo: {v.motivo} · {v.lancadaNoFast ? 'lançada no Fast' : 'pendente no Fast'}</p>
             <button class="botao secundario pequeno corrigir" onclick={() => ir(`vd/${familia.id}/${v.id}`)}>Corrigir esta VD</button>
           {/if}
@@ -184,6 +185,21 @@
       {/each}
     </ul>
   </section>
+
+  {#if familia.relatosAnteriores?.length}
+    {@const relatos = [...familia.relatosAnteriores].sort((a, b) => (b.data ?? '').localeCompare(a.data ?? ''))}
+    <section class="cartao">
+      <details open={relatos.length <= 3}>
+        <summary>Relatos anteriores ({relatos.length})</summary>
+        <p class="suave pequeno">Trazidos do {relatos[0].origem}. Só para consulta: não contam como VD.</p>
+        <ul class="lista">
+          {#each relatos as r (r.id)}
+            <li class="relato-ant"><strong>{r.titulo}</strong><p class="relato">{r.texto}</p></li>
+          {/each}
+        </ul>
+      </details>
+    </section>
+  {/if}
 
   <section class="cartao">
     <details>
@@ -203,6 +219,14 @@
 <style>
   .voltar {
     margin-bottom: 12px;
+  }
+  .relato-ant {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .relato-ant .relato {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
   }
   .cabecalho {
     display: flex;

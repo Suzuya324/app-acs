@@ -19,6 +19,7 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
+import type { Previa } from './importar-sv';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -345,6 +346,22 @@ export const restaurarDaLixeira = (entradaId: string) =>
     aplicar(lxRestaurar(dadosAtuais(), entradaId));
     if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
     await gravarTudo();
+  });
+
+/** Traz VDs e relatos de outro lugar (ex.: Sistema de Visitas), já conferidos na prévia. */
+export const trazerImportacao = (previa: Previa, origem: string) =>
+  comDesfazer(`Trazer do ${origem}`, async () => {
+    const quando = agora();
+    app.visitas.push(...previa.visitas);
+    for (const [familiaId, relatos] of previa.relatos) {
+      const f = app.familias.find((x) => x.id === familiaId);
+      if (!f) continue;
+      f.relatosAnteriores = [...(f.relatosAnteriores ?? []), ...relatos];
+      f.atualizadoEm = quando;
+    }
+    const nRelatos = [...previa.relatos.values()].reduce((n, l) => n + l.length, 0);
+    app.historico.push(...criarAlteracoes('', [`Trazido do ${origem}: ${previa.visitas.length} VDs e ${nRelatos} relatos anteriores`]));
+    await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico });
   });
 
 /** Restaura vários itens da lixeira de uma vez (ex.: as famílias tiradas da área por engano). */

@@ -138,5 +138,6 @@ describe('sincronização', () => {
   it('aceita o endereço inteiro do repositório', () => {
     expect(limparRepo(' https://github.com/Fulano/facilitador-dados.git/ ')).toBe('Fulano/facilitador-dados');
     expect(limparRepo('fulano/dados')).toBe('fulano/dados');
+    expect(limparRepo('Fulano/facilitador-dados, ')).toBe('Fulano/facilitador-dados');
   });
 });

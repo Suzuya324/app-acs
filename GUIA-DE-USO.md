@@ -122,6 +122,9 @@ aparelho" e conecte de novo.
   O app guarda só os números da sua micro e eles deixam de aparecer como livres.
 - **Famílias de outro ACS** (prontuário de outra micro): na mesma tela, marque a micro e toque em
   **"Tirar da minha área"**. Elas vão para a Lixeira (dá para restaurar) e saem da meta e do mapa.
+- **Trazer do Sistema de Visitas:** Ajustes → **"Trazer VDs e relatos do Sistema de Visitas"** →
+  escolha o arquivo que o Claude montou → confira o resumo → **Trazer para o app**. Nada se repete
+  (pode abrir o mesmo arquivo de novo). Depois, apague o arquivo do celular.
 - **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
 
 ---

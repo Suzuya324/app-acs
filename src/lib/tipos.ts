@@ -55,6 +55,19 @@ export interface Familia {
   /** Última alteração da família ou de algum morador (ISO). Usado para juntar backups. */
   atualizadoEm?: string;
   moradores: Morador[];
+  /** Relatos antigos trazidos de outro lugar (ex.: Sistema de Visitas). Só leitura; não contam como VD. */
+  relatosAnteriores?: RelatoAnterior[];
+}
+
+export interface RelatoAnterior {
+  id: string;
+  /** Ex.: "07/10 · VD do ACS". */
+  titulo: string;
+  texto: string;
+  /** Data (aaaa-mm-dd), se souber. */
+  data?: string;
+  /** De onde veio, ex.: "Sistema de Visitas". */
+  origem: string;
 }
 
 /** Volta marcada numa casa por um motivo (ex.: entregar guia de encaminhamento). */
