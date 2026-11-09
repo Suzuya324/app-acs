@@ -12,6 +12,10 @@
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
+  import Prioritarios from './telas/Prioritarios.svelte';
+  import Pessoa from './telas/Pessoa.svelte';
+  import PrioritarioEditar from './telas/PrioritarioEditar.svelte';
+  import ImportarPrioritarios from './telas/ImportarPrioritarios.svelte';
   import CasoForm from './telas/CasoForm.svelte';
   import NumerosProntuario from './telas/NumerosProntuario.svelte';
   import Busca from './telas/Busca.svelte';
@@ -47,12 +51,15 @@
   const abas = [
     { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
     { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
+    { tela: 'prioritarios', caminho: 'prioritarios', rotulo: 'Prioritários', icone: 'estrela' },
     { tela: 'fila', caminho: 'fila', rotulo: 'Fila do Fast', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
   const abaAtiva = $derived(
-    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso'].includes(rota.tela)
+    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso', 'pessoa'].includes(rota.tela)
       ? 'busca'
+      : ['prioritario', 'importar-prioritarios'].includes(rota.tela)
+        ? 'prioritarios'
       : rota.tela === 'lancar'
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv'].includes(rota.tela)
@@ -130,6 +137,14 @@
     <Relatorio />
   {:else if rota.tela === 'mapa'}
     <Mapa />
+  {:else if rota.tela === 'pessoa'}
+    {#key `${rota.id}/${rota.sub}`}<Pessoa familiaId={rota.id} moradorId={rota.sub} />{/key}
+  {:else if rota.tela === 'prioritarios'}
+    {#key rota.id}<Prioritarios abrir={rota.id} />{/key}
+  {:else if rota.tela === 'prioritario'}
+    {#key rota.id}<PrioritarioEditar id={rota.id} />{/key}
+  {:else if rota.tela === 'importar-prioritarios'}
+    <ImportarPrioritarios />
   {:else if rota.tela === 'casos'}
     <Casos />
   {:else if rota.tela === 'caso'}
@@ -250,9 +265,10 @@
     border: 0;
     background: transparent;
     color: var(--texto-suave);
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 700;
     cursor: pointer;
+    min-width: 0;
   }
   .aba.ativa {
     color: var(--primaria);
@@ -264,7 +280,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 56px;
+    width: 50px;
     height: 32px;
     border-radius: 999px;
   }

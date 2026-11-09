@@ -15,6 +15,7 @@
   });
 
   const resultados = $derived(buscar(app.familias, app.busca));
+  const prioridadeA = $derived(new Set(app.prioritarios.filter((p) => p.nivel === 'A' && p.familiaId).map((p) => p.familiaId)));
   const grupo = $derived(grupoDaBusca(app.busca));
   const noGrupo = $derived(resultados.filter((r) => r.motivo === 'grupo').reduce((n, r) => n + r.moradores.length, 0));
   const ruas = $derived([...new Set([...app.config.ruas, ...app.familias.map((f) => f.rua)])]);
@@ -72,6 +73,7 @@
         <button class="item-link resultado" onclick={() => ir(`familia/${f.id}`)}>
           <span class="linha1">
             <strong>{enderecoCurto(f)}</strong>
+            {#if prioridadeA.has(f.id)}<span class="selo-a">Prioridade A</span>{/if}
             {#if visitadasNoMes.has(f.id)}<span class="visitada" title="Já visitada no mês"><Icone nome="ok" tamanho={18} /> no mês</span>{/if}
           </span>
           <span class="pequeno">
@@ -95,6 +97,15 @@
 {/if}
 
 <style>
+  .selo-a {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--perigo);
+    color: var(--cartao);
+    white-space: nowrap;
+  }
   .grupo-achado {
     border: 2px solid var(--primaria);
     margin-bottom: 8px;

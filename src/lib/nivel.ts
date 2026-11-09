@@ -6,6 +6,7 @@
 // - O ACS pode marcar A ou B à mão (vale o mais alto).
 import { contaParaMeta } from './desfecho';
 import { idade, somarDias } from './datas';
+import type { Prioritario } from './prioritarios';
 import { NOMES_GRUPO } from './rotulos';
 import type { Familia, Grupo, Visita } from './tipos';
 
@@ -34,7 +35,7 @@ export const PERGUNTAS: Partial<Record<Grupo, string>> = {
 const moram = (f: Familia) => f.moradores.filter((m) => m.situacao === 'mora');
 const maisAlto = (a: Nivel, b: Nivel): Nivel => (a === 'A' || b === 'A' ? 'A' : a === 'B' || b === 'B' ? 'B' : 'C');
 
-export function nivelDaFamilia(f: Familia, hoje: string): { nivel: Nivel; motivo: string } {
+export function nivelDaFamilia(f: Familia, hoje: string, prios: Prioritario[] = []): { nivel: Nivel; motivo: string } {
   let nivel: Nivel = 'C';
   let motivo = '';
   const subir = (n: Nivel, porque: string) => {
@@ -53,6 +54,7 @@ export function nivelDaFamilia(f: Familia, hoje: string): { nivel: Nivel; motivo
     if (anos !== null && anos >= 60) subir('B', `${nome}: ${anos} anos`);
     if (cronico) subir('B', `${nome}: ${NOMES_GRUPO[cronico].toLowerCase()}`);
   }
+  for (const p of prios) if (p.familiaId === f.id && p.nivel !== 'C') subir(p.nivel, `${p.nome.split(' ')[0]}: prioritário ${p.nivel}`);
   if (f.nivel) subir(f.nivel, 'marcado por você');
   return { nivel, motivo };
 }
@@ -65,8 +67,8 @@ export function ultimaVisita(f: Familia, visitas: Visita[], hoje: string): strin
 }
 
 /** Até quando voltar (nível A: 10 dias; B: 30 dias). Null no nível C. Sem VD: hoje. */
-export function proximaVisita(f: Familia, visitas: Visita[], hoje: string): string | null {
-  const { nivel } = nivelDaFamilia(f, hoje);
+export function proximaVisita(f: Familia, visitas: Visita[], hoje: string, prios: Prioritario[] = []): string | null {
+  const { nivel } = nivelDaFamilia(f, hoje, prios);
   if (nivel === 'C') return null;
   const u = ultimaVisita(f, visitas, hoje);
   return u ? somarDias(u, DIAS_NIVEL[nivel]) : hoje;
@@ -86,13 +88,13 @@ export function perguntasDaFamilia(f: Familia, hoje: string): string[] {
 }
 
 /** Casas de nível A ou B com a próxima VD vencida (ou para hoje), A primeiro e a mais atrasada antes. */
-export function casasParaRevisitar(familias: Familia[], visitas: Visita[], hoje: string) {
+export function casasParaRevisitar(familias: Familia[], visitas: Visita[], hoje: string, prios: Prioritario[] = []) {
   const lista: { familia: Familia; nivel: 'A' | 'B'; ate: string; motivo: string; ultima: string }[] = [];
   for (const f of familias) {
     if (f.situacaoCasa !== 'habitada' || !moram(f).length) continue;
-    const { nivel, motivo } = nivelDaFamilia(f, hoje);
+    const { nivel, motivo } = nivelDaFamilia(f, hoje, prios);
     if (nivel === 'C') continue;
-    const ate = proximaVisita(f, visitas, hoje)!;
+    const ate = proximaVisita(f, visitas, hoje, prios)!;
     if (ate <= hoje) lista.push({ familia: f, nivel, ate, motivo, ultima: ultimaVisita(f, visitas, hoje) });
   }
   return lista.sort((a, b) => a.nivel.localeCompare(b.nivel) || a.ate.localeCompare(b.ate));

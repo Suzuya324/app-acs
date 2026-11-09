@@ -116,14 +116,15 @@ export function lerArquivoImportacao(texto: string): ArquivoImportacao {
 // ---------------------------------------------------------------- achar a família
 
 /** "CASA 02", "Casa 2", "cs2" → "2"; "FUNDOS" → "fundos". */
-function chaveComplemento(c = ''): string {
+export function chaveComplemento(c = ''): string {
   return normalizar(c)
+    .replace(/\b(casa|cs|c|numero|n|no)\.?\s*(?=\d)/g, ' ') // "CS1", "CASA3", "NUMERO14"
     .replace(/\b(casa|cs|c|numero|n|no)\b\.?/g, ' ')
     .replace(/\b0+(\d)/g, '$1')
     .replace(/\s+/g, '');
 }
 const chaveNumero = (n = '') => normalizar(n).replace(/\s/g, '').replace(/^s\/?n.*$/, 's/n').replace(/^0+(\d)/, '$1');
-const chaveNome = (n: string) => normalizar(n).split(' ').filter((p) => p && !['de', 'da', 'do', 'das', 'dos', 'e'].includes(p)).join(' ');
+export const chaveNome = (n: string) => normalizar(n).split(' ').filter((p) => p && !['de', 'da', 'do', 'das', 'dos', 'e'].includes(p)).join(' ');
 
 /** Acha a família de um registro: pelo prontuário, depois pelo endereço, depois pelo nome. */
 export function acharFamilia(casa: CasaRef, familias: Familia[]): Familia | null {

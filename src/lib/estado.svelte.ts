@@ -20,6 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
+import { etiquetaDoGrupo, gruposDasEtiquetas, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -42,6 +43,8 @@ export const app = $state({
   lixeira: [] as ItemLixeira[],
   /** Casos para acompanhar. */
   casos: [] as Caso[],
+  /** Pacientes prioritários. */
+  prioritarios: [] as Prioritario[],
   /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
   desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
@@ -114,6 +117,7 @@ function carregar(d: Dados) {
   app.revisitas = d.revisitas ?? [];
   app.lixeira = d.lixeira ?? [];
   app.casos = d.casos ?? [];
+  app.prioritarios = d.prioritarios ?? [];
 }
 
 function dadosAtuais(): Dados {
@@ -126,6 +130,7 @@ function dadosAtuais(): Dados {
     revisitas: app.revisitas,
     lixeira: app.lixeira,
     casos: app.casos,
+    prioritarios: app.prioritarios,
   }) as Dados;
 }
 
@@ -209,6 +214,7 @@ export async function trancar() {
   app.revisitas = [];
   app.lixeira = [];
   app.casos = [];
+  app.prioritarios = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.busca = '';
@@ -226,6 +232,7 @@ export async function apagarTudo() {
   app.revisitas = [];
   app.lixeira = [];
   app.casos = [];
+  app.prioritarios = [];
   ultimaAcao = null;
   app.desfazer = null;
   app.config = structuredClone(CONFIG_PADRAO);
@@ -298,6 +305,7 @@ export async function desfazerUltima() {
     revisitas: app.revisitas,
     lixeira: app.lixeira,
     casos: app.casos,
+    prioritarios: app.prioritarios,
   });
   mostrarAviso(`Desfeito: ${descricao}`);
 }
@@ -311,9 +319,10 @@ function aplicar(d: Dados) {
   app.lixeira = d.lixeira ?? [];
   app.rascunho = d.rascunho ?? null;
   app.casos = d.casos ?? app.casos;
+  app.prioritarios = d.prioritarios ?? app.prioritarios;
 }
 async function gravarTudo() {
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, rascunho: app.rascunho });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios, rascunho: app.rascunho });
 }
 
 export const excluirVisitaParaLixeira = (visitaId: string) =>
@@ -354,6 +363,112 @@ export const restaurarDaLixeira = (entradaId: string) =>
     aplicar(lxRestaurar(dadosAtuais(), entradaId));
     if (item) app.historico.push(...criarAlteracoes(item.familiaId, [`Restaurado da lixeira: ${item.descricao}`]));
     await gravarTudo();
+  });
+
+// ---------------- Prioritários ----------------
+
+/** Inclui nos moradores ligados os grupos que as etiquetas indicam (nunca tira o que já estava). */
+function aplicarGruposDosPrioritarios(lista: Prioritario[], tirar: Map<string, string[]> = new Map()) {
+  const quando = agora();
+  for (const p of lista) {
+    if (!p.familiaId || !p.moradorId) continue;
+    const f = app.familias.find((x) => x.id === p.familiaId);
+    const m = f?.moradores.find((x) => x.id === p.moradorId);
+    if (!f || !m) continue;
+    const antes = $state.snapshot(m) as Morador;
+    const sair = new Set(gruposDasEtiquetas(tirar.get(p.id) ?? []));
+    const ficam = gruposDasEtiquetas(p.etiquetas);
+    for (const g of ficam) sair.delete(g);
+    const grupos = [...new Set([...m.grupos.filter((g) => !sair.has(g)), ...ficam])];
+    if (grupos.join() === m.grupos.join()) continue;
+    m.grupos = grupos;
+    f.atualizadoEm = quando;
+    app.historico.push(...criarAlteracoes(f.id, mudancasMorador(antes, $state.snapshot(m) as Morador), m.id));
+  }
+}
+
+/**
+ * Mantém as etiquetas do prioritário iguais às condições do morador ligado
+ * (condição incluída → etiqueta incluída; condição tirada → etiqueta tirada).
+ */
+function sincronizarEtiquetas(moradorId: string, antes: Grupo[], depois: Grupo[]): boolean {
+  const p = app.prioritarios.find((x) => x.moradorId === moradorId);
+  if (!p) return false;
+  const entrou = depois.filter((g) => !antes.includes(g));
+  const saiu = antes.filter((g) => !depois.includes(g));
+  if (!entrou.length && !saiu.length) return false;
+  let etq = p.etiquetas.filter((e) => {
+    const g = infoEtiqueta(e).grupo;
+    return !(g && saiu.includes(g));
+  });
+  for (const g of entrou) {
+    const e = etiquetaDoGrupo(g);
+    if (e && !etq.includes(e)) etq = [...etq, e];
+    if (g === 'gestante') etq = etq.filter((x) => x !== 'GESTANTE?'); // gestação confirmada
+  }
+  if (etq.join('|') === p.etiquetas.join('|')) return false;
+  p.etiquetas = etq;
+  p.atualizadoEm = agora();
+  return true;
+}
+
+export interface AtualizacaoFicha {
+  moradorId: string;
+  grupos: Grupo[];
+  situacao?: 'faleceu' | 'mudou';
+}
+
+/** Aplica na ficha o que o ACS confirmou a partir das anotações da VD (condições e situação). */
+function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[]) {
+  const f = app.familias.find((x) => x.id === familiaId);
+  if (!f || !itens.length) return;
+  const quando = agora();
+  for (const it of itens) {
+    const m = f.moradores.find((x) => x.id === it.moradorId);
+    if (!m) continue;
+    const antes = $state.snapshot(m) as Morador;
+    if (it.grupos.length) m.grupos = [...new Set([...m.grupos, ...it.grupos])];
+    if (it.situacao) {
+      m.situacao = it.situacao;
+      m.situacaoDesde = data;
+    }
+    const textos = mudancasMorador(antes, $state.snapshot(m) as Morador);
+    if (!textos.length) continue;
+    f.atualizadoEm = quando;
+    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (pela anotação da VD)`), m.id));
+    sincronizarEtiquetas(m.id, antes.grupos, m.grupos);
+  }
+}
+
+/** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */
+export const importarPrioritarios = (previa: PreviaPrioritarios, usarDaListaNova: Set<string>) =>
+  comDesfazer('Importar prioritários', async () => {
+    const quando = agora();
+    const porId = new Map(app.prioritarios.map((p) => [p.id, p] as const));
+    const entram = [
+      ...previa.novos,
+      ...previa.atualizados,
+      ...previa.conflitos.filter((c) => usarDaListaNova.has(c.atual.id)).map((c) => ({ ...c.novo, editadoEm: undefined })),
+    ].map((p) => ({ ...p, atualizadoEm: quando }));
+    for (const p of entram) porId.set(p.id, p);
+    app.prioritarios = [...porId.values()];
+    aplicarGruposDosPrioritarios(entram);
+    app.historico.push(...criarAlteracoes('', [`Lista de prioritários: ${previa.novos.length} novos, ${entram.length - previa.novos.length} atualizados`]));
+    await gravar({ prioritarios: app.prioritarios, familias: app.familias, historico: app.historico });
+  });
+
+/** Salva a edição feita à mão (nível, etiquetas, resumo, óbito). */
+export const salvarPrioritario = (p: Prioritario) =>
+  comDesfazer('Editar prioritário', async () => {
+    const i = app.prioritarios.findIndex((x) => x.id === p.id);
+    if (i < 0) return;
+    const antes = $state.snapshot(app.prioritarios[i]) as Prioritario;
+    const quando = agora();
+    app.prioritarios[i] = { ...p, editadoEm: quando, atualizadoEm: quando };
+    const tiradas = antes.etiquetas.filter((e) => !p.etiquetas.includes(e));
+    aplicarGruposDosPrioritarios([app.prioritarios[i]], new Map([[p.id, tiradas]]));
+    if (p.familiaId) app.historico.push(...criarAlteracoes(p.familiaId, [`Prioritário editado: ${p.nome} (nível ${p.nivel})`], p.moradorId));
+    await gravar({ prioritarios: app.prioritarios, familias: app.familias, historico: app.historico });
   });
 
 // ---------------- Casos ----------------
@@ -484,12 +599,16 @@ export function familiaPorId(id: string): Familia | undefined {
   return app.familias.find((f) => f.id === id);
 }
 
-function _salvarVisita(v: Omit<Visita, 'id'>) {
+function _salvarVisita(v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) {
   const id = novoId('v');
   app.visitas.push({ ...v, id, atualizadoEm: agora() });
   app.rascunho = null;
   aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
-  return gravar({ visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico });
+  aplicarAtualizacoesFicha(v.familiaId, v.data, atualizacoes);
+  return gravar({
+    visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico,
+    ...(atualizacoes.length ? { familias: app.familias, prioritarios: app.prioritarios } : {}),
+  });
 }
 
 /** Marca como feitas as revisitas resolvidas na VD (e reabre as que foram desmarcadas numa correção). */
@@ -532,7 +651,7 @@ async function _cancelarRevisita(id: string) {
 }
 
 /** Corrige uma VD já salva e registra no histórico da família o que mudou. */
-async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) {
+async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean, atualizacoes: AtualizacaoFicha[] = []) {
   const i = app.visitas.findIndex((v) => v.id === id);
   if (i < 0) return;
   const antes = $state.snapshot(app.visitas[i]) as Visita;
@@ -544,7 +663,11 @@ async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaF
   app.rascunho = null;
   app.historico.push(...criarAlteracoes(antes.familiaId, textos));
   aplicarRevisitas(id, antes.familiaId, depois.data, depois.revisitasFeitas ?? [], antes.revisitasFeitas ?? []);
-  await gravar({ visitas: app.visitas, historico: app.historico, rascunho: null, revisitas: app.revisitas });
+  aplicarAtualizacoesFicha(antes.familiaId, depois.data, atualizacoes);
+  await gravar({
+    visitas: app.visitas, historico: app.historico, rascunho: null, revisitas: app.revisitas,
+    ...(atualizacoes.length ? { familias: app.familias, prioritarios: app.prioritarios } : {}),
+  });
 }
 
 /** Posição da visita na ordem em que foram feitas (para manter o mesmo modelo de relato ao corrigir). */
@@ -662,7 +785,8 @@ async function _salvarMorador(familiaId: string, novo: Morador, tornarResponsave
   if (!textos.length && !mudou) return;
   f.atualizadoEm = agora();
   if (textos.length) app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
-  await gravar({ familias: app.familias, historico: app.historico });
+  const etiquetasMudaram = sincronizarEtiquetas(novo.id, antigo?.grupos ?? [], novo.grupos);
+  await gravar({ familias: app.familias, historico: app.historico, ...(etiquetasMudaram ? { prioritarios: app.prioritarios } : {}) });
 }
 
 /** Troca os dados de exemplo (ou a área vazia) pela área importada do CSV. */
@@ -706,7 +830,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
   const { dados, resumo } = juntarDados(dadosAtuais(), outro);
   carregar(dados);
   app.historico.push(...criarAlteracoes('', [`Backup juntado: ${textoResumoJuncao(resumo)}`]));
-  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+  await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
   return resumo;
 }
 
@@ -714,7 +838,7 @@ async function _juntarBackup(texto: string, senha: string): Promise<ResumoJuncao
 export async function restaurarSobre(texto: string, senha: string) {
   const d = await lerBackup(texto, senha);
   carregar(d);
-  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+  await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
 }
 
 // ---------------- Bloqueio automático ----------------
@@ -776,9 +900,10 @@ export function responsavel(f: Familia): string {
   return (atuais.find((m) => m.id === f.responsavelId) ?? atuais[0])?.nome ?? '(sem morador)';
 }
 
-export const salvarVisita = (v: Omit<Visita, 'id'>) => comDesfazer('Salvar VD', () => _salvarVisita(v));
+export const salvarVisita = (v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) => comDesfazer('Salvar VD', () => _salvarVisita(v, atualizacoes));
 
-export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) => comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila));
+export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean, atualizacoes: AtualizacaoFicha[] = []) =>
+  comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila, atualizacoes));
 
 export const marcarLancada = (id: string, lancada: boolean) => comDesfazer('Marcar como lançada', () => _marcarLancada(id, lancada));
 
@@ -868,7 +993,7 @@ async function aplicarDaNuvem(novo: Dados) {
     // O "Desfazer" antigo não vale mais (desfaria também o que veio dos outros aparelhos).
     ultimaAcao = null;
     app.desfazer = null;
-    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos });
+    await gravar({ config: app.config, familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios });
   } finally {
     aplicandoRemoto = false;
   }

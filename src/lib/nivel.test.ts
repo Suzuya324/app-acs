@@ -56,3 +56,12 @@ describe('nível da casa', () => {
     expect(perguntasDaFamilia(fam('2', [mor('a')]), HOJE)[0]).toMatch(/Sem condição marcada/);
   });
 });
+
+describe('nível com a lista de prioritários', () => {
+  it('casa com prioritário A vira A; C não muda nada', () => {
+    const f = fam('1', [mor('a')]);
+    const p = (nivel: 'A' | 'B' | 'C') => [{ id: 'p', nome: 'Pessoaa Teste', nascimento: '', nivel, rua: '', casa: '', prontuario: '', etiquetas: [], resumo: '', ultimaInfo: '', familiaId: '1', atualizadoEm: '' }];
+    expect(nivelDaFamilia(f, HOJE, p('A'))).toEqual({ nivel: 'A', motivo: 'Pessoaa: prioritário A' });
+    expect(nivelDaFamilia(f, HOJE, p('C')).nivel).toBe('C');
+  });
+});

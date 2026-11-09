@@ -138,6 +138,7 @@ export interface RascunhoVD {
   relatoEditado: string | null;
   revisitasFeitas?: string[];
   observacao?: string;
+  anotacoes?: Record<string, string>;
 }
 
 /** Um registro do histórico: o que mudou, quando e em qual família/morador. Nada é apagado. */
@@ -181,6 +182,8 @@ export interface Visita {
   revisitasFeitas?: string[];
   /** O que foi conversado / observado (escrito pelo ACS). */
   observacao?: string;
+  /** Anotações sobre cada pessoa (chave = id do morador): vão para a ficha dela. */
+  anotacoes?: Record<string, string>;
   /** Última alteração (salvar, corrigir, marcar lançada) (ISO). Usado para juntar backups. */
   atualizadoEm?: string;
 }

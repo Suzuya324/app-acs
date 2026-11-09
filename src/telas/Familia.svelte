@@ -3,6 +3,9 @@
   import Icone from '../componentes/Icone.svelte';
   import MarcarRevisita from '../componentes/MarcarRevisita.svelte';
   import Prioridade from '../componentes/Prioridade.svelte';
+  import Etiqueta from '../componentes/Etiqueta.svelte';
+  import { etiquetasParaMostrar } from '../lib/prioritarios';
+  import { ultimaAnotacao } from '../lib/anotacoes';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
@@ -28,6 +31,7 @@
   const atuais = $derived(familia?.moradores.filter((m) => m.situacao === 'mora') ?? []);
   const antigos = $derived(familia?.moradores.filter((m) => m.situacao !== 'mora') ?? []);
   const historico = $derived(historicoDaFamilia(id));
+  const prios = $derived(app.prioritarios.filter((p) => p.familiaId === id).sort((a, b) => a.nivel.localeCompare(b.nivel)));
   const casos = $derived(app.casos.filter((c) => c.familiaId === id).sort((a, b) => Number(!!a.resolvidoEm) - Number(!!b.resolvidoEm) || b.atualizadoEm.localeCompare(a.atualizadoEm)));
   let aberta = $state<string | null>(null);
   let confirmandoAusencia = $state(false);
@@ -77,6 +81,26 @@
     {#if familia.obs}<p class="obs"><strong>Obs.:</strong> {familia.obs}</p>{/if}
     {#if familia.atencao}<p class="alerta atencao"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
   </section>
+
+  {#if prios.length}
+    <section class="cartao prios">
+      <h2>Prioritários desta casa</h2>
+      <ul class="lista">
+        {#each prios as p (p.id)}
+          <li>
+            <button class="item-link prio" onclick={() => ir(`prioritarios/${p.id}`)}>
+              <span class="bola nivel-{p.nivel}" aria-label="Nível {p.nivel}"></span>
+              <span>
+                <strong>{p.nome.split(' ')[0]}</strong> <span class="suave pequeno">· nível {p.nivel}</span>
+                {#if p.obito}<span class="obito"> · óbito a confirmar</span>{/if}<br />
+                <span class="etqs">{#each etiquetasParaMostrar(p, hoje) as e (e)}<Etiqueta {e} />{/each}</span>
+              </span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   {#if familia.situacaoCasa === 'habitada'}<Prioridade {familia} />{/if}
 
@@ -148,8 +172,9 @@
     <h2>Moradores ({atuais.length})</h2>
     <ul class="lista">
       {#each atuais as m (m.id)}
+        {@const ult = ultimaAnotacao(m.id, familia.id, app.visitas)}
         <li>
-          <button class="morador" onclick={() => ir(`morador/${familia.id}/${m.id}`)}>
+          <button class="morador" onclick={() => ir(`pessoa/${familia.id}/${m.id}`)}>
             <span class="nome">
               <Icone nome="pessoa" tamanho={20} />
               <strong>{m.nome}</strong>
@@ -162,6 +187,7 @@
             {#if m.grupos.length}
               <span>{#each m.grupos as g (g)}<span class="grupo">{NOMES_GRUPO[g]}</span>{/each}</span>
             {/if}
+            {#if ult}<span class="ult pequeno">📝 {formatarData(ult.data).slice(0, 5)}: {ult.texto.length > 90 ? `${ult.texto.slice(0, 90)}…` : ult.texto}</span>{/if}
           </button>
         </li>
       {/each}
@@ -247,6 +273,38 @@
   }
   .atencao {
     margin-top: 8px;
+  }
+  .ult {
+    color: var(--texto-suave);
+    overflow-wrap: anywhere;
+  }
+  .prio {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bola {
+    flex: 0 0 14px;
+    height: 14px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--borda);
+  }
+  .bola.nivel-A {
+    background: var(--perigo);
+  }
+  .bola.nivel-B {
+    background: var(--ausencia);
+  }
+  .etqs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .obito {
+    color: var(--perigo);
+    font-weight: 800;
   }
   .caso-fam.resolvido {
     opacity: 0.6;
