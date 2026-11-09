@@ -10,6 +10,18 @@ export function ligarModoOffline() {
     onNeedRefresh() {
       app.novaVersao = true;
     },
+    // O app instalado fica aberto em segundo plano e não recarrega: procura versão nova
+    // ao voltar para ele e a cada hora (só baixa o aviso; os dados não mudam).
+    onRegisteredSW(_url, registro) {
+      if (!registro) return;
+      const procurar = () => {
+        if (navigator.onLine !== false) void registro.update().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') procurar();
+      });
+      setInterval(procurar, 60 * 60 * 1000);
+    },
   });
 }
 
