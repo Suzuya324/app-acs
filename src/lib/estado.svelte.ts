@@ -20,6 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
+import type { SugestaoDasVDs } from './anotacoes';
 import { etiquetaDoGrupo, gruposDasEtiquetas, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
@@ -419,7 +420,7 @@ export interface AtualizacaoFicha {
 }
 
 /** Aplica na ficha o que o ACS confirmou a partir das anotações da VD (condições e situação). */
-function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[]) {
+function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[], deOnde = 'pela anotação da VD') {
   const f = app.familias.find((x) => x.id === familiaId);
   if (!f || !itens.length) return;
   const quando = agora();
@@ -435,9 +436,39 @@ function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: Atuali
     const textos = mudancasMorador(antes, $state.snapshot(m) as Morador);
     if (!textos.length) continue;
     f.atualizadoEm = quando;
-    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (pela anotação da VD)`), m.id));
+    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (${deOnde})`), m.id));
     sincronizarEtiquetas(m.id, antes.grupos, m.grupos);
   }
+}
+
+/**
+ * Revisão das VDs já feitas: aplica nas fichas o que o ACS confirmou e esconde o que ele disse que não é
+ * (para não perguntar de novo).
+ */
+export const aplicarSugestoesDasVDs = (confirmadas: SugestaoDasVDs[], naoE: string[]) =>
+  comDesfazer('Atualizar fichas pelas VDs', async () => {
+    const porPessoa = new Map<string, { familiaId: string; data: string; item: AtualizacaoFicha }>();
+    for (const s of confirmadas) {
+      const p = porPessoa.get(s.morador.id) ?? { familiaId: s.familia.id, data: '', item: { moradorId: s.morador.id, grupos: [] } };
+      if (s.sugestao.tipo === 'grupo') p.item.grupos.push(s.sugestao.grupo);
+      else if (p.item.situacao !== 'faleceu') {
+        p.item.situacao = s.sugestao.situacao;
+        p.data = s.provas[0]?.data ?? '';
+      }
+      porPessoa.set(s.morador.id, p);
+    }
+    for (const p of porPessoa.values()) aplicarAtualizacoesFicha(p.familiaId, p.data || hojeISO(), [p.item], 'pelas VDs já feitas');
+    if (naoE.length) {
+      app.config.sugestoesEscondidas = [...new Set([...(app.config.sugestoesEscondidas ?? []), ...naoE])];
+      app.config.alteradaEm = agora();
+    }
+    await gravar({ familias: app.familias, historico: app.historico, prioritarios: app.prioritarios, ...(naoE.length ? { config: app.config } : {}) });
+  });
+
+/** Volta a mostrar as sugestões que o ACS tinha escondido. */
+export function mostrarSugestoesEscondidas() {
+  app.config.sugestoesEscondidas = [];
+  return salvarConfig();
 }
 
 /** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */

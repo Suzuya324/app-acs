@@ -143,6 +143,16 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   escolha o arquivo que o Claude montou (VDs, relatos, casos, condições, níveis e "voltar") →
   confira o resumo → **Trazer para o app**. Nada se repete
   (pode abrir o mesmo arquivo de novo). Depois, apague o arquivo do celular.
+- **Prioritários:** na aba da estrela, toque em **"Importar lista"** e escolha o arquivo dos pacientes
+  prioritários (faça isso num aparelho só: a sincronização leva para os outros).
+- **Ficha da pessoa:** na família, toque no morador. Aparecem as condições, a prioridade e a linha do
+  tempo (anotações das VDs, P.A., glicemia, relatos antigos e o que foi escrito nas VDs trazidas).
+- **Anotar na VD:** em **"Sobre cada pessoa"**, escreva ou dite. O app sugere o que atualizar na ficha;
+  só muda o que você tocar.
+- **Atualizar fichas pelas VDs já feitas:** Ajustes → **"Atualizar fichas pelas VDs já feitas"** (ou o
+  aviso na aba Prioritários). O app lê o que você já escreveu (relatos trazidos do Sistema de Visitas,
+  observações das VDs e casos) e mostra o que daria para atualizar, com a frase de onde tirou. Toque em
+  **Atualizar** no que estiver certo e em **Não é** no que estiver errado (não aparece mais) → **Salvar**.
 - **Como usar:** Ajustes → "Como usar o app" tem o passo a passo dentro do próprio app.
 
 ---

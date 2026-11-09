@@ -7,7 +7,7 @@
   import { app, mostrarAviso } from '../lib/estado.svelte';
   import { etiquetasParaMostrar, idadeHoje, ordenarPrioritarios, textoParaCopiar, type NivelPrio, type Prioritario } from '../lib/prioritarios';
   import { ir } from '../lib/rotas.svelte';
-  import { ultimaAnotacao } from '../lib/anotacoes';
+  import { sugestoesDasVDs, ultimaAnotacao } from '../lib/anotacoes';
 
   let { abrir = '' }: { abrir?: string } = $props();
   const hoje = hojeISO();
@@ -23,6 +23,9 @@
     { chave: 'SAUDE MENTAL', nome: 'Saúde mental', tem: (p) => p.etiquetas.includes('SAUDE MENTAL') },
     { chave: 'GESTANTE?', nome: 'Gestantes (confirmar)', tem: (p) => p.etiquetas.includes('GESTANTE?') },
   ];
+
+  /** Atualizações para as fichas achadas no que já foi escrito nas VDs. */
+  const paraFichas = $derived(sugestoesDasVDs(app.familias, app.visitas, app.casos, app.config.sugestoesEscondidas ?? []).length);
 
   let filtroEtq = $state<string | null>(null);
   let nivel = $state<'todos' | NivelPrio>('todos');
@@ -59,6 +62,13 @@
   <h1>Prioritários <span class="suave">({app.prioritarios.length})</span></h1>
   <button class="botao secundario pequeno" onclick={() => ir('importar-prioritarios')}>Importar lista</button>
 </div>
+
+{#if paraFichas}
+  <button class="cartao aviso-fichas" onclick={() => ir('revisar-fichas')}>
+    <strong>{paraFichas} {paraFichas === 1 ? 'atualização' : 'atualizações'} para as fichas</strong>
+    <span class="suave pequeno">Achei no que você já escreveu nas VDs e nos casos. Toque para conferir.</span>
+  </button>
+{/if}
 
 {#if app.prioritarios.length === 0}
   <section class="cartao">
@@ -303,5 +313,17 @@
     gap: 8px;
     flex-wrap: wrap;
     margin-top: 8px;
+  }
+  .aviso-fichas {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    border-left: 4px solid var(--primaria);
+    color: var(--texto);
+    font: inherit;
+    cursor: pointer;
+    margin-bottom: 12px;
   }
 </style>

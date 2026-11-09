@@ -225,6 +225,8 @@ export interface Config {
   emUsoNoFast: { micro: string; numeros: string };
   /** Dia da semana da reunião de equipe (0 = domingo … 3 = quarta … 6 = sábado; -1 = sem reunião fixa). */
   diaReuniao: number;
+  /** Sugestões das VDs já feitas que o ACS disse que não são (moradorId|sugestão), para não perguntar de novo. */
+  sugestoesEscondidas?: string[];
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */
   alteradaEm?: string;
 }

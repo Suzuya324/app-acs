@@ -185,6 +185,7 @@
   <button class="botao secundario largo" onclick={() => ir('importar')}>Importar minha área (CSV)</button>
   <button class="botao secundario largo" onclick={() => ir('importar-sv')}>Trazer do Sistema de Visitas (VDs, relatos, casos…)</button>
   <button class="botao secundario largo" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista (hipertensos, diabéticos, acamados…)</button>
+  <button class="botao secundario largo" onclick={() => ir('revisar-fichas')}>Atualizar fichas pelas VDs já feitas</button>
   <button class="botao secundario largo espaco-b" onclick={() => ir('lixeira')}>
     Lixeira ({app.lixeira.filter((i) => !i.restauradoEm).length})
   </button>
