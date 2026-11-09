@@ -22,6 +22,8 @@
     salvarVisita,
   } from '../lib/estado.svelte';
   import { gerarRelato, juntarNomes, nomesCurtos, separarNomes } from '../lib/relato';
+  import { sugestoesDaAnotacao, type Sugestao } from '../lib/anotacoes';
+  import type { AtualizacaoFicha } from '../lib/estado.svelte';
   import { NOMES_GRUPO, TEMAS_ORIENTACAO, textoRevisitaFeita } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Desfecho, RascunhoVD, SinaisVitais, Visita } from '../lib/tipos';
@@ -63,6 +65,7 @@
         relatoEditado: null as string | null,
         revisitasFeitas: [...(original.revisitasFeitas ?? [])],
         observacao: original.observacao ?? '',
+        anotacoes: { ...(original.anotacoes ?? {}) } as Record<string, string>,
         original,
         restaurado: false,
       };
@@ -82,6 +85,7 @@
       relatoEditado: null as string | null,
       revisitasFeitas: [] as string[],
       observacao: '',
+      anotacoes: {} as Record<string, string>,
       original,
       restaurado: false,
     };
@@ -109,6 +113,53 @@
   let relatoEditado = $state<string | null>(inicio.relatoEditado);
   /** O que foi conversado / observado (entra no relato). */
   let observacao = $state(inicio.observacao ?? '');
+  /** Anotações sobre cada pessoa (vão para a ficha dela). */
+  let anotacoes = $state<Record<string, string>>({ ...(inicio.anotacoes ?? {}) });
+  /** Quem está com o campo de anotação aberto. */
+  let anotando = $state<string[]>(Object.keys(inicio.anotacoes ?? {}).filter((k) => (inicio.anotacoes ?? {})[k]?.trim()));
+  /** Sugestões que o ACS confirmou (chave: "morador|sugestão"). */
+  let aceitas = $state<string[]>([]);
+  const sugestoes = $derived(
+    Object.fromEntries(ativos.map((m) => [m.id, sugestoesDaAnotacao(anotacoes[m.id] ?? '', m)])) as Record<string, Sugestao[]>,
+  );
+  function alternarSugestao(mid: string, sid: string) {
+    const k = `${mid}|${sid}`;
+    aceitas = aceitas.includes(k) ? aceitas.filter((x) => x !== k) : [...aceitas, k];
+  }
+  /** O que vai mudar na ficha ao salvar (só o que o ACS confirmou e ainda vale para o texto). */
+  function atualizacoesConfirmadas(): AtualizacaoFicha[] {
+    const lista: AtualizacaoFicha[] = [];
+    for (const m of ativos) {
+      const ok = (sugestoes[m.id] ?? []).filter((sg) => aceitas.includes(`${m.id}|${sg.id}`));
+      if (!ok.length) continue;
+      const situ = ok.find((sg) => sg.tipo === 'situacao');
+      lista.push({
+        moradorId: m.id,
+        grupos: ok.flatMap((sg) => (sg.tipo === 'grupo' ? [sg.grupo] : [])),
+        situacao: situ && situ.tipo === 'situacao' ? situ.situacao : undefined,
+      });
+    }
+    return lista;
+  }
+  /** Anotações preenchidas (sem as vazias). */
+  function anotacoesPreenchidas(): Record<string, string> | undefined {
+    const r = Object.fromEntries(Object.entries(anotacoes).map(([k, v]) => [k, v.trim()]).filter(([k, v]) => v && ativos.some((m) => m.id === k)));
+    return Object.keys(r).length ? r : undefined;
+  }
+  /** Observação + anotações de cada pessoa: é o que entra no relato. */
+  const observacaoDoRelato = $derived(
+    [
+      observacao.trim(),
+      ...ativos
+        .filter((m) => anotacoes[m.id]?.trim())
+        .map((m) => {
+          const t = anotacoes[m.id].trim().replace(/[.;\s]+$/, '');
+          return `sobre ${app.config.relatoNomeCompleto ? m.nome : m.nome.split(' ')[0]}: ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+        }),
+    ]
+      .filter(Boolean)
+      .join('; '),
+  );
   /** VD anterior desta família (até 30 dias antes da data desta VD), para dar continuidade ao relato. */
   const anterior = $derived.by(() => {
     if (!data) return undefined;
@@ -161,7 +212,7 @@
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
       feitos: feitosTexto,
       motivo: motivo === app.config.motivoPadrao ? '' : motivo,
-      observacao,
+      observacao: observacaoDoRelato,
       anterior,
       nomeCompleto: app.config.relatoNomeCompleto,
       contador,
@@ -233,6 +284,7 @@
       relatoEditado,
       revisitasFeitas,
       observacao,
+      anotacoes: anotacoesPreenchidas(),
     }) as RascunhoVD;
   }
   let mexeu = $state(inicio.restaurado);
@@ -241,7 +293,7 @@
   let primeiraLeitura = true;
   $effect(() => {
     // lê tudo o que o ACS pode mudar
-    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado, revisitasFeitas, observacao]);
+    JSON.stringify([data, presentes, conversou, recusou, desfechoManual, motivo, compartilhada, compartilhadaCom, sinais, temas, outrosTemas, relatoEditado, revisitasFeitas, observacao, anotacoes]);
     if (primeiraLeitura) {
       primeiraLeitura = false;
       return;
@@ -301,13 +353,15 @@
       lancadaNoFast: false,
       revisitasFeitas: atendida ? revisitasFeitas.filter((id) => revisitasDaFamilia.some((r) => r.id === id)) : [],
       observacao: observacao.trim(),
+      anotacoes: anotacoesPreenchidas(),
     };
+    const atualizacoes = atualizacoesConfirmadas();
     if (corrigindo && original) {
-      await corrigirVisita(original.id, v, voltarParaFila);
+      await corrigirVisita(original.id, v, voltarParaFila, atualizacoes);
       mostrarAviso(voltarParaFila ? 'Correção salva ✓ Voltou para a fila do Fast.' : 'Correção salva ✓', 3500);
     } else {
-      await salvarVisita(v);
-      mostrarAviso('VD salva e colocada na fila do Fast ✓');
+      await salvarVisita(v, atualizacoes);
+      mostrarAviso(atualizacoes.length ? 'VD salva ✓ Ficha atualizada.' : 'VD salva e colocada na fila do Fast ✓');
     }
     voltar(`familia/${familia.id}`);
   }
@@ -467,6 +521,34 @@
     {/if}
   </section>
 
+  <!-- ANOTAÇÕES POR PESSOA (vão para a ficha) -->
+  <section class="cartao anotacoes">
+    <h2>Sobre cada pessoa</h2>
+    <p class="suave pequeno">O que você anotar aqui vai para a <strong>ficha da pessoa</strong> e entra no relato.</p>
+    {#each [...ativos].sort((a, b) => Number(presentes.includes(b.id)) - Number(presentes.includes(a.id))) as m (m.id)}
+      {@const aberto = anotando.includes(m.id)}
+      <div class="anot">
+        {#if !aberto}
+          <button class="link-simples anotar" onclick={() => (anotando = [...anotando, m.id])}>＋ Anotar sobre {m.nome.split(' ')[0]}</button>
+        {:else}
+          <label class="campo">
+            <span>Sobre {m.nome}</span>
+            <textarea rows="2" bind:value={anotacoes[m.id]} placeholder="Ex.: começou insulina, refere tontura, consulta de cardio dia 20"></textarea>
+          </label>
+          {#if sugestoes[m.id]?.length}
+            <div class="sugs">
+              <span class="suave pequeno">Atualizar a ficha?</span>
+              {#each sugestoes[m.id] as sg (sg.id)}
+                {@const ok = aceitas.includes(`${m.id}|${sg.id}`)}
+                <button class="sug" class:ok aria-pressed={ok} onclick={() => alternarSugestao(m.id, sg.id)}>{ok ? '✓' : '＋'} {sg.texto}</button>
+              {/each}
+            </div>
+          {/if}
+        {/if}
+      </div>
+    {/each}
+  </section>
+
   <section class="cartao">
     <label class="opcao">
       <input type="checkbox" bind:checked={compartilhada} onchange={ligarCompartilhada} />
@@ -534,6 +616,50 @@
 {/if}
 
 <style>
+  .anot {
+    border-bottom: 1px solid var(--borda);
+    padding: 4px 0;
+  }
+  .anot:last-child {
+    border-bottom: 0;
+  }
+  .anotar {
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+    padding: 10px 0;
+    border: 0;
+    background: none;
+    color: var(--primaria);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .anot textarea {
+    width: 100%;
+  }
+  .sugs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 4px 0 8px;
+  }
+  .sug {
+    min-height: 40px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 2px dashed var(--primaria);
+    background: var(--cartao);
+    color: var(--primaria);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .sug.ok {
+    border-style: solid;
+    background: var(--primaria);
+    color: var(--primaria-texto);
+  }
   .voltar {
     margin-bottom: 12px;
   }

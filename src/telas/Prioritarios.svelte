@@ -7,6 +7,7 @@
   import { app, mostrarAviso } from '../lib/estado.svelte';
   import { etiquetasParaMostrar, idadeHoje, ordenarPrioritarios, textoParaCopiar, type NivelPrio, type Prioritario } from '../lib/prioritarios';
   import { ir } from '../lib/rotas.svelte';
+  import { ultimaAnotacao } from '../lib/anotacoes';
 
   let { abrir = '' }: { abrir?: string } = $props();
   const hoje = hojeISO();
@@ -110,6 +111,10 @@
         </button>
         {#if aberto === p.id}
           <div class="corpo">
+            {#if p.familiaId && p.moradorId}
+              {@const ult = ultimaAnotacao(p.moradorId, p.familiaId, app.visitas)}
+              {#if ult}<p class="ultima"><strong>Última anotação ({formatarData(ult.data)}):</strong> {ult.texto}</p>{/if}
+            {/if}
             {#if p.resumo}<p class="resumo">{p.resumo}</p>{/if}
             <p class="pequeno">
               <strong>Nascimento:</strong> {p.nascimento ? formatarData(p.nascimento) : '—'} · <strong>Nível:</strong> {p.nivel}
@@ -119,7 +124,8 @@
             <div class="botoes">
               <button class="botao pequeno" onclick={() => copiar(p)}><Icone nome="copiar" tamanho={18} /> Copiar</button>
               <button class="botao secundario pequeno" onclick={() => ir(`prioritario/${p.id}`)}>Editar</button>
-              {#if p.familiaId}<button class="botao secundario pequeno" onclick={() => ir(`familia/${p.familiaId}`)}>Ver família</button>{/if}
+              {#if p.familiaId && p.moradorId}<button class="botao secundario pequeno" onclick={() => ir(`pessoa/${p.familiaId}/${p.moradorId}`)}>Ver ficha</button>
+              {:else if p.familiaId}<button class="botao secundario pequeno" onclick={() => ir(`familia/${p.familiaId}`)}>Ver família</button>{/if}
             </div>
           </div>
         {/if}
@@ -281,6 +287,12 @@
   .corpo {
     padding: 0 12px 12px;
     border-top: 1px solid var(--borda);
+  }
+  .ultima {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--primaria-clara);
   }
   .resumo {
     white-space: pre-wrap;

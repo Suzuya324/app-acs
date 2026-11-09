@@ -20,7 +20,7 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
-import { gruposDasEtiquetas, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import { etiquetaDoGrupo, gruposDasEtiquetas, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -387,6 +387,59 @@ function aplicarGruposDosPrioritarios(lista: Prioritario[], tirar: Map<string, s
   }
 }
 
+/**
+ * Mantém as etiquetas do prioritário iguais às condições do morador ligado
+ * (condição incluída → etiqueta incluída; condição tirada → etiqueta tirada).
+ */
+function sincronizarEtiquetas(moradorId: string, antes: Grupo[], depois: Grupo[]): boolean {
+  const p = app.prioritarios.find((x) => x.moradorId === moradorId);
+  if (!p) return false;
+  const entrou = depois.filter((g) => !antes.includes(g));
+  const saiu = antes.filter((g) => !depois.includes(g));
+  if (!entrou.length && !saiu.length) return false;
+  let etq = p.etiquetas.filter((e) => {
+    const g = infoEtiqueta(e).grupo;
+    return !(g && saiu.includes(g));
+  });
+  for (const g of entrou) {
+    const e = etiquetaDoGrupo(g);
+    if (e && !etq.includes(e)) etq = [...etq, e];
+    if (g === 'gestante') etq = etq.filter((x) => x !== 'GESTANTE?'); // gestação confirmada
+  }
+  if (etq.join('|') === p.etiquetas.join('|')) return false;
+  p.etiquetas = etq;
+  p.atualizadoEm = agora();
+  return true;
+}
+
+export interface AtualizacaoFicha {
+  moradorId: string;
+  grupos: Grupo[];
+  situacao?: 'faleceu' | 'mudou';
+}
+
+/** Aplica na ficha o que o ACS confirmou a partir das anotações da VD (condições e situação). */
+function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[]) {
+  const f = app.familias.find((x) => x.id === familiaId);
+  if (!f || !itens.length) return;
+  const quando = agora();
+  for (const it of itens) {
+    const m = f.moradores.find((x) => x.id === it.moradorId);
+    if (!m) continue;
+    const antes = $state.snapshot(m) as Morador;
+    if (it.grupos.length) m.grupos = [...new Set([...m.grupos, ...it.grupos])];
+    if (it.situacao) {
+      m.situacao = it.situacao;
+      m.situacaoDesde = data;
+    }
+    const textos = mudancasMorador(antes, $state.snapshot(m) as Morador);
+    if (!textos.length) continue;
+    f.atualizadoEm = quando;
+    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (pela anotação da VD)`), m.id));
+    sincronizarEtiquetas(m.id, antes.grupos, m.grupos);
+  }
+}
+
 /** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */
 export const importarPrioritarios = (previa: PreviaPrioritarios, usarDaListaNova: Set<string>) =>
   comDesfazer('Importar prioritários', async () => {
@@ -546,12 +599,16 @@ export function familiaPorId(id: string): Familia | undefined {
   return app.familias.find((f) => f.id === id);
 }
 
-function _salvarVisita(v: Omit<Visita, 'id'>) {
+function _salvarVisita(v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) {
   const id = novoId('v');
   app.visitas.push({ ...v, id, atualizadoEm: agora() });
   app.rascunho = null;
   aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
-  return gravar({ visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico });
+  aplicarAtualizacoesFicha(v.familiaId, v.data, atualizacoes);
+  return gravar({
+    visitas: app.visitas, rascunho: null, revisitas: app.revisitas, historico: app.historico,
+    ...(atualizacoes.length ? { familias: app.familias, prioritarios: app.prioritarios } : {}),
+  });
 }
 
 /** Marca como feitas as revisitas resolvidas na VD (e reabre as que foram desmarcadas numa correção). */
@@ -594,7 +651,7 @@ async function _cancelarRevisita(id: string) {
 }
 
 /** Corrige uma VD já salva e registra no histórico da família o que mudou. */
-async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) {
+async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean, atualizacoes: AtualizacaoFicha[] = []) {
   const i = app.visitas.findIndex((v) => v.id === id);
   if (i < 0) return;
   const antes = $state.snapshot(app.visitas[i]) as Visita;
@@ -606,7 +663,11 @@ async function _corrigirVisita(id: string, nova: Omit<Visita, 'id'>, voltarParaF
   app.rascunho = null;
   app.historico.push(...criarAlteracoes(antes.familiaId, textos));
   aplicarRevisitas(id, antes.familiaId, depois.data, depois.revisitasFeitas ?? [], antes.revisitasFeitas ?? []);
-  await gravar({ visitas: app.visitas, historico: app.historico, rascunho: null, revisitas: app.revisitas });
+  aplicarAtualizacoesFicha(antes.familiaId, depois.data, atualizacoes);
+  await gravar({
+    visitas: app.visitas, historico: app.historico, rascunho: null, revisitas: app.revisitas,
+    ...(atualizacoes.length ? { familias: app.familias, prioritarios: app.prioritarios } : {}),
+  });
 }
 
 /** Posição da visita na ordem em que foram feitas (para manter o mesmo modelo de relato ao corrigir). */
@@ -724,7 +785,8 @@ async function _salvarMorador(familiaId: string, novo: Morador, tornarResponsave
   if (!textos.length && !mudou) return;
   f.atualizadoEm = agora();
   if (textos.length) app.historico.push(...criarAlteracoes(familiaId, textos, novo.id));
-  await gravar({ familias: app.familias, historico: app.historico });
+  const etiquetasMudaram = sincronizarEtiquetas(novo.id, antigo?.grupos ?? [], novo.grupos);
+  await gravar({ familias: app.familias, historico: app.historico, ...(etiquetasMudaram ? { prioritarios: app.prioritarios } : {}) });
 }
 
 /** Troca os dados de exemplo (ou a área vazia) pela área importada do CSV. */
@@ -838,9 +900,10 @@ export function responsavel(f: Familia): string {
   return (atuais.find((m) => m.id === f.responsavelId) ?? atuais[0])?.nome ?? '(sem morador)';
 }
 
-export const salvarVisita = (v: Omit<Visita, 'id'>) => comDesfazer('Salvar VD', () => _salvarVisita(v));
+export const salvarVisita = (v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) => comDesfazer('Salvar VD', () => _salvarVisita(v, atualizacoes));
 
-export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean) => comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila));
+export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaFila: boolean, atualizacoes: AtualizacaoFicha[] = []) =>
+  comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila, atualizacoes));
 
 export const marcarLancada = (id: string, lancada: boolean) => comDesfazer('Marcar como lançada', () => _marcarLancada(id, lancada));
 

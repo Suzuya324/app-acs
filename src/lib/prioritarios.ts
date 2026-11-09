@@ -48,6 +48,7 @@ export const ETIQUETAS: { chave: string; nome: string; cor: CorEtiqueta; grupo?:
   { chave: 'ALZHEIMER/DEMENCIA', nome: 'Alzheimer/demência', cor: 'roxo', grupo: 'alzheimer' },
   { chave: 'IDOSO 80+', nome: '80+', cor: 'azul' },
   { chave: 'GESTANTE?', nome: 'Gestante? confirmar', cor: 'azul' },
+  { chave: 'GESTANTE', nome: 'Gestante', cor: 'azul', grupo: 'gestante' },
   { chave: 'PRE-DIABETES', nome: 'Pré-diabetes', cor: 'cinza' },
   { chave: 'CANCER', nome: 'Câncer', cor: 'cinza', grupo: 'cancer' },
   { chave: 'CIRURGIA', nome: 'Cirurgia', cor: 'cinza', grupo: 'cirurgia' },
@@ -61,7 +62,7 @@ const semAcento = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, 
 /** "GESTANTE? (registro antigo - confirmar)" → "GESTANTE?"; "Saúde mental" → "SAUDE MENTAL"; "PNEUMONIA (27/10)" fica com a data. */
 export function normalizarEtiqueta(e: string): string {
   const t = semAcento(e).toUpperCase().replace(/\s+/g, ' ').trim();
-  if (t.startsWith('GESTANTE')) return 'GESTANTE?';
+  if (t.startsWith('GESTANTE')) return /\?|CONFIRMAR/.test(t) ? 'GESTANTE?' : 'GESTANTE';
   if (t.startsWith('PNEUMONIA')) return t;
   return t;
 }
@@ -72,6 +73,11 @@ export function infoEtiqueta(e: string): { nome: string; cor: CorEtiqueta; grupo
   if (!base) return { nome: e.charAt(0) + e.slice(1).toLowerCase(), cor: 'cinza' };
   const data = e.match(/\(([^)]*)\)/)?.[1];
   return { nome: data ? `${base.nome} (${data})` : base.nome, cor: base.cor, grupo: base.grupo };
+}
+
+/** Etiqueta da lista que corresponde a um grupo do app (ex.: hipertenso → "HAS"). */
+export function etiquetaDoGrupo(g: Grupo): string | undefined {
+  return ETIQUETAS.find((e) => e.grupo === g && e.chave !== 'PALIATIVO')?.chave;
 }
 
 /** Grupos do app que as etiquetas indicam. */

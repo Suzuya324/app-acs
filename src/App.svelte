@@ -13,6 +13,7 @@
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
+  import Pessoa from './telas/Pessoa.svelte';
   import PrioritarioEditar from './telas/PrioritarioEditar.svelte';
   import ImportarPrioritarios from './telas/ImportarPrioritarios.svelte';
   import CasoForm from './telas/CasoForm.svelte';
@@ -55,7 +56,7 @@
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
   const abaAtiva = $derived(
-    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso'].includes(rota.tela)
+    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso', 'pessoa'].includes(rota.tela)
       ? 'busca'
       : ['prioritario', 'importar-prioritarios'].includes(rota.tela)
         ? 'prioritarios'
@@ -136,6 +137,8 @@
     <Relatorio />
   {:else if rota.tela === 'mapa'}
     <Mapa />
+  {:else if rota.tela === 'pessoa'}
+    {#key `${rota.id}/${rota.sub}`}<Pessoa familiaId={rota.id} moradorId={rota.sub} />{/key}
   {:else if rota.tela === 'prioritarios'}
     {#key rota.id}<Prioritarios abrir={rota.id} />{/key}
   {:else if rota.tela === 'prioritario'}

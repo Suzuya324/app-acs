@@ -5,6 +5,7 @@
   import Prioridade from '../componentes/Prioridade.svelte';
   import Etiqueta from '../componentes/Etiqueta.svelte';
   import { etiquetasParaMostrar } from '../lib/prioritarios';
+  import { ultimaAnotacao } from '../lib/anotacoes';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
@@ -171,8 +172,9 @@
     <h2>Moradores ({atuais.length})</h2>
     <ul class="lista">
       {#each atuais as m (m.id)}
+        {@const ult = ultimaAnotacao(m.id, familia.id, app.visitas)}
         <li>
-          <button class="morador" onclick={() => ir(`morador/${familia.id}/${m.id}`)}>
+          <button class="morador" onclick={() => ir(`pessoa/${familia.id}/${m.id}`)}>
             <span class="nome">
               <Icone nome="pessoa" tamanho={20} />
               <strong>{m.nome}</strong>
@@ -185,6 +187,7 @@
             {#if m.grupos.length}
               <span>{#each m.grupos as g (g)}<span class="grupo">{NOMES_GRUPO[g]}</span>{/each}</span>
             {/if}
+            {#if ult}<span class="ult pequeno">📝 {formatarData(ult.data).slice(0, 5)}: {ult.texto.length > 90 ? `${ult.texto.slice(0, 90)}…` : ult.texto}</span>{/if}
           </button>
         </li>
       {/each}
@@ -270,6 +273,10 @@
   }
   .atencao {
     margin-top: 8px;
+  }
+  .ult {
+    color: var(--texto-suave);
+    overflow-wrap: anywhere;
   }
   .prio {
     display: flex;
