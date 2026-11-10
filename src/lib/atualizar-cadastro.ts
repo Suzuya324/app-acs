@@ -171,7 +171,7 @@ function mesmaPessoa(m: Morador, p: MoradorSbcd): boolean {
   return curto.length >= 2 && curto.every((x) => longo.includes(x));
 }
 
-/** O nome da rua como o app já escreve (ex.: arquivo "Morro do Livramento", app "Rua Morro do Livramento"). */
+/** O nome da rua como o app já escreve (ex.: arquivo "Acácias", app "Rua das Acácias"). */
 function ruaDoApp(c: CasaSbcd, familias: Familia[]): string {
   const alvo = normalizar(c.ruaCurta || c.rua);
   return familias.find((f) => normalizar(f.rua).includes(alvo))?.rua ?? c.rua;
