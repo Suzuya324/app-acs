@@ -14,7 +14,7 @@ export interface Prioritario {
   /** aaaa-mm-dd */
   nascimento: string;
   nivel: NivelPrio;
-  /** Como veio na lista (ex.: "Morro"). */
+  /** Como veio na lista (ex.: "Acácias"). */
   rua: string;
   /** Ex.: "333", "400 NUMERO 13A". */
   casa: string;
@@ -244,7 +244,7 @@ export function ordenarPrioritarios(lista: Prioritario[], ordemRuas: string[] = 
   );
 }
 
-/** "Nome (idade) - Morro 333 - Pront. X - condições - resumo" (para mandar no WhatsApp da equipe). */
+/** "Nome (idade) - Acácias 12 - Pront. X - condições - resumo" (para mandar no WhatsApp da equipe). */
 export function textoParaCopiar(p: Prioritario, hoje: string): string {
   const anos = idadeHoje(p, hoje);
   const cond = etiquetasParaMostrar(p, hoje).map((e) => infoEtiqueta(e).nome).join(', ');

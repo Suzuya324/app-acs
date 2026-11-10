@@ -97,19 +97,36 @@ export interface ArquivoImportacao {
 }
 
 export class ArquivoImportacaoInvalido extends Error {
-  constructor() {
-    super('Este arquivo não é de importação do Facilitador de VDs.');
+  constructor(msg = 'Este arquivo não é de VDs e relatos para trazer. Confira se escolheu o arquivo certo.') {
+    super(msg);
   }
+}
+
+/** Diz qual arquivo foi escolhido por engano e onde ele entra. */
+function qualArquivo(a: unknown): string | undefined {
+  const d = a as Record<string, unknown> | unknown[] | null;
+  if (Array.isArray(d)) {
+    if (d.some((x) => (x as Record<string, unknown>)?.nome && (x as Record<string, unknown>)?.nascimento)) {
+      return 'Este é a lista de pacientes prioritários. Ela entra na aba Prioritários → Importar lista.';
+    }
+    return undefined;
+  }
+  if (d?.tipo === 'facilitador-vds/importacao-sbcd' || Array.isArray(d?.casas)) {
+    return 'Este é o arquivo do cadastro do SBCD. Ele entra em Ajustes → Atualizar cadastro pelo SBCD (se o botão não aparecer, atualize o app).';
+  }
+  if (d?.formato === 'facilitador-conexao') return 'Este é o arquivo de conexão da sincronização. Ele entra em Ajustes → Sincronizar aparelhos.';
+  if (d?.formato === 'app-acs-backup') return 'Este é um backup. Ele entra em Ajustes → Backup.';
+  return undefined;
 }
 
 export function lerArquivoImportacao(texto: string): ArquivoImportacao {
   let a: ArquivoImportacao;
   try {
-    a = JSON.parse(texto);
+    a = JSON.parse(texto.replace(/^\uFEFF/, ''));
   } catch {
     throw new ArquivoImportacaoInvalido();
   }
-  if (a?.formato !== FORMATO_IMPORTACAO || a.versao !== 1 || !Array.isArray(a.itens)) throw new ArquivoImportacaoInvalido();
+  if (a?.formato !== FORMATO_IMPORTACAO || a.versao !== 1 || !Array.isArray(a.itens)) throw new ArquivoImportacaoInvalido(qualArquivo(a));
   return a;
 }
 

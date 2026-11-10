@@ -22,7 +22,8 @@ import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
-import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import type { Comparacao } from './atualizar-cadastro';
+import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -669,6 +670,95 @@ export const tirarFamiliasDaArea = (familiaIds: string[], motivo: string) =>
     }
     aplicar(d);
     await gravarTudo();
+  });
+
+/**
+ * Atualiza o cadastro com o que o ACS marcou na comparação com o arquivo do SBCD. Nada é apagado:
+ * casas que não vieram só saem da área se marcadas (vão para a lixeira); quem muda de casa leva a ficha junto.
+ */
+export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) =>
+  comDesfazer('Atualizar cadastro pelo SBCD', async () => {
+    const quando = agora();
+    const hoje = hojeISO();
+    const deOnde = `cadastro do SBCD${cmp.geradoEm ? ` de ${cmp.geradoEm.split('-').reverse().join('/')}` : ''}`;
+    const fam = (id: string) => app.familias.find((f) => f.id === id);
+    const anotar = (f: Familia, textos: string[], moradorId?: string) => {
+      if (!textos.length) return;
+      f.atualizadoEm = quando;
+      app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (${deOnde})`), moradorId));
+    };
+    /** Tira a pessoa da casa antiga (a ficha vai junto para a casa nova) e corrige quem é o responsável. */
+    const tirarDaCasa = (familiaId: string, moradorId: string, para: string) => {
+      const f = fam(familiaId);
+      const m = f?.moradores.find((x) => x.id === moradorId);
+      if (!f || !m) return null;
+      f.moradores = f.moradores.filter((x) => x.id !== moradorId);
+      if (f.responsavelId === moradorId) f.responsavelId = f.moradores.find((x) => x.situacao === 'mora')?.id ?? '';
+      anotar(f, [`${m.nome} mudou para ${para}`], moradorId);
+      return $state.snapshot(m) as Morador;
+    };
+    const escolhida = cmp.mudancas.filter((m) => escolhidas.has(m.id));
+    // Códigos do SBCD nas casas e pessoas achadas (a próxima atualização acha mais fácil).
+    for (const l of cmp.ligacoes) {
+      const f = fam(l.familiaId);
+      if (!f) continue;
+      if (l.codSbcd) f.codSbcd = l.codSbcd;
+      for (const x of l.moradores) {
+        const m = f.moradores.find((y) => y.id === x.moradorId);
+        if (m) m.codSbcd = x.codSbcd;
+      }
+    }
+    for (const mu of escolhida) {
+      if (mu.tipo === 'casa') {
+        for (const mv of mu.mover) tirarDaCasa(mv.familiaId, mv.moradorId, mu.rotulo);
+        const nova = structuredClone(mu.familia);
+        app.familias.push({ ...nova, atualizadoEm: quando });
+        app.historico.push(...criarAlteracoes(nova.id, [`Casa nova: ${mu.rotulo} (${nova.moradores.length} ${nova.moradores.length === 1 ? 'pessoa' : 'pessoas'}) (${deOnde})`]));
+        for (const p of app.prioritarios) if (mu.mover.some((mv) => mv.moradorId === p.moradorId)) p.familiaId = nova.id;
+        continue;
+      }
+      if (mu.tipo === 'tirar') continue; // por último, de uma vez
+      const f = fam(mu.familiaId);
+      if (!f) continue;
+      if (mu.tipo === 'prontuario') {
+        anotar(f, [`Prontuário ${mu.de || '(vazio)'} → ${mu.para}`]);
+        f.prontuario = mu.para;
+      } else if (mu.tipo === 'endereco') {
+        anotar(f, [`Endereço ${mu.de} → ${mu.rotulo}`]);
+        f.numero = mu.numero;
+        f.complemento = mu.complemento;
+      } else if (mu.tipo === 'pessoa') {
+        const veio = mu.mover ? tirarDaCasa(mu.mover.familiaId, mu.mover.moradorId, enderecoCurto(f)) : null;
+        const m = veio ? { ...veio, codSbcd: mu.morador.codSbcd ?? veio.codSbcd, nascimento: veio.nascimento || mu.morador.nascimento, sexo: veio.sexo || mu.morador.sexo } : structuredClone(mu.morador);
+        f.moradores.push(m);
+        if (!f.responsavelId) f.responsavelId = m.id;
+        anotar(f, [veio ? `${m.nome} veio de ${mu.mover!.de}` : `Pessoa nova: ${m.nome}`], m.id);
+        if (veio) for (const p of app.prioritarios) if (p.moradorId === m.id) p.familiaId = f.id;
+      } else {
+        const m = f.moradores.find((x) => x.id === mu.moradorId);
+        if (!m) continue;
+        const antes = $state.snapshot(m) as Morador;
+        if (mu.tipo === 'nascimento') m.nascimento = mu.para;
+        else if (mu.tipo === 'sexo') m.sexo = mu.para;
+        else if (mu.tipo === 'obito') {
+          m.situacao = 'faleceu';
+          m.situacaoDesde = hoje;
+        }
+        anotar(f, mudancasMorador(antes, $state.snapshot(m) as Morador), m.id);
+      }
+    }
+    // Prioritários que ainda não estavam ligados a uma pessoa: tenta de novo com o cadastro novo.
+    for (const p of app.prioritarios) {
+      if (p.moradorId) continue;
+      const l = ligar(p, app.familias);
+      if (l.moradorId) Object.assign(p, l);
+    }
+    const ruas = [...new Set([...app.config.ruas, ...app.familias.map((f) => f.rua).filter(Boolean)])];
+    if (ruas.length !== app.config.ruas.length) app.config.ruas = ruas;
+    app.historico.push(...criarAlteracoes('', [`Cadastro atualizado pelo SBCD: ${escolhida.length} ${escolhida.length === 1 ? 'mudança' : 'mudanças'}`]));
+    await gravar({ familias: app.familias, prioritarios: app.prioritarios, historico: app.historico, config: app.config });
+    const tirar = escolhida.filter((m) => m.tipo === 'tirar').map((m) => (m as { familiaId: string }).familiaId);
+    if (tirar.length) await tirarFamiliasDaArea(tirar, 'não veio do SBCD');
   });
 
 /** Marca grupos em vários moradores de uma vez (ex.: lista de hipertensos colada do Fast). */
