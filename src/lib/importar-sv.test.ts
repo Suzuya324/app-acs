@@ -97,3 +97,13 @@ describe('trazer casos, condições, níveis e voltar', () => {
     expect(p2.jaExistiam).toBe(4);
   });
 });
+
+describe('arquivo errado', () => {
+  it('diz qual arquivo foi escolhido e onde ele entra', () => {
+    expect(() => lerArquivoImportacao(JSON.stringify({ tipo: 'facilitador-vds/importacao-sbcd', casas: [] }))).toThrow(/Atualizar cadastro pelo SBCD/);
+    expect(() => lerArquivoImportacao(JSON.stringify([{ nome: 'Ana Teste', nascimento: '01/01/1950' }]))).toThrow(/Prioritários → Importar lista/);
+    expect(() => lerArquivoImportacao(JSON.stringify({ formato: 'app-acs-backup' }))).toThrow(/backup/);
+    expect(() => lerArquivoImportacao('{}')).toThrow(/arquivo certo/);
+    expect(lerArquivoImportacao('\uFEFF{"formato":"facilitador-importacao","versao":1,"origem":"x","itens":[]}').itens).toEqual([]);
+  });
+});
