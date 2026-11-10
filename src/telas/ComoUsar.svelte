@@ -76,7 +76,21 @@
 
 <section class="cartao">
   <details>
-    <summary>7. Errei! Desfazer e lixeira</summary>
+    <summary>7. Prioritários e ficha da pessoa</summary>
+    <ul>
+      <li><strong>Prioritários</strong> (aba da estrela): toque em <strong>Importar lista</strong> e escolha o arquivo dos pacientes prioritários. Os números de cima filtram (acamados, O₂, HAS, DM…).</li>
+      <li><strong>Ficha da pessoa:</strong> na família, toque no morador. Ela mostra as condições, a prioridade e a linha do tempo com tudo o que foi escrito sobre a pessoa.</li>
+      <li><strong>Na VD</strong>, use <strong>“Sobre cada pessoa”</strong> para anotar. O app sugere o que atualizar na ficha (ex.: “ficou acamada” → Acamado); só muda o que você tocar.</li>
+      <li><strong>Acompanhamento:</strong> o app lê tudo o que você escreve (VDs, anotações, casos) e monta para cada pessoa: remédios, P.A. e glicemia, pendências (exame, consulta, resultado) e <strong>o que perguntar na próxima VD</strong>. Aparece na ficha, no cartão de prioritário e na tela da VD. Ele só procura palavras: confira. Toque em <strong>Confirmar</strong> ou <strong>Não é</strong> nas condições achadas e em <strong>Resolvida</strong> nas pendências.</li>
+      <li><strong>Achados pelo app:</strong> quem não está na lista importada, mas tem condição marcada, condição achada nas VDs ou remédio, entra sozinho na aba Prioritários. Use <strong>Todos / Lista / Achados</strong> para filtrar.</li>
+      <li><strong>VDs já feitas:</strong> Ajustes → <strong>Atualizar fichas pelas VDs já feitas</strong> (ou o aviso na aba Prioritários). O app lê o que você já escreveu e mostra o que daria para atualizar, com a frase de onde tirou. Toque em <strong>Atualizar</strong> no que estiver certo e em <strong>Não é</strong> no que estiver errado.</li>
+    </ul>
+  </details>
+</section>
+
+<section class="cartao">
+  <details>
+    <summary>8. Errei! Desfazer e lixeira</summary>
     <ul>
       <li>Depois de salvar, corrigir ou excluir, aparece <strong>Desfazer</strong> no aviso de baixo por alguns segundos.</li>
       <li><strong>Excluir</strong> é só para cadastro feito por engano. Quem mudou-se ou faleceu: mude a <strong>situação</strong>.</li>
@@ -87,7 +101,7 @@
 
 <section class="cartao">
   <details>
-    <summary>8. Celular, tablet e computador (sincronizar) e backup</summary>
+    <summary>9. Celular, tablet e computador (sincronizar) e backup</summary>
     <ul>
       <li><strong>Sincronizar:</strong> em Ajustes → <strong>Sincronizar aparelhos</strong>, conecte cada aparelho uma vez (o passo a passo está lá). Depois, tudo fica igual sozinho, sem backup manual. Vai para a nuvem só uma cópia trancada com a sua senha de sincronização.</li>
       <li><strong>Backup</strong>: Ajustes → Backup. Com a sincronização ligada, uma vez por mês basta; sem ela, toda semana. O app lembra no Início.</li>
@@ -99,7 +113,7 @@
 
 <section class="cartao">
   <details>
-    <summary>9. Segurança</summary>
+    <summary>10. Segurança</summary>
     <ul>
       <li>Os dados ficam <strong>só no aparelho</strong>, trancados com o seu PIN. O app tranca sozinho depois de alguns minutos.</li>
       <li>Esqueceu o PIN? Não tem como recuperar: só com o backup.</li>

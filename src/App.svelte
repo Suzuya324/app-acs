@@ -10,6 +10,7 @@
   import Mapa from './telas/Mapa.svelte';
   import Prontuarios from './telas/Prontuarios.svelte';
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
+  import RevisarFichas from './telas/RevisarFichas.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -58,7 +59,7 @@
   const abaAtiva = $derived(
     ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso', 'pessoa'].includes(rota.tela)
       ? 'busca'
-      : ['prioritario', 'importar-prioritarios'].includes(rota.tela)
+      : ['prioritario', 'importar-prioritarios', 'revisar-fichas'].includes(rota.tela)
         ? 'prioritarios'
       : rota.tela === 'lancar'
         ? 'fila'
@@ -153,6 +154,8 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'revisar-fichas'}
+    <RevisarFichas />
   {:else if rota.tela === 'numeros'}
     <NumerosProntuario />
   {:else if rota.tela === 'prontuarios'}

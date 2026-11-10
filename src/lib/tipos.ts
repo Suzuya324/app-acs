@@ -17,6 +17,7 @@ export type Grupo =
   | 'saude_mental'
   | 'oxigenio'
   | 'avc'
+  | 'coracao'
   | 'cancer'
   | 'cirurgia'
   | 'alzheimer'
@@ -225,6 +226,13 @@ export interface Config {
   emUsoNoFast: { micro: string; numeros: string };
   /** Dia da semana da reunião de equipe (0 = domingo … 3 = quarta … 6 = sábado; -1 = sem reunião fixa). */
   diaReuniao: number;
+  /**
+   * O que o ACS escondeu do acompanhamento, para não aparecer de novo: sugestões que "não são" (moradorId|g-…),
+   * pendências resolvidas (moradorId|p-…) e remédios errados (moradorId|r-…).
+   */
+  sugestoesEscondidas?: string[];
+  /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */
+  remediosExtras?: string;
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */
   alteradaEm?: string;
 }

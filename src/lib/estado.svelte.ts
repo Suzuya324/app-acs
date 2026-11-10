@@ -20,7 +20,9 @@ import {
 } from './lixeira';
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
-import { etiquetaDoGrupo, gruposDasEtiquetas, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import type { SugestaoDasVDs } from './anotacoes';
+import type { Contexto } from './acompanhamento';
+import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -118,6 +120,22 @@ function carregar(d: Dados) {
   app.lixeira = d.lixeira ?? [];
   app.casos = d.casos ?? [];
   app.prioritarios = d.prioritarios ?? [];
+  corrigirCoracao();
+}
+
+/**
+ * Conserta quem ficou como "AVC/infarto" só porque a lista de prioritários usa uma etiqueta única para
+ * "AVC/infarto/coração" (ex.: bebê com cirurgia no coração). Quem não tem AVC nem infarto no resumo passa
+ * para "Coração", na lista e na ficha. Roda uma vez por pessoa: depois a etiqueta já está trocada.
+ */
+function corrigirCoracao() {
+  for (const p of app.prioritarios) {
+    const novas = separarCoracao(p.etiquetas, p.resumo);
+    if (novas === p.etiquetas) continue;
+    p.etiquetas = novas;
+    const m = app.familias.find((f) => f.id === p.familiaId)?.moradores.find((x) => x.id === p.moradorId);
+    if (m?.grupos.includes('avc')) m.grupos = [...new Set(m.grupos.map((g) => (g === 'avc' ? 'coracao' : g)))];
+  }
 }
 
 function dadosAtuais(): Dados {
@@ -320,6 +338,7 @@ function aplicar(d: Dados) {
   app.rascunho = d.rascunho ?? null;
   app.casos = d.casos ?? app.casos;
   app.prioritarios = d.prioritarios ?? app.prioritarios;
+  corrigirCoracao();
 }
 async function gravarTudo() {
   await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios, rascunho: app.rascunho });
@@ -419,7 +438,7 @@ export interface AtualizacaoFicha {
 }
 
 /** Aplica na ficha o que o ACS confirmou a partir das anotações da VD (condições e situação). */
-function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[]) {
+function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: AtualizacaoFicha[], deOnde = 'pela anotação da VD') {
   const f = app.familias.find((x) => x.id === familiaId);
   if (!f || !itens.length) return;
   const quando = agora();
@@ -435,10 +454,85 @@ function aplicarAtualizacoesFicha(familiaId: string, data: string, itens: Atuali
     const textos = mudancasMorador(antes, $state.snapshot(m) as Morador);
     if (!textos.length) continue;
     f.atualizadoEm = quando;
-    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (pela anotação da VD)`), m.id));
+    app.historico.push(...criarAlteracoes(f.id, textos.map((t) => `${t} (${deOnde})`), m.id));
     sincronizarEtiquetas(m.id, antes.grupos, m.grupos);
   }
 }
+
+/**
+ * Revisão das VDs já feitas: aplica nas fichas o que o ACS confirmou e esconde o que ele disse que não é
+ * (para não perguntar de novo).
+ */
+export const aplicarSugestoesDasVDs = (confirmadas: SugestaoDasVDs[], naoE: string[]) =>
+  comDesfazer('Atualizar fichas pelas VDs', async () => {
+    const porPessoa = new Map<string, { familiaId: string; data: string; item: AtualizacaoFicha }>();
+    for (const s of confirmadas) {
+      const p = porPessoa.get(s.morador.id) ?? { familiaId: s.familia.id, data: '', item: { moradorId: s.morador.id, grupos: [] } };
+      if (s.sugestao.tipo === 'grupo') p.item.grupos.push(s.sugestao.grupo);
+      else if (p.item.situacao !== 'faleceu') {
+        p.item.situacao = s.sugestao.situacao;
+        p.data = s.provas[0]?.data ?? '';
+      }
+      porPessoa.set(s.morador.id, p);
+    }
+    for (const p of porPessoa.values()) aplicarAtualizacoesFicha(p.familiaId, p.data || hojeISO(), [p.item], 'pelas VDs já feitas');
+    if (naoE.length) {
+      app.config.sugestoesEscondidas = [...new Set([...(app.config.sugestoesEscondidas ?? []), ...naoE])];
+      app.config.alteradaEm = agora();
+    }
+    await gravar({ familias: app.familias, historico: app.historico, prioritarios: app.prioritarios, ...(naoE.length ? { config: app.config } : {}) });
+  });
+
+/** Volta a mostrar as sugestões que o ACS tinha escondido (as pendências resolvidas e os remédios tirados continuam fora). */
+export function mostrarSugestoesEscondidas() {
+  app.config.sugestoesEscondidas = (app.config.sugestoesEscondidas ?? []).filter((k) => /\|[pr]-/.test(k));
+  return salvarConfig();
+}
+
+// ---------------- Acompanhamento de cada paciente ----------------
+
+/** O que o acompanhamento precisa ler (tudo já está no aparelho). */
+export const contextoAcompanhamento = (): Contexto => ({
+  visitas: app.visitas,
+  casos: app.casos,
+  prioritarios: app.prioritarios,
+  escondidas: app.config.sugestoesEscondidas ?? [],
+  remediosExtras: app.config.remediosExtras ?? '',
+  hoje: hojeISO(),
+});
+
+/** Tira do acompanhamento o que o ACS resolveu ou disse que está errado (pendência, remédio ou sugestão). */
+export const esconderDoAcompanhamento = (chaves: string[], descricao: string) =>
+  comDesfazer(descricao, async () => {
+    app.config.sugestoesEscondidas = [...new Set([...(app.config.sugestoesEscondidas ?? []), ...chaves])];
+    app.config.alteradaEm = agora();
+    await gravar({ config: app.config });
+  });
+
+/** Ensina ao app nomes de remédios que ele não reconheceu (só os nomes; separados por vírgula). */
+export const ensinarRemedios = (nomes: string) =>
+  comDesfazer('Ensinar remédio', async () => {
+    const limpar = (t: string) => t.split(/[,;\n]+/).map((x) => x.trim().replace(/\s+/g, ' ')).filter((x) => x.length >= 3 && x.length <= 40);
+    const juntos = new Map<string, string>();
+    for (const n of [...limpar(app.config.remediosExtras ?? ''), ...limpar(nomes)]) juntos.set(n.toLowerCase(), n);
+    app.config.remediosExtras = [...juntos.values()].join(', ');
+    app.config.alteradaEm = agora();
+    await gravar({ config: app.config });
+  });
+
+/** Põe na lista de prioritários (gravada) uma pessoa que o app achou pela ficha ou pelas VDs. */
+export const porNaListaDePrioritarios = (p: Prioritario) =>
+  comDesfazer('Pôr na lista de prioritários', async () => {
+    const quando = agora();
+    const id = idPrioritario(p.nome, p.nascimento);
+    const novo: Prioritario = { ...p, id, doApp: undefined, editadoEm: quando, atualizadoEm: quando };
+    const i = app.prioritarios.findIndex((x) => x.id === id);
+    if (i >= 0) app.prioritarios[i] = { ...app.prioritarios[i], familiaId: p.familiaId, moradorId: p.moradorId, atualizadoEm: quando };
+    else app.prioritarios.push(novo);
+    if (p.familiaId) app.historico.push(...criarAlteracoes(p.familiaId, [`Incluído na lista de prioritários: ${p.nome} (nível ${p.nivel})`], p.moradorId));
+    await gravar({ prioritarios: app.prioritarios, historico: app.historico });
+    return id;
+  });
 
 /** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */
 export const importarPrioritarios = (previa: PreviaPrioritarios, usarDaListaNova: Set<string>) =>
