@@ -1,16 +1,34 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import Acompanhamento from '../componentes/Acompanhamento.svelte';
   import Etiqueta from '../componentes/Etiqueta.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { normalizar } from '../lib/busca';
   import { formatarData, hojeISO } from '../lib/datas';
-  import { app, mostrarAviso } from '../lib/estado.svelte';
+  import { achadosPeloApp } from '../lib/acompanhamento';
+  import { app, contextoAcompanhamento, familiaPorId, mostrarAviso, porNaListaDePrioritarios } from '../lib/estado.svelte';
+  import { NOMES_GRUPO } from '../lib/rotulos';
   import { etiquetasParaMostrar, idadeHoje, ordenarPrioritarios, textoParaCopiar, type NivelPrio, type Prioritario } from '../lib/prioritarios';
   import { ir } from '../lib/rotas.svelte';
   import { sugestoesDasVDs, ultimaAnotacao } from '../lib/anotacoes';
 
   let { abrir = '' }: { abrir?: string } = $props();
   const hoje = hojeISO();
+
+  /** Quem o app achou fora da lista (pela ficha ou pelas VDs) e o acompanhamento de quem tem algo escrito. */
+  const area = $derived(achadosPeloApp(app.familias, contextoAcompanhamento()));
+  const acompDe = (p: Prioritario) => (p.moradorId ? area.acompanhamentos.get(p.moradorId) : undefined);
+  const aConfirmar = (p: Prioritario) => (acompDe(p)?.achadas ?? []).filter((s) => s.sugestao.tipo === 'grupo');
+  const moradorDe = (p: Prioritario) => (p.familiaId && p.moradorId ? familiaPorId(p.familiaId)?.moradores.find((m) => m.id === p.moradorId) : undefined);
+  /** De onde vem cada pessoa: da lista importada ou achada pelo app. */
+  let origem = $state<'todos' | 'lista' | 'app'>('todos');
+  const base = $derived(origem === 'lista' ? app.prioritarios : origem === 'app' ? area.achados : [...app.prioritarios, ...area.achados]);
+
+  async function porNaLista(p: Prioritario) {
+    const id = await porNaListaDePrioritarios($state.snapshot(p) as Prioritario);
+    aberto = id;
+    mostrarAviso(`${p.nome.split(' ')[0]} entrou na lista ✓`);
+  }
 
   /** Contadores (servem de filtro). */
   const CONTADORES: { chave: string; nome: string; tem: (p: Prioritario) => boolean }[] = [
@@ -22,6 +40,8 @@
     { chave: '80', nome: '80+', tem: (p) => etiquetasParaMostrar(p, hoje).includes('IDOSO 80+') },
     { chave: 'SAUDE MENTAL', nome: 'Saúde mental', tem: (p) => p.etiquetas.includes('SAUDE MENTAL') },
     { chave: 'GESTANTE?', nome: 'Gestantes (confirmar)', tem: (p) => p.etiquetas.includes('GESTANTE?') },
+    { chave: 'CONFIRMAR', nome: 'A confirmar', tem: (p) => aConfirmar(p).length > 0 },
+    { chave: 'PENDENCIA', nome: 'Com pendência', tem: (p) => (acompDe(p)?.pendencias.length ?? 0) > 0 },
   ];
 
   /** Atualizações para as fichas achadas no que já foi escrito nas VDs. */
@@ -33,7 +53,7 @@
   let busca = $state('');
   let aberto = $state<string | null>(untrack(() => abrir) || null);
 
-  const lista = $derived(ordenarPrioritarios(app.prioritarios, app.config.ruas));
+  const lista = $derived(ordenarPrioritarios(base, app.config.ruas));
   const ruas = $derived([...new Set(lista.map((p) => p.rua).filter(Boolean))]);
   const filtrada = $derived.by(() => {
     const q = normalizar(busca);
@@ -59,7 +79,7 @@
 </script>
 
 <div class="cab">
-  <h1>Prioritários <span class="suave">({app.prioritarios.length})</span></h1>
+  <h1>Prioritários <span class="suave">({app.prioritarios.length}{area.achados.length ? ` + ${area.achados.length}` : ''})</span></h1>
   <button class="botao secundario pequeno" onclick={() => ir('importar-prioritarios')}>Importar lista</button>
 </div>
 
@@ -75,10 +95,18 @@
     <p>Ainda não tem lista de prioritários.</p>
     <p class="suave pequeno">Toque em <strong>Importar lista</strong> e escolha o arquivo JSON dos pacientes prioritários.</p>
   </section>
-{:else}
+{/if}
+{#if app.prioritarios.length + area.achados.length > 0}
+  {#if area.achados.length}
+    <div class="seg origem" role="radiogroup" aria-label="De onde vem">
+      <button class:ativo={origem === 'todos'} role="radio" aria-checked={origem === 'todos'} onclick={() => (origem = 'todos')}>Todos</button>
+      <button class:ativo={origem === 'lista'} role="radio" aria-checked={origem === 'lista'} onclick={() => (origem = 'lista')}>Lista ({app.prioritarios.length})</button>
+      <button class:ativo={origem === 'app'} role="radio" aria-checked={origem === 'app'} onclick={() => (origem = 'app')}>Achados ({area.achados.length})</button>
+    </div>
+  {/if}
   <div class="contadores" role="group" aria-label="Filtrar por condição">
     {#each CONTADORES as c (c.chave)}
-      {@const n = app.prioritarios.filter(c.tem).length}
+      {@const n = base.filter(c.tem).length}
       <button class="cont" class:ativo={filtroEtq === c.chave} aria-pressed={filtroEtq === c.chave} onclick={() => (filtroEtq = filtroEtq === c.chave ? null : c.chave)}>
         <strong>{n}</strong><span>{c.nome}</span>
       </button>
@@ -116,7 +144,11 @@
             <span class="suave pequeno">{p.rua} {p.casa} · {p.prontuario ? `Pront. ${p.prontuario}` : 'sem prontuário'}</span>
             {#if p.obito}<span class="obito">⚠️ óbito a confirmar</span>{/if}
             {#if !p.familiaId}<span class="semcasa">não achado no cadastro do app</span>{/if}
-            <span class="etqs">{#each etiquetasParaMostrar(p, hoje) as e (e)}<Etiqueta {e} />{/each}</span>
+            {#if p.doApp}<span class="doapp">achado pelo app · fora da lista</span>{/if}
+            <span class="etqs">
+              {#each etiquetasParaMostrar(p, hoje) as e (e)}<Etiqueta {e} />{/each}
+              {#each aConfirmar(p) as s (s.chave)}{#if s.sugestao.tipo === 'grupo'}<span class="etq-q">{NOMES_GRUPO[s.sugestao.grupo]}? confirmar</span>{/if}{/each}
+            </span>
           </span>
         </button>
         {#if aberto === p.id}
@@ -126,6 +158,9 @@
               {#if ult}<p class="ultima"><strong>Última anotação ({formatarData(ult.data)}):</strong> {ult.texto}</p>{/if}
             {/if}
             {#if p.resumo}<p class="resumo">{p.resumo}</p>{/if}
+            {#if acompDe(p) && moradorDe(p)}
+              <div class="acomp-caixa"><Acompanhamento a={acompDe(p)!} morador={moradorDe(p)!} modo="cartao" /></div>
+            {/if}
             <p class="pequeno">
               <strong>Nascimento:</strong> {p.nascimento ? formatarData(p.nascimento) : '—'} · <strong>Nível:</strong> {p.nivel}
               {#if p.ultimaInfo}<br /><strong>Última informação:</strong> {p.ultimaInfo}{/if}
@@ -133,7 +168,8 @@
             </p>
             <div class="botoes">
               <button class="botao pequeno" onclick={() => copiar(p)}><Icone nome="copiar" tamanho={18} /> Copiar</button>
-              <button class="botao secundario pequeno" onclick={() => ir(`prioritario/${p.id}`)}>Editar</button>
+              {#if p.doApp}<button class="botao secundario pequeno" onclick={() => porNaLista(p)}>Pôr na lista</button>
+              {:else}<button class="botao secundario pequeno" onclick={() => ir(`prioritario/${p.id}`)}>Editar</button>{/if}
               {#if p.familiaId && p.moradorId}<button class="botao secundario pequeno" onclick={() => ir(`pessoa/${p.familiaId}/${p.moradorId}`)}>Ver ficha</button>
               {:else if p.familiaId}<button class="botao secundario pequeno" onclick={() => ir(`familia/${p.familiaId}`)}>Ver família</button>{/if}
             </div>
@@ -325,5 +361,29 @@
     font: inherit;
     cursor: pointer;
     margin-bottom: 12px;
+  }
+  .origem {
+    margin-bottom: 8px;
+  }
+  .doapp {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primaria);
+  }
+  .etq-q {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 6px;
+    line-height: 1.4;
+    border: 2px dashed var(--ausencia);
+    color: var(--texto);
+  }
+  .acomp-caixa {
+    border-top: 1px solid var(--borda);
+    border-bottom: 1px solid var(--borda);
+    padding: 10px 0;
+    margin: 8px 0;
   }
 </style>

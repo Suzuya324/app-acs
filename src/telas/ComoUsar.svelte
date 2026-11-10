@@ -81,6 +81,8 @@
       <li><strong>Prioritários</strong> (aba da estrela): toque em <strong>Importar lista</strong> e escolha o arquivo dos pacientes prioritários. Os números de cima filtram (acamados, O₂, HAS, DM…).</li>
       <li><strong>Ficha da pessoa:</strong> na família, toque no morador. Ela mostra as condições, a prioridade e a linha do tempo com tudo o que foi escrito sobre a pessoa.</li>
       <li><strong>Na VD</strong>, use <strong>“Sobre cada pessoa”</strong> para anotar. O app sugere o que atualizar na ficha (ex.: “ficou acamada” → Acamado); só muda o que você tocar.</li>
+      <li><strong>Acompanhamento:</strong> o app lê tudo o que você escreve (VDs, anotações, casos) e monta para cada pessoa: remédios, P.A. e glicemia, pendências (exame, consulta, resultado) e <strong>o que perguntar na próxima VD</strong>. Aparece na ficha, no cartão de prioritário e na tela da VD. Ele só procura palavras: confira. Toque em <strong>Confirmar</strong> ou <strong>Não é</strong> nas condições achadas e em <strong>Resolvida</strong> nas pendências.</li>
+      <li><strong>Achados pelo app:</strong> quem não está na lista importada, mas tem condição marcada, condição achada nas VDs ou remédio, entra sozinho na aba Prioritários. Use <strong>Todos / Lista / Achados</strong> para filtrar.</li>
       <li><strong>VDs já feitas:</strong> Ajustes → <strong>Atualizar fichas pelas VDs já feitas</strong> (ou o aviso na aba Prioritários). O app lê o que você já escreveu e mostra o que daria para atualizar, com a frase de onde tirou. Toque em <strong>Atualizar</strong> no que estiver certo e em <strong>Não é</strong> no que estiver errado.</li>
     </ul>
   </details>

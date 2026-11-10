@@ -21,7 +21,8 @@ import {
 import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
-import { etiquetaDoGrupo, gruposDasEtiquetas, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import type { Contexto } from './acompanhamento';
+import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -465,11 +466,56 @@ export const aplicarSugestoesDasVDs = (confirmadas: SugestaoDasVDs[], naoE: stri
     await gravar({ familias: app.familias, historico: app.historico, prioritarios: app.prioritarios, ...(naoE.length ? { config: app.config } : {}) });
   });
 
-/** Volta a mostrar as sugestões que o ACS tinha escondido. */
+/** Volta a mostrar as sugestões que o ACS tinha escondido (as pendências resolvidas e os remédios tirados continuam fora). */
 export function mostrarSugestoesEscondidas() {
-  app.config.sugestoesEscondidas = [];
+  app.config.sugestoesEscondidas = (app.config.sugestoesEscondidas ?? []).filter((k) => /\|[pr]-/.test(k));
   return salvarConfig();
 }
+
+// ---------------- Acompanhamento de cada paciente ----------------
+
+/** O que o acompanhamento precisa ler (tudo já está no aparelho). */
+export const contextoAcompanhamento = (): Contexto => ({
+  visitas: app.visitas,
+  casos: app.casos,
+  prioritarios: app.prioritarios,
+  escondidas: app.config.sugestoesEscondidas ?? [],
+  remediosExtras: app.config.remediosExtras ?? '',
+  hoje: hojeISO(),
+});
+
+/** Tira do acompanhamento o que o ACS resolveu ou disse que está errado (pendência, remédio ou sugestão). */
+export const esconderDoAcompanhamento = (chaves: string[], descricao: string) =>
+  comDesfazer(descricao, async () => {
+    app.config.sugestoesEscondidas = [...new Set([...(app.config.sugestoesEscondidas ?? []), ...chaves])];
+    app.config.alteradaEm = agora();
+    await gravar({ config: app.config });
+  });
+
+/** Ensina ao app nomes de remédios que ele não reconheceu (só os nomes; separados por vírgula). */
+export const ensinarRemedios = (nomes: string) =>
+  comDesfazer('Ensinar remédio', async () => {
+    const limpar = (t: string) => t.split(/[,;\n]+/).map((x) => x.trim().replace(/\s+/g, ' ')).filter((x) => x.length >= 3 && x.length <= 40);
+    const juntos = new Map<string, string>();
+    for (const n of [...limpar(app.config.remediosExtras ?? ''), ...limpar(nomes)]) juntos.set(n.toLowerCase(), n);
+    app.config.remediosExtras = [...juntos.values()].join(', ');
+    app.config.alteradaEm = agora();
+    await gravar({ config: app.config });
+  });
+
+/** Põe na lista de prioritários (gravada) uma pessoa que o app achou pela ficha ou pelas VDs. */
+export const porNaListaDePrioritarios = (p: Prioritario) =>
+  comDesfazer('Pôr na lista de prioritários', async () => {
+    const quando = agora();
+    const id = idPrioritario(p.nome, p.nascimento);
+    const novo: Prioritario = { ...p, id, doApp: undefined, editadoEm: quando, atualizadoEm: quando };
+    const i = app.prioritarios.findIndex((x) => x.id === id);
+    if (i >= 0) app.prioritarios[i] = { ...app.prioritarios[i], familiaId: p.familiaId, moradorId: p.moradorId, atualizadoEm: quando };
+    else app.prioritarios.push(novo);
+    if (p.familiaId) app.historico.push(...criarAlteracoes(p.familiaId, [`Incluído na lista de prioritários: ${p.nome} (nível ${p.nivel})`], p.moradorId));
+    await gravar({ prioritarios: app.prioritarios, historico: app.historico });
+    return id;
+  });
 
 /** Traz a lista de prioritários (nova ou atualizada). Nada é apagado; o que foi editado à mão só muda se o ACS escolheu. */
 export const importarPrioritarios = (previa: PreviaPrioritarios, usarDaListaNova: Set<string>) =>

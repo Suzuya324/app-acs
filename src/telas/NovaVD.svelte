@@ -23,7 +23,9 @@
   } from '../lib/estado.svelte';
   import { gerarRelato, juntarNomes, nomesCurtos, separarNomes } from '../lib/relato';
   import { sugestoesDaAnotacao, type Sugestao } from '../lib/anotacoes';
-  import type { AtualizacaoFicha } from '../lib/estado.svelte';
+  import { acompanhamentoDaPessoa } from '../lib/acompanhamento';
+  import Acompanhamento from '../componentes/Acompanhamento.svelte';
+  import { contextoAcompanhamento, type AtualizacaoFicha } from '../lib/estado.svelte';
   import { NOMES_GRUPO, TEMAS_ORIENTACAO, textoRevisitaFeita } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Desfecho, RascunhoVD, SinaisVitais, Visita } from '../lib/tipos';
@@ -119,6 +121,14 @@
   let anotando = $state<string[]>(Object.keys(inicio.anotacoes ?? {}).filter((k) => (inicio.anotacoes ?? {})[k]?.trim()));
   /** Sugestões que o ACS confirmou (chave: "morador|sugestão"). */
   let aceitas = $state<string[]>([]);
+  /** Quem da casa tem algo para acompanhar (pendência, remédio, pergunta, condição a confirmar). */
+  const acomps = $derived(
+    familia
+      ? ativos
+          .map((m) => ({ m, a: acompanhamentoDaPessoa(m, familia, contextoAcompanhamento()) }))
+          .filter((x) => x.a.perguntas.length || x.a.remedios.length || x.a.pendencias.length || x.a.achadas.length)
+      : [],
+  );
   const sugestoes = $derived(
     Object.fromEntries(ativos.map((m) => [m.id, sugestoesDaAnotacao(anotacoes[m.id] ?? '', m)])) as Record<string, Sugestao[]>,
   );
@@ -376,6 +386,27 @@
   <p class="suave endereco">{enderecoCurto(familia)}</p>
   {#if familia.atencao}<p class="alerta"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
   {#if !corrigindo}<Prioridade {familia} aberto />{/if}
+
+  <!-- ACOMPANHAMENTO: o que o app leu do que já foi escrito sobre cada pessoa da casa -->
+  {#if !corrigindo && acomps.length}
+    <section class="cartao acompanhar">
+      <h2>Acompanhar nesta casa</h2>
+      <p class="suave pequeno">O que o app leu do que você já escreveu. Toque no nome para ver.</p>
+      {#each acomps as x (x.m.id)}
+        <details open={acomps.length <= 2}>
+          <summary>
+            <strong>{x.m.nome.split(' ')[0]}</strong>
+            <span class="suave pequeno">
+              {[x.a.pendencias.length && `${x.a.pendencias.length} ${x.a.pendencias.length === 1 ? 'pendência' : 'pendências'}`,
+                x.a.remedios.length && `${x.a.remedios.length} ${x.a.remedios.length === 1 ? 'remédio' : 'remédios'}`,
+                x.a.achadas.length && `${x.a.achadas.length} a confirmar`].filter(Boolean).join(' · ')}
+            </span>
+          </summary>
+          <Acompanhamento a={x.a} morador={x.m} modo="vd" />
+        </details>
+      {/each}
+    </section>
+  {/if}
   {#if inicio.restaurado}
     <p class="alerta">Você tinha começado esta visita: ela foi recuperada do jeito que estava.</p>
   {/if}
@@ -831,5 +862,17 @@
     display: flex;
     min-height: 60px;
     font-size: 1.15rem;
+  }
+  .acompanhar details {
+    border-top: 1px solid var(--borda);
+    padding: 8px 0;
+  }
+  .acompanhar summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 0;
   }
 </style>

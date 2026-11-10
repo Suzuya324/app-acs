@@ -149,6 +149,14 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   tempo (anotações das VDs, P.A., glicemia, relatos antigos e o que foi escrito nas VDs trazidas).
 - **Anotar na VD:** em **"Sobre cada pessoa"**, escreva ou dite. O app sugere o que atualizar na ficha;
   só muda o que você tocar.
+- **Acompanhamento de cada pessoa:** o app lê o que você escreve (VDs, anotações, casos) e monta sozinho:
+  remédios (em uso, parou, alergia), últimas P.A. e glicemia, pendências (exame, consulta, resultado,
+  cirurgia, receita) e **o que perguntar na próxima VD**. Aparece na ficha da pessoa, no cartão de
+  prioritário e na tela da VD ("Acompanhar nesta casa"). Ele só procura palavras: confira. Toque em
+  **Confirmar** / **Não é** nas condições achadas, em **Resolvida** nas pendências e no **✕** do remédio errado.
+  Frases curtas ajudam: "parou o captopril", "começou losartana", "pegou o resultado".
+- **Achados pelo app:** quem está fora da lista importada, mas tem condição marcada, condição achada nas
+  VDs ou remédio, entra sozinho na aba Prioritários. Filtre por **Todos / Lista / Achados**.
 - **Atualizar fichas pelas VDs já feitas:** Ajustes → **"Atualizar fichas pelas VDs já feitas"** (ou o
   aviso na aba Prioritários). O app lê o que você já escreveu (relatos trazidos do Sistema de Visitas,
   observações das VDs e casos) e mostra o que daria para atualizar, com a frase de onde tirou. Toque em

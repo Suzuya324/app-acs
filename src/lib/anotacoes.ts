@@ -27,11 +27,11 @@ const REGRAS: [RegExp, Grupo][] = [
 const FALECEU = /\b(faleceu|falecid[oa]|obito|morreu)\b/;
 const MUDOU = /\b(mudou[- ]se|se mudou|mudou de (casa|endereco)|nao mora mais)\b/;
 /** Antes da palavra, no mesmo pedaço da frase (entre vírgulas): negação ou só orientação ("nega", "sem", "orientada sobre…"). */
-const NEGACAO = /\b(nega\w*|sem|nao tem|nao e|nunca teve|descartad\w*|nao esta|orient\w*)\b/;
+export const NEGACAO = /\b(nega\w*|sem|nao tem|nao e|nunca teve|descartad\w*|nao esta|orient\w*)\b/;
 /** Antes da palavra, na mesma frase: outra pessoa ("a mãe é…", "o marido…"). */
-const OUTRA_PESSOA = /\b(mae|pai|esposa|esposo|marido|filh[oa]s?|irma[o]?s?|avo|avos|net[oa]s?|vizinh[oa]|sogr[oa]|tia|tio|prim[oa])\b/;
+export const OUTRA_PESSOA = /\b(mae|pai|esposa|esposo|marido|filh[oa]s?|irma[o]?s?|avo|avos|net[oa]s?|vizinh[oa]|sogr[oa]|tia|tio|prim[oa])\b/;
 /** Depois de "contou que", "disse que"… o assunto volta a ser a própria pessoa. */
-const RELATOU = /\b(?:contou|disse|relatou|informou|falou|avisou|referiu)\b/;
+export const RELATOU = /\b(?:contou|disse|relatou|informou|falou|avisou|referiu)\b/;
 
 /** Logo depois da palavra: "…da mãe", "…do marido" (a condição é de outra pessoa). */
 const DE_OUTRA_PESSOA = new RegExp(`^\\s*d[aeo]s?\\s+(?:su[ao]s?\\s+|seus?\\s+)?${OUTRA_PESSOA.source}`);
@@ -88,8 +88,8 @@ export function textoEscritoDaVD(v: Visita): string {
 }
 
 /** Minúsculas e sem acento, letra por letra (mantém as posições do texto original). */
-const semAcento = (t: string) => t.split('').map((c) => (c.normalize('NFD')[0] ?? c).toLowerCase()[0] ?? c).join('');
-const escapar = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const semAcento = (t: string) => t.split('').map((c) => (c.normalize('NFD')[0] ?? c).toLowerCase()[0] ?? c).join('');
+export const escapar = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const LIGACOES = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 /** Depois do nome: "…disse que ele/ela…" (a pessoa só está contando de outra). */
 const FALA_DE_OUTRO = /^[^.;!?\n]{0,40}?\b(?:disse|contou|relatou|informou|falou|avisou|referiu)\s+que\s+(?:ele|ela)\b/;
@@ -136,14 +136,24 @@ export function trechosDaPessoa(texto: string, m: Morador, f: Familia): string[]
   return trechos.map((t) => t.trim()).filter(Boolean);
 }
 
+/** "12/08/2026 Agente" → "2026-08-12". */
+export const dataDeTexto = (t: string) => {
+  const m = (t ?? '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+};
+
 /** Um texto já escrito sobre a família, com a data e de onde veio. */
 export interface TextoDaFamilia {
   data: string;
   origem: string;
   texto: string;
+  /** Veio de um caso já resolvido (não gera pendência). */
+  encerrado?: boolean;
+  /** Veio do resumo da lista de prioritários. */
+  lista?: boolean;
 }
 
-const dataCurta = (iso: string) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '');
+export const dataCurta = (iso: string) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '');
 
 /** Tudo o que já foi escrito sobre a família: VDs (relatos trazidos e observações), relatos antigos e casos. */
 export function textosDaFamilia(f: Familia, visitas: Visita[], casos: Caso[] = []): TextoDaFamilia[] {
@@ -154,8 +164,32 @@ export function textosDaFamilia(f: Familia, visitas: Visita[], casos: Caso[] = [
   }
   for (const r of f.relatosAnteriores ?? []) lista.push({ data: r.data ?? '', origem: r.titulo, texto: r.texto });
   for (const c of casos) {
-    if (c.familiaId === f.id) lista.push({ data: c.criadoEm.slice(0, 10), origem: `Caso: ${c.titulo}`, texto: `${c.titulo}. ${c.texto}` });
+    if (c.familiaId === f.id) lista.push({ data: c.criadoEm.slice(0, 10), origem: `Caso: ${c.titulo}`, texto: `${c.titulo}. ${c.texto}`, encerrado: !!c.resolvidoEm || undefined });
   }
+  return lista;
+}
+
+/**
+ * Tudo o que já foi escrito sobre a pessoa: as anotações dela nas VDs, os pedaços dos textos da casa
+ * que falam dela (VDs, relatos antigos, casos) e, se pedir, o resumo da lista de prioritários.
+ */
+export function textosDaPessoa(m: Morador, f: Familia, visitas: Visita[], casos: Caso[] = [], prio?: Prioritario): TextoDaFamilia[] {
+  const lista: TextoDaFamilia[] = [];
+  const vistos = new Set<string>();
+  const por = (t: TextoDaFamilia) => {
+    const chave = `${t.data}|${t.texto}`;
+    if (!t.texto || vistos.has(chave)) return;
+    vistos.add(chave);
+    lista.push(t);
+  };
+  for (const v of visitas) {
+    const anot = v.familiaId === f.id ? (v.anotacoes?.[m.id]?.trim() ?? '') : '';
+    if (anot) por({ data: v.data, origem: `VD de ${dataCurta(v.data)}`, texto: anot });
+  }
+  for (const t of textosDaFamilia(f, visitas, casos)) {
+    for (const trecho of trechosDaPessoa(t.texto, m, f)) por({ ...t, texto: trecho });
+  }
+  if (prio?.resumo?.trim()) por({ data: dataDeTexto(prio.ultimaInfo), origem: 'Lista de prioritários', texto: prio.resumo.trim(), lista: true });
   return lista;
 }
 
@@ -171,34 +205,43 @@ export interface SugestaoDasVDs {
 }
 
 /** As frases de um texto, com a pontuação final. */
-const frases = (t: string) => (t.match(/[^.;!?\n]+[.;!?\n]*/g) ?? []).map((x) => x.trim()).filter(Boolean);
+export const frases = (t: string) =>
+  // "Dra.", "Sr.", "P.A." e "1.5" não terminam a frase: o ponto é trocado por um parecido só para separar.
+  (t.replace(/\b(dra?|sra?|srta|p\.a|obs|tel)\./gi, '$1\u2024').replace(/(\d)\.(?=\d)/g, '$1\u2024').match(/[^.;!?\n|]+[.;!?\n|]*/g) ?? [])
+    .map((x) => x.replace(/\u2024/g, '.').replace(/[|\s]+$/, '').trim())
+    .filter(Boolean);
 
-/** Lê as VDs já feitas, os relatos antigos e os casos e junta o que daria para atualizar nas fichas. */
-export function sugestoesDasVDs(familias: Familia[], visitas: Visita[], casos: Caso[], escondidas: Iterable<string> = []): SugestaoDasVDs[] {
-  const fora = new Set(escondidas);
+/** As atualizações de ficha achadas no que já foi escrito sobre uma pessoa. */
+export function sugestoesDaPessoa(m: Morador, f: Familia, textos: TextoDaFamilia[], escondidas: ReadonlySet<string> = new Set()): SugestaoDasVDs[] {
   const porChave = new Map<string, SugestaoDasVDs>();
-  for (const f of familias) {
-    const textos = textosDaFamilia(f, visitas, casos);
-    if (!textos.length) continue;
-    for (const m of f.moradores) {
-      if (m.situacao !== 'mora') continue;
-      for (const t of textos) {
-        for (const trecho of trechosDaPessoa(t.texto, m, f)) {
-          for (const frase of frases(trecho)) {
-            for (const s of sugestoesDaAnotacao(frase, m)) {
-              const chave = `${m.id}|${s.id}`;
-              if (fora.has(chave)) continue;
-              let item = porChave.get(chave);
-              if (!item) porChave.set(chave, (item = { chave, familia: f, morador: m, sugestao: s, provas: [] }));
-              if (!item.provas.some((p) => p.frase === frase)) item.provas.push({ data: t.data, origem: t.origem, frase, trecho });
-            }
-          }
-        }
+  for (const t of textos) {
+    if (t.lista) continue; // a lista de prioritários já traz as próprias etiquetas
+    for (const frase of frases(t.texto)) {
+      for (const s of sugestoesDaAnotacao(frase, m)) {
+        const chave = `${m.id}|${s.id}`;
+        if (escondidas.has(chave)) continue;
+        let item = porChave.get(chave);
+        if (!item) porChave.set(chave, (item = { chave, familia: f, morador: m, sugestao: s, provas: [] }));
+        if (!item.provas.some((p) => p.frase === frase)) item.provas.push({ data: t.data, origem: t.origem, frase, trecho: t.texto });
       }
     }
   }
   const lista = [...porChave.values()];
   for (const it of lista) it.provas.sort((a, b) => b.data.localeCompare(a.data));
+  return lista;
+}
+
+/** Lê as VDs já feitas, as anotações, os relatos antigos e os casos e junta o que daria para atualizar nas fichas. */
+export function sugestoesDasVDs(familias: Familia[], visitas: Visita[], casos: Caso[], escondidas: Iterable<string> = []): SugestaoDasVDs[] {
+  const fora = new Set(escondidas);
+  const comTexto = new Set<string>([...visitas.map((v) => v.familiaId), ...casos.map((c) => c.familiaId)]);
+  const lista: SugestaoDasVDs[] = [];
+  for (const f of familias) {
+    if (!comTexto.has(f.id) && !f.relatosAnteriores?.length) continue;
+    for (const m of f.moradores) {
+      if (m.situacao === 'mora') lista.push(...sugestoesDaPessoa(m, f, textosDaPessoa(m, f, visitas, casos), fora));
+    }
+  }
   return lista;
 }
 
@@ -226,10 +269,6 @@ export function textoSinais(s?: SinaisVitais): string {
     .join(' · ');
 }
 
-const dataDeTexto = (t: string) => {
-  const m = t.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
-};
 
 /**
  * Tudo sobre a pessoa, do mais novo ao mais antigo: o que foi anotado nas VDs, os sinais vitais,

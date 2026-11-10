@@ -32,6 +32,8 @@ export interface Prioritario {
   /** Última edição feita à mão no app (ISO). */
   editadoEm?: string;
   atualizadoEm: string;
+  /** Não veio da lista importada: o app achou a pessoa pela ficha ou pelas VDs (nunca é gravado). */
+  doApp?: boolean;
 }
 
 export type CorEtiqueta = 'vermelho' | 'laranja' | 'roxo' | 'azul' | 'cinza';

@@ -1,11 +1,13 @@
 <script lang="ts">
   // Ficha do paciente: dados, condições, prioridade e a linha do tempo (tudo o que foi anotado).
+  import Acompanhamento from '../componentes/Acompanhamento.svelte';
   import Etiqueta from '../componentes/Etiqueta.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { idadeTexto } from '../lib/dados-ficticios';
   import { linhaDoTempo } from '../lib/anotacoes';
   import { formatarData, hojeISO } from '../lib/datas';
-  import { app, enderecoCurto, familiaPorId } from '../lib/estado.svelte';
+  import { acompanhamentoDaPessoa } from '../lib/acompanhamento';
+  import { app, contextoAcompanhamento, enderecoCurto, familiaPorId } from '../lib/estado.svelte';
   import { etiquetasParaMostrar } from '../lib/prioritarios';
   import { NOMES_GRUPO, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
@@ -16,6 +18,7 @@
   const m = $derived(familia?.moradores.find((x) => x.id === moradorId));
   const prio = $derived(app.prioritarios.find((p) => p.moradorId === moradorId));
   const linha = $derived(m && familia ? linhaDoTempo(m, familia, app.visitas, (d) => app.config.nomesDesfecho[d], prio) : []);
+  const acomp = $derived(m && familia ? acompanhamentoDaPessoa(m, familia, contextoAcompanhamento()) : null);
   let mostrarTudo = $state(false);
 </script>
 
@@ -48,6 +51,14 @@
     {/if}
     {#if m.obs}<p class="obs"><strong>Obs.:</strong> {m.obs}</p>{/if}
   </section>
+
+  {#if acomp && !acomp.vazio && (acomp.achadas.length || acomp.perguntas.length || acomp.remedios.length || acomp.pendencias.length)}
+    <section class="cartao acompanhamento">
+      <h2>Acompanhamento</h2>
+      <p class="suave pequeno">O app leu o que você já escreveu sobre {m.nome.split(' ')[0]}. Ele só procura palavras: confira antes de confiar.</p>
+      <Acompanhamento a={acomp} morador={m} modo="ficha" />
+    </section>
+  {/if}
 
   <section class="cartao">
     <h2>Linha do tempo</h2>
