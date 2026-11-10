@@ -11,6 +11,7 @@
   import Prontuarios from './telas/Prontuarios.svelte';
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
   import RevisarFichas from './telas/RevisarFichas.svelte';
+  import AtualizarCadastro from './telas/AtualizarCadastro.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -63,7 +64,7 @@
         ? 'prioritarios'
       : rota.tela === 'lancar'
         ? 'fila'
-        : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv'].includes(rota.tela)
+        : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro'].includes(rota.tela)
         ? 'ajustes'
         : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'casos'].includes(rota.tela)
           ? 'inicio'
@@ -154,6 +155,8 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'atualizar-cadastro'}
+    <AtualizarCadastro />
   {:else if rota.tela === 'revisar-fichas'}
     <RevisarFichas />
   {:else if rota.tela === 'numeros'}

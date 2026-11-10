@@ -42,6 +42,8 @@ export interface Morador {
   situacaoDesde: string;
   grupos: Grupo[];
   obs: string;
+  /** Código da pessoa no SBCD (vem do arquivo de atualização do cadastro). */
+  codSbcd?: string;
 }
 
 export interface Familia {
@@ -68,7 +70,8 @@ export interface Familia {
   /** Recado de atenção da casa (aparece na ficha e na VD). */
   atencao?: string;
   /** Data (aaaa-mm-dd) da última VD feita fora do app (ex.: lançada só no Fast), para calcular a próxima. */
-  ultimaVdFora?: string;
+  ultimaVdFora?: string;  /** Código do domicílio no SBCD (vem do arquivo de atualização do cadastro). */
+  codSbcd?: string;
 }
 
 export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';

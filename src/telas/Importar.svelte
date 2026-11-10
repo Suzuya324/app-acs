@@ -66,6 +66,7 @@
     <p class="alerta">
       Você já importou sua área. Importar de novo <strong>apaga as famílias, as visitas e o histórico atuais</strong>
       e põe o conteúdo do arquivo no lugar. Faça um backup antes. Para pequenas mudanças, edite direto no app.
+      Para atualizar pelo SBCD sem perder nada, use <button class="link-cad" onclick={() => ir('atualizar-cadastro')}>Atualizar cadastro pelo SBCD</button>.
     </p>
   {:else if app.config.usandoExemplo}
     <p class="alerta">A importação troca os <strong>dados de exemplo</strong> (inventados) pela sua área. As visitas de exemplo também somem.</p>
@@ -244,5 +245,16 @@ Acácias 12 FUNDOS (pront. 00.001)
   }
   .espaco {
     margin-top: 10px;
+  }
+  .link-cad {
+    display: inline;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
   }
 </style>

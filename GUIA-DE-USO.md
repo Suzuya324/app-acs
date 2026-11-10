@@ -139,6 +139,11 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   família**, junto com o recado de **Atenção**. O Início mostra **"Revisitar por prioridade"**.
 - **O que perguntar:** a ficha da família e a tela da VD mostram o que perguntar conforme as
   condições de cada pessoa.
+- **Atualizar cadastro pelo SBCD (sem apagar nada):** Ajustes → **"Atualizar cadastro pelo SBCD"** →
+  escolha o arquivo do cadastro que o Claude montou. O app mostra só as diferenças: prontuário novo,
+  endereço que mudou, pessoa nova, casa nova (quem já estava em outra casa muda junto, com a ficha),
+  data de nascimento, óbito e casas que não vieram. As seguras já vêm marcadas; confira as outras e
+  toque em **Salvar**. As VDs e as fichas ficam. Não use "Importar minha área (CSV)" para isso: ele apaga tudo.
 - **Trazer do Sistema de Visitas:** Ajustes → **"Trazer VDs e relatos do Sistema de Visitas"** →
   escolha o arquivo que o Claude montou (VDs, relatos, casos, condições, níveis e "voltar") →
   confira o resumo → **Trazer para o app**. Nada se repete
