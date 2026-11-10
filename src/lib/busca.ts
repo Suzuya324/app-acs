@@ -51,6 +51,7 @@ const PALAVRAS_GRUPO: [string, Grupo][] = [
   ['saude mental', 'saude_mental'], ['mental', 'saude_mental'],
   ['oxigenio', 'oxigenio'],
   ['avc', 'avc'], ['infarto', 'avc'],
+  ['coracao', 'coracao'], ['cardiaco', 'coracao'], ['cardiopatia', 'coracao'], ['arritmia', 'coracao'],
   ['cancer', 'cancer'], ['oncologia', 'cancer'],
   ['cirurgia', 'cirurgia'], ['operado', 'cirurgia'],
   ['alzheimer', 'alzheimer'], ['demencia', 'alzheimer'], ['paliativo', 'alzheimer'],

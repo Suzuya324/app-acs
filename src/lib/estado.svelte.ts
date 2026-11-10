@@ -22,7 +22,7 @@ import { gerarRelato } from './relato';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
-import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -120,6 +120,22 @@ function carregar(d: Dados) {
   app.lixeira = d.lixeira ?? [];
   app.casos = d.casos ?? [];
   app.prioritarios = d.prioritarios ?? [];
+  corrigirCoracao();
+}
+
+/**
+ * Conserta quem ficou como "AVC/infarto" só porque a lista de prioritários usa uma etiqueta única para
+ * "AVC/infarto/coração" (ex.: bebê com cirurgia no coração). Quem não tem AVC nem infarto no resumo passa
+ * para "Coração", na lista e na ficha. Roda uma vez por pessoa: depois a etiqueta já está trocada.
+ */
+function corrigirCoracao() {
+  for (const p of app.prioritarios) {
+    const novas = separarCoracao(p.etiquetas, p.resumo);
+    if (novas === p.etiquetas) continue;
+    p.etiquetas = novas;
+    const m = app.familias.find((f) => f.id === p.familiaId)?.moradores.find((x) => x.id === p.moradorId);
+    if (m?.grupos.includes('avc')) m.grupos = [...new Set(m.grupos.map((g) => (g === 'avc' ? 'coracao' : g)))];
+  }
 }
 
 function dadosAtuais(): Dados {
@@ -322,6 +338,7 @@ function aplicar(d: Dados) {
   app.rascunho = d.rascunho ?? null;
   app.casos = d.casos ?? app.casos;
   app.prioritarios = d.prioritarios ?? app.prioritarios;
+  corrigirCoracao();
 }
 async function gravarTudo() {
   await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios, rascunho: app.rascunho });

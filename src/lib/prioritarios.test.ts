@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   etiquetasParaMostrar, gruposDasEtiquetas, infoEtiqueta, lerListaPrioritarios, ligar, ordenarPrioritarios,
-  pareceObitoAConfirmar, prepararPrioritarios, textoParaCopiar, type Prioritario,
+  pareceObitoAConfirmar, prepararPrioritarios, textoParaCopiar, type Prioritario, separarCoracao, temAvcOuInfarto,
 } from './prioritarios';
 import type { Familia, Morador } from './tipos';
 
@@ -73,5 +73,24 @@ describe('prioritários', () => {
     const l = lerListaPrioritarios(LISTA, 'agora');
     expect(ordenarPrioritarios(l, ['RUA DAS ACACIAS']).map((p) => `${p.nivel}${p.casa}`)).toEqual(['A333', 'A400 NUMERO 13A', 'B111 CS1', 'C1']);
     expect(textoParaCopiar(l[0], HOJE)).toBe('JOANA TESTE SILVA (76 anos) - Acacias 333 - Pront. 0000.09.101 - HAS, DM, Gestante? confirmar - Resumo inventado.');
+  });
+});
+
+describe('etiqueta de coração', () => {
+  it('só fica como AVC/infarto quem tem AVC ou infarto no resumo', () => {
+    expect(temAvcOuInfarto('Infarto em 2024 (inventado).')).toBe(true);
+    expect(temAvcOuInfarto('2 AVCs com sequela (inventado).')).toBe(true);
+    expect(temAvcOuInfarto('BEBE: cirurgia cardíaca (inventado).')).toBe(false);
+    expect(separarCoracao(['AVC/INFARTO/CORACAO', 'HAS'], 'Arritmia, usa marca-passo (inventado).')).toEqual(['CORACAO', 'HAS']);
+    expect(separarCoracao(['AVC/INFARTO/CORACAO'], 'Teve derrame (inventado).')).toEqual(['AVC/INFARTO/CORACAO']);
+    expect(gruposDasEtiquetas(['CORACAO'])).toEqual(['coracao']);
+  });
+
+  it('a lista importada já chega separada', () => {
+    const l = lerListaPrioritarios(JSON.stringify([
+      { nome: 'Bebe Teste', nascimento: '12/04/2024', nivel: 'A', condicoes: ['AVC/INFARTO/CORACAO'], resumo: 'Cirurgia cardíaca (inventado).' },
+      { nome: 'Adulto Teste', nascimento: '12/04/1960', nivel: 'A', condicoes: ['AVC/INFARTO/CORACAO'], resumo: 'Infarto em 2024 (inventado).' },
+    ]), 'x');
+    expect(l.map((p) => p.etiquetas)).toEqual([['CORACAO'], ['AVC/INFARTO/CORACAO']]);
   });
 });

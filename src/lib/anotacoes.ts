@@ -16,6 +16,7 @@ const REGRAS: [RegExp, Grupo][] = [
   [/\b(acamad\w*|domiciliad\w*|nao (anda|levanta) mais)\b/, 'acamado'],
   [/\b(oxigenio|o2)\b/, 'oxigenio'],
   [/\b(avc|derrame|infarto|infartou)\b/, 'avc'],
+  [/\b(cardiopat\w*|arritmia|marca[- ]?passo|sopro no coracao|cirurgia cardiaca|insuficiencia cardiaca)\b/, 'coracao'],
   [/\b(cancer|tumor|quimioterapia|quimio|radioterapia|oncologia)\b/, 'cancer'],
   [/\b(cirurgia|operou|operad[oa]|pos operatorio)\b/, 'cirurgia'],
   [/\b(depress\w*|ansiedade|psiquiatr\w*|caps|saude mental|bipolar\w*|esquizofren\w*)\b/, 'saude_mental'],

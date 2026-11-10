@@ -14,7 +14,7 @@ export type Nivel = 'A' | 'B' | 'C';
 
 export const DIAS_NIVEL: Record<'A' | 'B', number> = { A: 10, B: 30 };
 const GRAVES: Grupo[] = ['oxigenio', 'acamado', 'avc', 'cancer', 'saude_mental', 'alzheimer'];
-const CRONICOS: Grupo[] = ['diabetico', 'hipertenso', 'cirurgia'];
+const CRONICOS: Grupo[] = ['diabetico', 'hipertenso', 'cirurgia', 'coracao'];
 
 /** O que perguntar na VD, por condição. */
 export const PERGUNTAS: Partial<Record<Grupo, string>> = {
@@ -23,6 +23,7 @@ export const PERGUNTAS: Partial<Record<Grupo, string>> = {
   oxigenio: 'aparelho e cilindro de oxigênio, falta de ar',
   acamado: 'pele/escaras, posição, higiene, cuidador',
   avc: 'fala, força, remédios, dor no peito',
+  coracao: 'falta de ar, cansaço, inchaço, remédios, consultas do coração',
   cancer: 'dor, alimentação, consultas e tratamento',
   cirurgia: 'ferida, curativo, retorno',
   saude_mental: 'humor, sono, remédios, rede de apoio',

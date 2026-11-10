@@ -17,6 +17,7 @@ export type Grupo =
   | 'saude_mental'
   | 'oxigenio'
   | 'avc'
+  | 'coracao'
   | 'cancer'
   | 'cirurgia'
   | 'alzheimer'

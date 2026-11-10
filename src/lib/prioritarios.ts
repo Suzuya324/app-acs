@@ -45,7 +45,8 @@ export const ETIQUETAS: { chave: string; nome: string; cor: CorEtiqueta; grupo?:
   { chave: 'PALIATIVO', nome: 'Paliativo', cor: 'vermelho', grupo: 'alzheimer' },
   { chave: 'HAS', nome: 'HAS', cor: 'laranja', grupo: 'hipertenso' },
   { chave: 'DM', nome: 'DM', cor: 'laranja', grupo: 'diabetico' },
-  { chave: 'AVC/INFARTO/CORACAO', nome: 'AVC/infarto/coração', cor: 'laranja', grupo: 'avc' },
+  { chave: 'AVC/INFARTO/CORACAO', nome: 'AVC/infarto', cor: 'laranja', grupo: 'avc' },
+  { chave: 'CORACAO', nome: 'Coração', cor: 'laranja', grupo: 'coracao' },
   { chave: 'SAUDE MENTAL', nome: 'Saúde mental', cor: 'roxo', grupo: 'saude_mental' },
   { chave: 'ALZHEIMER/DEMENCIA', nome: 'Alzheimer/demência', cor: 'roxo', grupo: 'alzheimer' },
   { chave: 'IDOSO 80+', nome: '80+', cor: 'azul' },
@@ -94,6 +95,18 @@ const dataISO = (t: string) => {
   return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : '';
 };
 
+/** O resumo fala mesmo de AVC ou infarto? (a etiqueta da lista junta "AVC/infarto/coração" numa só) */
+export const temAvcOuInfarto = (resumo: string) => /\b(avcs?|ave|derrame|infart\w*|isquemi\w*)\b/.test(semAcento(resumo).toLowerCase());
+
+/**
+ * A etiqueta "AVC/INFARTO/CORACAO" da lista serve também para arritmia, marca-passo, cirurgia do coração…
+ * Só fica como AVC/infarto quem tem AVC ou infarto escrito no resumo; os outros viram "Coração".
+ */
+export function separarCoracao(etiquetas: string[], resumo: string): string[] {
+  if (!etiquetas.includes('AVC/INFARTO/CORACAO') || temAvcOuInfarto(resumo)) return etiquetas;
+  return [...new Set(etiquetas.map((e) => (e === 'AVC/INFARTO/CORACAO' ? 'CORACAO' : e)))];
+}
+
 /** O resumo diz que o paciente pode ter falecido (e falta confirmar)? */
 export function pareceObitoAConfirmar(resumo: string): boolean {
   const t = semAcento(resumo).toLowerCase();
@@ -131,7 +144,7 @@ export function lerListaPrioritarios(texto: string, quando: string): Prioritario
       rua: String(it.rua ?? '').trim(),
       casa: String(it.casa ?? '').trim(),
       prontuario: String(it.prontuario ?? '').trim(),
-      etiquetas: [...new Set(((it.condicoes ?? it.etiquetas ?? []) as unknown[]).map((e) => normalizarEtiqueta(String(e))).filter(Boolean))],
+      etiquetas: separarCoracao([...new Set(((it.condicoes ?? it.etiquetas ?? []) as unknown[]).map((e) => normalizarEtiqueta(String(e))).filter(Boolean))], resumo),
       resumo,
       ultimaInfo: String(it.ultimaInfo ?? '').trim(),
       obito: pareceObitoAConfirmar(resumo) || undefined,

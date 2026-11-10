@@ -441,9 +441,9 @@ export function acompanhamentoDaPessoa(m: Morador, f: Familia, c: Contexto): Aco
 // ---------------------------------------------------------------- achados pelo app (aba Prioritários)
 
 /** Condições de saúde que põem a pessoa na aba Prioritários mesmo fora da lista importada. */
-const SAUDE: Grupo[] = ['acamado', 'oxigenio', 'avc', 'cancer', 'saude_mental', 'alzheimer', 'diabetico', 'hipertenso', 'cirurgia', 'gestante', 'puerpera', 'deficiencia'];
+const SAUDE: Grupo[] = ['acamado', 'oxigenio', 'avc', 'coracao', 'cancer', 'saude_mental', 'alzheimer', 'diabetico', 'hipertenso', 'cirurgia', 'gestante', 'puerpera', 'deficiencia'];
 const GRAVES: Grupo[] = ['oxigenio', 'acamado', 'avc', 'cancer', 'saude_mental', 'alzheimer'];
-const CRONICOS: Grupo[] = ['diabetico', 'hipertenso', 'cirurgia'];
+const CRONICOS: Grupo[] = ['diabetico', 'hipertenso', 'cirurgia', 'coracao'];
 
 /** "Rua das Acácias" → "Acácias" (como a lista de prioritários escreve). */
 export const ruaCurta = (rua: string) =>

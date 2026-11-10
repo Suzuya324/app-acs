@@ -24,6 +24,7 @@ const SINAIS_GRUPO: [RegExp, Grupo][] = [
   [/\bidos[oa]s?\b/, 'idoso'],
   [/\b(oxigenio|o2)\b/, 'oxigenio'],
   [/\b(avc|infarto)\b/, 'avc'],
+  [/\b(cardiopat\w*|arritmia|marca[- ]?passo|cardiac[oa])\b/, 'coracao'],
   [/\b(cancer|oncolog\w*|neoplasia)\b/, 'cancer'],
   [/\b(cirurgia|pos operatorio|operad[oa])\b/, 'cirurgia'],
   [/\b(alzheimer|demencia|paliativ\w*)\b/, 'alzheimer'],

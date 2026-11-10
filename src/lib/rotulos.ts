@@ -47,6 +47,7 @@ export const NOMES_GRUPO: Record<Grupo, string> = {
   saude_mental: 'Saúde mental',
   oxigenio: 'Oxigênio',
   avc: 'AVC/infarto',
+  coracao: 'Coração',
   cancer: 'Câncer',
   cirurgia: 'Cirurgia',
   alzheimer: 'Alzheimer/paliativo',
