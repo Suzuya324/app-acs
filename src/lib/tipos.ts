@@ -44,6 +44,10 @@ export interface Morador {
   obs: string;
   /** Código da pessoa no SBCD (vem do arquivo de atualização do cadastro). */
   codSbcd?: string;
+  /** Gestante: data provável do parto (aaaa-mm-dd). */
+  dpp?: string;
+  /** Criança: última vez que o ACS conferiu a caderneta de vacinas (aaaa-mm-dd). */
+  cadernetaEm?: string;
 }
 
 export interface Familia {
@@ -251,6 +255,8 @@ export interface Config {
   frasesProntas?: string[];
   /** Modo rua: letra maior e mais contraste, para ler no sol. */
   modoRua?: boolean;
+  /** Até quando (ISO) as mudanças do cadastro já foram passadas para o SBCD. */
+  sbcdAtualizadoAte?: string;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */
   remediosExtras?: string;
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */

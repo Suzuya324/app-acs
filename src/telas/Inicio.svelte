@@ -1,11 +1,12 @@
 <script lang="ts">
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
-  import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
+  import { diferencaDias, formatarData, formatarDataLonga, hojeISO, somarDias } from '../lib/datas';
   import { app, contextoAcompanhamento, descartarRascunho, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
   import { casasParaRevisitar } from '../lib/nivel';
   import { agenda, lembretes, roteiroDoDia, sumidos } from '../lib/dia';
+  import { aConfirmar, criancas, gestantes, mudancasParaSbcd } from '../lib/bloco4';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -43,6 +44,13 @@
   const roteiro = $derived(roteiroDoDia(app.familias, app.revisitas, { ...contextoAcompanhamento(), casos: app.casos }, new Set(), compromissos));
   const avisos = $derived(lembretes(compromissos, hoje));
   const nSumidos = $derived(sumidos(app.familias, app.visitas, hoje, 60).length);
+  // Não perder ninguém (Bloco 4).
+  const confirmar = $derived.by(() => {
+    const r = aConfirmar(app.familias, contextoAcompanhamento());
+    return r.obitos.length + r.gestantes.length + r.anotacoes.length;
+  });
+  const alertasGC = $derived(gestantes(app.familias, app.visitas, hoje).filter((g) => g.alerta).length + criancas(app.familias, hoje).filter((c) => c.conferir).length);
+  const nMudancas = $derived(mudancasParaSbcd(app.historico, app.familias, app.config.sbcdAtualizadoAte ?? `${somarDias(hoje, -30)}T00:00:00.000Z`).length);
   const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   const quandoCurto = (iso: string) => (iso === hoje ? 'hoje' : iso > hoje ? 'amanhã' : `${DIAS_SEMANA[new Date(`${iso}T12:00:00`).getDay()]} ${formatarData(iso).slice(0, 5)}`);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
@@ -186,6 +194,25 @@
   <button class="item-link pendencias" onclick={() => ir('atencao')}>
     <span><strong>Atenção</strong><br /><span class="suave pequeno">gestantes, acamados, P.A., glicemia, idades{aniversarios ? ` · ${aniversarios} aniversário(s) na semana` : ''}</span></span>
     <span class="num-pend">{atencao.length}</span>
+  </button>
+{/if}
+
+{#if confirmar > 0}
+  <button class="item-link pendencias" onclick={() => ir('confirmar')}>
+    <span><strong>A confirmar</strong><br /><span class="suave pequeno">óbito, “gestante?”, o que você anotou “a confirmar”</span></span>
+    <span class="num-pend">{confirmar}</span>
+  </button>
+{/if}
+
+<button class="item-link pendencias" onclick={() => ir('gestantes')}>
+  <span><strong>Gestantes e crianças</strong><br /><span class="suave pequeno">DPP, perto de ganhar, caderneta de vacinas</span></span>
+  {#if alertasGC}<span class="num-pend">{alertasGC}</span>{/if}
+</button>
+
+{#if nMudancas > 0}
+  <button class="item-link pendencias" onclick={() => ir('mudancas')}>
+    <span><strong>Mudanças para o SBCD</strong><br /><span class="suave pequeno">quem chegou, mudou, faleceu… para atualizar de uma vez</span></span>
+    <span class="num-pend">{nMudancas}</span>
   </button>
 {/if}
 
