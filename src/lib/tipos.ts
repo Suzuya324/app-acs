@@ -255,6 +255,8 @@ export interface Config {
   frasesProntas?: string[];
   /** Modo rua: letra maior e mais contraste, para ler no sol. */
   modoRua?: boolean;
+  /** Última sincronização de cada aparelho (nome → ISO), para avisar quando um ficou para trás. */
+  aparelhos?: Record<string, string>;
   /** Até quando (ISO) as mudanças do cadastro já foram passadas para o SBCD. */
   sbcdAtualizadoAte?: string;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */

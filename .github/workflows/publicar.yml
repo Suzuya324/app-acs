@@ -21,11 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Não deixa a senha do robô guardada depois de baixar o código (ninguém precisa dela nos passos seguintes).
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      # Instala exatamente as versões travadas no package-lock.json e confere se nenhuma peça tem falha grave conhecida.
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run check
       - run: npm test
       - run: npm run build

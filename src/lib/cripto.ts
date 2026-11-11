@@ -74,5 +74,5 @@ export function problemaNoPin(pin: string): string {
 /** Espera (em segundos) antes da próxima tentativa, depois de `erros` PINs errados seguidos. */
 export function esperaAposErros(erros: number): number {
   if (erros < 3) return 0;
-  return Math.min(300, 5 * 2 ** (erros - 3)); // 5 s, 10 s, 20 s, 40 s… até 5 minutos
+  return Math.min(3600, 5 * 2 ** (erros - 3)); // 5 s, 10 s, 20 s, 40 s… até 1 hora (depois de 13 erros)
 }

@@ -1225,6 +1225,12 @@ async function rodarSinc(): Promise<void> {
   /** Ainda conectado e destrancado? (o app pode trancar no meio de uma sincronização) */
   const vivo = () => sincGh === gh && app.fase === 'aberto';
   try {
+    // Avisa os outros aparelhos que este está em dia (no máximo a cada 6 horas, para não gravar à toa).
+    const ultimaDaqui = app.config.aparelhos?.[cfg.aparelho] ?? '';
+    if (cfg.aparelho && (!ultimaDaqui || Date.now() - new Date(ultimaDaqui).getTime() > 6 * 3600_000)) {
+      app.config.aparelhos = { ...(app.config.aparelhos ?? {}), [cfg.aparelho]: new Date().toISOString() };
+      sincSujo = true;
+    }
     for (let tentativa = 0; tentativa < 3; tentativa++) {
       // Primeiro só a versão (rápido): se nada mudou de nenhum lado, termina aqui.
       const versao = await gh.versao();

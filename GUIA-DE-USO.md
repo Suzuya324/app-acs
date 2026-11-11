@@ -135,6 +135,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Conferir com o Fast:** aba **Fila** → **"Conferir com o Fast"**. No Fast, abra a lista das VDs
+  lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
+  que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
+  O app não entra no Fast: só lê o texto colado.
+- **Aparelho sem sincronizar:** se o tablet ou o computador ficar 3 dias ou mais sem sincronizar, o
+  Início avisa ("O Tablet não sincroniza há 5 dias"). É só abrir o app nele com internet.
 - **Números do mês:**
   - **Previsão da meta** (Início e Painel): "No ritmo de agora (8,5 por dia de campo), você fecha o mês com
     ~190 famílias". Amarelo = não vai bater; verde = vai bater.
@@ -272,6 +278,22 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 2. Em "Como você faz login no Google", toque em **Verificação em duas etapas** → **Ativar**.
 3. Siga os passos (confirmar pelo celular / SMS) e, se quiser, adicione o app autenticador.
 4. Guarde os **códigos alternativos** (backup codes) num lugar seguro.
+
+### GitHub: avisos de segurança e proteção da branch principal
+1. Entre em **github.com/Suzuya324/app-acs** pelo navegador, com **"Site para computador"** ligado.
+2. **Settings** (no alto da página do repositório) → **Code security** (menu da esquerda).
+3. Ative **Dependabot alerts** e **Dependabot security updates** (botão **Enable** em cada um).
+   O GitHub passa a avisar quando alguma peça do app tem falha conhecida e abre um pedido de correção.
+4. Ainda em **Settings** → **Branches** → **Add branch ruleset** (ou "Add rule"): nome **main**,
+   alvo **main**, marque **Require a pull request before merging** e **Block force pushes** → **Create**.
+   Assim nada muda no app sem um pedido aceito por você.
+
+### Se perder o celular
+1. Em outro aparelho seu: Ajustes → **Sincronizar aparelhos** → **Trocar a chave**.
+2. No GitHub: foto → **Settings** → **Developer settings** → **Fine-grained tokens** → apague a chave
+   antiga.
+3. Os dados no celular perdido continuam trancados pelo PIN (depois de 13 erros, ele espera 1 hora
+   entre as tentativas).
 
 ### Celular
 - Bloqueio de tela com **senha ou digital**.

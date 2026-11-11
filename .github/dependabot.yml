@@ -1,0 +1,24 @@
+# Dependabot: o GitHub avisa quando alguma peça do app (biblioteca ou ferramenta da publicação) tem uma
+# falha de segurança conhecida, e abre um pedido de correção. Nada é publicado sem o ACS aceitar o pedido.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      bibliotecas:
+        patterns: ['*']
+    commit-message:
+      prefix: 'Atualizar peças do app'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      publicacao:
+        patterns: ['*']
+    commit-message:
+      prefix: 'Atualizar ferramentas da publicação'

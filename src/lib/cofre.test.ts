@@ -136,7 +136,8 @@ describe('regras do PIN', () => {
     expect(esperaAposErros(2)).toBe(0);
     expect(esperaAposErros(3)).toBe(5);
     expect(esperaAposErros(4)).toBe(10);
-    expect(esperaAposErros(20)).toBe(300);
+    expect(esperaAposErros(10)).toBe(640);
+    expect(esperaAposErros(20)).toBe(3600);
   });
 });
 
