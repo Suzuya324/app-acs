@@ -8,12 +8,14 @@
   import { agenda, lembretes, roteiroDoDia, sumidos } from '../lib/dia';
   import { aConfirmar, criancas, gestantes, mudancasParaSbcd } from '../lib/bloco4';
   import { calcularPainel } from '../lib/meta';
+  import { previsaoDaMeta } from '../lib/indicadores';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
   const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoesPainel()));
+  const previsao = $derived(previsaoDaMeta(painel, hoje, opcoesPainel().ehDiaDeCampo!));
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   /** Com a sincronização funcionando, o backup em arquivo vira só uma garantia extra (1 vez por mês). */
@@ -137,6 +139,12 @@
     </p>
   {:else}
     <p class="falta"><strong>Meta batida! 🎉</strong></p>
+  {/if}
+  {#if previsao}
+    <p class="previsao" class:bom={previsao.vaiBater}>
+      {previsao.vaiBater ? '📈' : '⚠️'} No ritmo de agora ({previsao.ritmo.toFixed(1).replace('.', ',')} por dia de campo), você fecha o mês com
+      <strong>~{previsao.previsto}</strong> famílias{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
+    </p>
   {/if}
   <button class="link-simples ver-mais" onclick={() => ir('painel')}>Ver gráfico e meses anteriores ›</button>
 </section>
@@ -483,5 +491,17 @@
   }
   .atalhos .botao {
     flex: 1;
+  }
+  .previsao {
+    margin: 6px 0 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--aviso-fundo);
+    color: var(--aviso-texto);
+    font-size: 0.92rem;
+  }
+  .previsao.bom {
+    background: var(--primaria-clara);
+    color: var(--texto);
   }
 </style>

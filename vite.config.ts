@@ -34,6 +34,8 @@ function cspPlugin(): Plugin {
 }
 
 export default defineConfig({
+  // Versão do app (data e hora da montagem), para conferir em Ajustes se o celular já atualizou.
+  define: { __VERSAO__: JSON.stringify(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })) },
   // Caminhos relativos: funciona em qualquer endereço (ex.: usuario.github.io/app-acs/)
   base: './',
   plugins: [

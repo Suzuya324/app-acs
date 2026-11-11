@@ -431,6 +431,8 @@
   </details>
 </section>
 
+<p class="suave pequeno centro versao">Versão do app: {__VERSAO__}</p>
+
 <style>
   .como-usar {
     margin-bottom: 14px;
