@@ -2,9 +2,10 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
-  import { app, descartarRascunho, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
+  import { app, contextoAcompanhamento, descartarRascunho, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
   import { casasParaRevisitar } from '../lib/nivel';
+  import { agenda, lembretes, roteiroDoDia, sumidos } from '../lib/dia';
   import { calcularPainel } from '../lib/meta';
   import { listarPendencias } from '../lib/pendencias';
   import { ir } from '../lib/rotas.svelte';
@@ -37,6 +38,13 @@
     app.config.primeirosPassosOcultos = true;
     salvarConfig();
   }
+  // O dia na rua (Bloco 2): roteiro, lembretes da agenda e quem está sumido.
+  const compromissos = $derived(agenda(app.familias, app.revisitas, contextoAcompanhamento()));
+  const roteiro = $derived(roteiroDoDia(app.familias, app.revisitas, { ...contextoAcompanhamento(), casos: app.casos }, new Set(), compromissos));
+  const avisos = $derived(lembretes(compromissos, hoje));
+  const nSumidos = $derived(sumidos(app.familias, app.visitas, hoje, 60).length);
+  const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const quandoCurto = (iso: string) => (iso === hoje ? 'hoje' : iso > hoje ? 'amanhã' : `${DIAS_SEMANA[new Date(`${iso}T12:00:00`).getDay()]} ${formatarData(iso).slice(0, 5)}`);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function haQuanto(data: string | null): string {
@@ -128,6 +136,31 @@
 <button class="botao largo grande" onclick={() => ir('busca')}>
   <Icone nome="mais" /> Nova visita
 </button>
+
+{#if !precisaImportar}
+  <section class="cartao dia" aria-labelledby="t-dia">
+    <h2 id="t-dia">Hoje na rua</h2>
+    <button class="item-link pendencias" onclick={() => ir('dia')}>
+      <span><strong>Roteiro de hoje</strong><br /><span class="suave pequeno">casos urgentes, nível A/B vencido, revisitas, consultas… em ordem de rua</span></span>
+      <span class="num-pend" class:urgente={roteiro.some((c) => c.peso >= 80)}>{Math.min(15, roteiro.length)}</span>
+    </button>
+    {#if avisos.length}
+      <ul class="lembretes">
+        {#each avisos.slice(0, 4) as c, i (i)}
+          <li>
+            <button class="item-link" onclick={() => ir(c.morador ? `pessoa/${c.familia.id}/${c.morador.id}` : `familia/${c.familia.id}`)}>
+              <strong>{quandoCurto(c.data)}:</strong> {c.morador?.nome.split(' ')[0] ?? enderecoCurto(c.familia)} – {c.tipo.toLowerCase()}{c.data < hoje ? ' (perguntar como foi)' : ''}
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    <div class="atalhos">
+      <button class="botao secundario pequeno" onclick={() => ir('agenda')}>Agenda</button>
+      <button class="botao secundario pequeno" onclick={() => ir('sumidos')}>Sumidos{nSumidos ? ` (${nSumidos})` : ''}</button>
+    </div>
+  </section>
+{/if}
 
 <section class="numeros" aria-label="Resumo de visitas">
   <div class="cartao mini"><strong>{painel.visitasHoje}</strong><span>hoje</span></div>
@@ -404,5 +437,24 @@
     font-weight: 600;
     cursor: pointer;
     border-bottom: 1px solid var(--borda);
+  }
+  .dia h2 {
+    margin: 0 0 6px;
+  }
+  .lembretes {
+    list-style: none;
+    margin: 6px 0;
+    padding: 0;
+  }
+  .lembretes li {
+    padding: 2px 0;
+  }
+  .atalhos {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .atalhos .botao {
+    flex: 1;
   }
 </style>
