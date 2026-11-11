@@ -24,8 +24,10 @@
   import { gerarRelato, juntarNomes, nomesCurtos, separarNomes } from '../lib/relato';
   import { sugestoesDaAnotacao, type Sugestao } from '../lib/anotacoes';
   import { acompanhamentoDaPessoa } from '../lib/acompanhamento';
+  import { frases } from '../lib/anotacoes';
+  import { motivoDaFrase, npvDoMotivo, tituloDoCaso, type MotivoCaso } from '../lib/casos-auto';
   import Acompanhamento from '../componentes/Acompanhamento.svelte';
-  import { contextoAcompanhamento, type AtualizacaoFicha } from '../lib/estado.svelte';
+  import { contextoAcompanhamento, salvarCaso, type AtualizacaoFicha } from '../lib/estado.svelte';
   import { NOMES_GRUPO, TEMAS_ORIENTACAO, textoRevisitaFeita } from '../lib/rotulos';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Desfecho, RascunhoVD, SinaisVitais, Visita } from '../lib/tipos';
@@ -136,6 +138,34 @@
     const k = `${mid}|${sid}`;
     aceitas = aceitas.includes(k) ? aceitas.filter((x) => x !== k) : [...aceitas, k];
   }
+  /**
+   * Casos achados no que está sendo escrito agora (por pessoa e na observação da casa). Já vêm marcados para abrir;
+   * o ACS toca para desmarcar. Um por assunto (urgente, eMulti, reunião).
+   */
+  interface CasoNaVD { chave: string; moradorId?: string; motivo: MotivoCaso; frases: string[] }
+  const casosNaVD = $derived.by(() => {
+    if (corrigindo) return [] as CasoNaVD[];
+    const lista: CasoNaVD[] = [];
+    const juntar = (moradorId: string | undefined, texto: string) => {
+      for (const fr of frases(texto)) {
+        const motivo = motivoDaFrase(fr);
+        if (!motivo) continue;
+        const chave = `${moradorId ?? 'casa'}|${motivo.categoria}|${motivo.emulti ?? ''}`;
+        const ja = lista.find((x) => x.chave === chave);
+        if (ja) ja.frases.push(fr);
+        else lista.push({ chave, moradorId, motivo, frases: [fr] });
+      }
+    };
+    for (const m of ativos) juntar(m.id, anotacoes[m.id] ?? '');
+    juntar(undefined, observacao);
+    return lista;
+  });
+  /** Casos que o ACS desmarcou (os outros abrem ao salvar). */
+  let casosRecusados = $state<string[]>([]);
+  const alternarCaso = (k: string) => (casosRecusados = casosRecusados.includes(k) ? casosRecusados.filter((x) => x !== k) : [...casosRecusados, k]);
+  const NOME_CAT = { urgente: 'urgente', importante: 'importante', social: 'social', npv: 'NPV' } as const;
+  const rotuloCaso = (c: CasoNaVD) => `Abrir caso ${NOME_CAT[c.motivo.categoria]}${c.motivo.emulti ? ` · eMulti: ${c.motivo.emulti}` : ''}${c.motivo.reuniao ? ' · reunião' : ''}`;
+
   /** O que vai mudar na ficha ao salvar (só o que o ACS confirmou e ainda vale para o texto). */
   function atualizacoesConfirmadas(): AtualizacaoFicha[] {
     const lista: AtualizacaoFicha[] = [];
@@ -371,7 +401,21 @@
       mostrarAviso(voltarParaFila ? 'Correção salva ✓ Voltou para a fila do Fast.' : 'Correção salva ✓', 3500);
     } else {
       await salvarVisita(v, atualizacoes);
-      mostrarAviso(atualizacoes.length ? 'VD salva ✓ Ficha atualizada.' : 'VD salva e colocada na fila do Fast ✓');
+      const abrir = casosNaVD.filter((c) => !casosRecusados.includes(c.chave));
+      for (const c of abrir) {
+        const m = ativos.find((x) => x.id === c.moradorId);
+        const dia = data.split('-').reverse().slice(0, 2).join('/');
+        await salvarCaso({
+          familiaId: familia.id,
+          categoria: c.motivo.categoria,
+          titulo: tituloDoCaso(m, familia, data),
+          texto: c.frases.map((fr) => `${dia}: ${fr}`).join('\n'),
+          emulti: c.motivo.emulti,
+          npv: npvDoMotivo(c.motivo),
+        });
+      }
+      const partes = [atualizacoes.length && 'ficha atualizada', abrir.length && `${abrir.length} ${abrir.length === 1 ? 'caso aberto' : 'casos abertos'}`].filter(Boolean);
+      mostrarAviso(partes.length ? `VD salva ✓ ${partes.join(', ')}.` : 'VD salva e colocada na fila do Fast ✓');
     }
     voltar(`familia/${familia.id}`);
   }
@@ -545,6 +589,12 @@
       <span>O que foi conversado / observado (opcional)</span>
       <textarea rows="3" bind:value={observacao} placeholder="Ex.: refere dor nas costas, aguarda resultado de exame"></textarea>
     </label>
+    {#each casosNaVD.filter((c) => !c.moradorId) as c (c.chave)}
+      {@const ok = !casosRecusados.includes(c.chave)}
+      <div class="sugs">
+        <button class="sug caso {c.motivo.categoria}" class:ok aria-pressed={ok} onclick={() => alternarCaso(c.chave)}>{ok ? '✓' : '＋'} {rotuloCaso(c)}</button>
+      </div>
+    {/each}
     <p class="suave pequeno">Entra no relato.</p>
     <DicaDitado />
     {#if anterior}
@@ -575,6 +625,12 @@
               {/each}
             </div>
           {/if}
+          {#each casosNaVD.filter((c) => c.moradorId === m.id) as c (c.chave)}
+            {@const ok = !casosRecusados.includes(c.chave)}
+            <div class="sugs">
+              <button class="sug caso {c.motivo.categoria}" class:ok aria-pressed={ok} onclick={() => alternarCaso(c.chave)}>{ok ? '✓' : '＋'} {rotuloCaso(c)}</button>
+            </div>
+          {/each}
         {/if}
       </div>
     {/each}
@@ -690,6 +746,14 @@
     border-style: solid;
     background: var(--primaria);
     color: var(--primaria-texto);
+  }
+  .sug.caso.urgente {
+    border-color: var(--perigo);
+    color: var(--perigo);
+  }
+  .sug.caso.urgente.ok {
+    background: var(--perigo);
+    color: var(--cartao);
   }
   .voltar {
     margin-bottom: 12px;

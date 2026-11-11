@@ -22,7 +22,7 @@
   });
   const confirmadas = $derived(lista.filter((s) => decisao[s.chave] === 'sim'));
   const naoE = $derived(lista.filter((s) => decisao[s.chave] === 'nao').map((s) => s.chave));
-  const escondidas = $derived((app.config.sugestoesEscondidas ?? []).filter((k) => !/\|[pr]-/.test(k)).length);
+  const escondidas = $derived((app.config.sugestoesEscondidas ?? []).filter((k) => !/\|[prc]-/.test(k)).length);
 
   function tocar(chave: string, valor: 'sim' | 'nao') {
     if (decisao[chave] === valor) delete decisao[chave];

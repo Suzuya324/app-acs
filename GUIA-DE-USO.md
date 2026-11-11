@@ -78,7 +78,7 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
 
 ## 2. Lançar no Fast pelo PC
 
-1. No app do PC: **Fila do Fast** → **"Lançar em sequência"**.
+1. No app do PC: **Fila** (do Fast) → **"Lançar em sequência"**.
 2. Para cada VD: **1** Copiar prontuário → cole no Fast; **2** Copiar relato → cole no Fast;
    **3** confira a data e toque em **"Lancei no Fast, próxima"**.
 3. Dica: em **Ajustes → Fast**, coloque o endereço do Fast para ter o botão **"Abrir o Fast"**.
@@ -130,7 +130,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   O app guarda só os números da sua micro e eles deixam de aparecer como livres.
 - **Famílias de outro ACS** (prontuário de outra micro): na mesma tela, marque a micro e toque em
   **"Tirar da minha área"**. Elas vão para a Lixeira (dá para restaurar) e saem da meta e do mapa.
-- **Casos:** no Início, **Casos** lista o que acompanhar de perto (urgente, importante,
+- **Casos achados nas VDs:** ao escrever na VD ("precisa da assistente social", "caiu ontem", "pedir VD da
+  enfermeira", "sem insulina"), aparece **"Abrir caso"** já marcado, com a categoria (urgente, importante,
+  social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
+  **"Achei nas VDs"** (o que foi escrito nos últimos 60 dias e ainda não virou caso) e **"Copiar a pauta"**
+  da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Casos:** a aba **Casos** lista o que acompanhar de perto (urgente, importante,
   social/cadastro, NPV), com filtro de eMulti e a data da próxima reunião de equipe (toda quarta; dá para mudar em Ajustes). Para abrir um
   caso: na família → **"Abrir caso"**. Para fechar: **"Resolvido"** (nada é apagado).
 - **Nível A/B/C:** cada casa tem um nível. **A** = voltar a cada 10 dias (alguém com 80 anos ou mais,

@@ -486,7 +486,7 @@ export const aplicarSugestoesDasVDs = (confirmadas: SugestaoDasVDs[], naoE: stri
 
 /** Volta a mostrar as sugestões que o ACS tinha escondido (as pendências resolvidas e os remédios tirados continuam fora). */
 export function mostrarSugestoesEscondidas() {
-  app.config.sugestoesEscondidas = (app.config.sugestoesEscondidas ?? []).filter((k) => /\|[pr]-/.test(k));
+  app.config.sugestoesEscondidas = (app.config.sugestoesEscondidas ?? []).filter((k) => /\|[prc]-/.test(k));
   return salvarConfig();
 }
 

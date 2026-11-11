@@ -19,7 +19,7 @@
   const lembrarBackup = $derived(!app.config.usandoExemplo && (diasSemBackup === null || diasSemBackup >= (sincronizado ? 30 : 7)));
   const marcadas = $derived(app.revisitas && revisitasAbertas());
   const atencao = $derived(calcularAtencao(app.familias, app.visitas, hoje));
-  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje, app.prioritarios));
+  const porNivel = $derived(casasParaRevisitar(app.familias, app.visitas, hoje, app.prioritarios, app.casos));
   const casosAbertosLista = $derived(app.casos.filter((c) => !c.resolvidoEm && app.familias.some((f) => f.id === c.familiaId)));
   const urgentes = $derived(casosAbertosLista.filter((c) => c.categoria === 'urgente').length);
   const aniversarios = $derived(atencao.filter((a) => a.tipo === 'aniversario').length);
