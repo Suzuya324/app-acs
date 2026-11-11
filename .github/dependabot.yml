@@ -10,6 +10,11 @@ updates:
     groups:
       bibliotecas:
         patterns: ['*']
+    # Saltos grandes de versão (ex.: TypeScript 5 → 7) costumam quebrar outras peças: esses o Claude faz à mão,
+    # testando. O Dependabot só sugere as atualizações pequenas e as de segurança.
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'Atualizar peças do app'
   - package-ecosystem: github-actions

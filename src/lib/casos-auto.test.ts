@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { casoDoAchado, casosAchados, casosDaPauta, diasParado, motivoDaFrase, ordenarCasos, textoDaPauta, textoParado } from './casos-auto';
+import { casoDoAchado, casosAchados, casosDaPauta, diasParado, motivoDaFrase, ordenarCasos, textoDaPauta, textoDoCaso, textoParado } from './casos-auto';
 import { nivelDaFamilia } from './nivel';
 import type { Caso, Familia, Morador, Visita } from './tipos';
 
@@ -133,5 +133,18 @@ describe('casos parados e respostas', () => {
     const t = textoDaPauta(casos, () => 'Rua das Acácias, 12', '12/11', '2026-11-11');
     expect(t).toContain('2. [Importante] parado – Rua das Acácias, 12 – SEM RESPOSTA HÁ 5 SEMANAS');
     expect(t).toContain('Última resposta (05/11): Encaminhado para a psicologia');
+  });
+});
+
+describe('copiar caso', () => {
+  it('leva título, endereço com prontuário, eMulti, texto e última resposta', () => {
+    const c: Caso = {
+      id: 'x', familiaId: 'f1', categoria: 'importante', titulo: 'Ana Teste, 76 anos', texto: '05/11: Ferida no pé (inventado).', emulti: 'Psicologia',
+      criadoEm: '2026-11-05T12:00:00Z', atualizadoEm: '', novidadeEm: '2026-11-05T12:00:00Z', respostas: [{ data: '2026-11-06', texto: 'Enfermagem vai passar (inventado).' }],
+    };
+    expect(textoDoCaso(c, () => 'Rua das Acácias, 12 (pront. 00.0001)', '2026-11-11').split('\n')).toEqual([
+      '[Importante] Ana Teste, 76 anos', 'Rua das Acácias, 12 (pront. 00.0001)', 'eMulti: Psicologia', '05/11: Ferida no pé (inventado).',
+      'Última resposta (06/11): Enfermagem vai passar (inventado).',
+    ]);
   });
 });
