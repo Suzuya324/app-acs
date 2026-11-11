@@ -12,7 +12,8 @@ export type TipoAtencao =
   | 'virou_idoso' // 60 anos ou mais e fora do grupo Idoso
   | 'crianca_cresceu' // 2 anos ou mais e ainda em Criança pequena
   | 'crianca_fora' // menos de 2 anos e fora de Criança pequena
-  | 'aniversario'; // faz aniversário nos próximos 7 dias
+  | 'aniversario' // faz aniversário nos próximos 7 dias
+  | 'idade_chegando'; // vai fazer 2, 60 ou 80 anos nos próximos 30 dias (muda grupo ou prioridade)
 
 export interface AvisoAtencao {
   tipo: TipoAtencao;
@@ -35,10 +36,11 @@ export const NOMES_ATENCAO: Record<TipoAtencao, string> = {
   crianca_cresceu: 'Já têm 2 anos (tirar de Criança pequena?)',
   crianca_fora: 'Menores de 2 anos fora de Criança pequena',
   aniversario: 'Aniversários nos próximos 7 dias',
+  idade_chegando: 'Vão fazer 2, 60 ou 80 anos nos próximos 30 dias',
 };
 
 export const ORDEM_ATENCAO: TipoAtencao[] = [
-  'acompanhar', 'acamado', 'pa', 'glicemia', 'aniversario', 'virou_idoso', 'crianca_fora', 'crianca_cresceu',
+  'acompanhar', 'acamado', 'pa', 'glicemia', 'aniversario', 'idade_chegando', 'virou_idoso', 'crianca_fora', 'crianca_cresceu',
 ];
 
 export const DIAS_ACOMPANHAR = 30;
@@ -116,6 +118,14 @@ export function calcularAtencao(familias: Familia[], visitas: Visita[], hoje: st
         add('crianca_fora', anos === 0 ? 'Menos de 1 ano' : '1 ano', 2 - anos, { incluir: 'crianca', rotulo: 'Incluir em Criança' });
       }
       const aniv = proximoAniversario(m.nascimento, hoje);
+      // Idade que muda o grupo ou a prioridade, avisada antes de acontecer.
+      if (aniv > hoje && aniv <= somarDias(hoje, 30)) {
+        const vai = anos + 1;
+        const quando = formatarData(aniv).slice(0, 5);
+        if (vai === 2 && g.has('crianca')) add('idade_chegando', `Faz 2 anos em ${quando} (sai de Criança pequena)`, 30 - diferencaDias(hoje, aniv), { tirar: 'crianca', rotulo: 'Tirar de Criança' });
+        else if (vai === 60 && !g.has('idoso')) add('idade_chegando', `Faz 60 anos em ${quando} (entra em Idoso; prioridade B)`, 30 - diferencaDias(hoje, aniv), { incluir: 'idoso', rotulo: 'Incluir em Idoso' });
+        else if (vai === 80) add('idade_chegando', `Faz 80 anos em ${quando} (prioridade A: VD a cada 10 dias)`, 30 - diferencaDias(hoje, aniv));
+      }
       if (aniv <= fimSemana) {
         const faz = Number(aniv.slice(0, 4)) - Number(m.nascimento.slice(0, 4));
         const dia = aniv === hoje ? 'hoje' : aniv === somarDias(hoje, 1) ? 'amanhã' : DIAS_SEMANA[deISO(aniv).getDay()];

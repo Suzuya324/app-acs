@@ -135,6 +135,17 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Não perder ninguém (Início):**
+  - **A confirmar:** óbito a confirmar e "gestante?" da lista de prioritários, e tudo o que você anotou
+    "a confirmar". Um toque resolve ("Confirmar óbito", "Está vivo(a)", "Está grávida", "Já confirmei").
+  - **Gestantes e crianças:** cada gestante com a DPP (anotada ali, ou estimada pelo que você escreveu:
+    "DPP 20/03", "28 semanas"), semanas de gestação e aviso de "perto de ganhar" ou "passou da DPP"
+    (com botão "marcar puérpera"). Crianças até 5 anos: quando chega a idade de uma vacina ou consulta,
+    aparece "Conferir a caderneta"; depois de olhar, toque em **"Conferi a caderneta"**.
+  - **Idade chegando:** em **Atenção**, quem vai fazer 2, 60 ou 80 anos nos próximos 30 dias.
+  - **Mudanças para o SBCD:** o que mudou no cadastro pelo app (quem chegou, mudou, faleceu, prontuário,
+    endereço, data de nascimento), por casa. **Copiar a lista**, passe para o SBCD e toque em
+    **"Já passei tudo"**.
 - **VD mais rápida:**
   - **Frases prontas:** embaixo de "O que foi conversado" e de cada "Sobre Fulana" aparecem botões com
     frases ("Todos bem, sem queixas.", "Renovar a receita."…). Um toque escreve a frase. O app junta as

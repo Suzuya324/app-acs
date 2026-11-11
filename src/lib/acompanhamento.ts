@@ -422,8 +422,38 @@ export function perguntasDaPessoa(a: Omit<Acompanhamento, 'perguntas' | 'vazio' 
   return lista.slice(0, 8);
 }
 
+/**
+ * Guarda os acompanhamentos já lidos enquanto os dados não mudam (a tela inicial usa o mesmo resultado na
+ * agenda, no roteiro e na lista "a confirmar", sem ler tudo de novo). A "assinatura" muda quando muda
+ * qualquer VD, caso, prioritário, item escondido ou o dia; a casa e a pessoa entram na chave de cada uma.
+ */
+let memoria: { assinatura: string; mapa: Map<string, Acompanhamento> } | null = null;
+const assinaturas = new WeakMap<Contexto, string>();
+const maior = (l: { atualizadoEm?: string; editadoEm?: string }[]) => l.reduce((m, x) => (x.atualizadoEm && x.atualizadoEm > m ? x.atualizadoEm : m), '');
+
+function assinatura(c: Contexto): string {
+  let a = assinaturas.get(c);
+  if (a === undefined) {
+    const esc = [...(c.escondidas ?? [])];
+    a = [c.hoje, c.visitas.length, maior(c.visitas), c.casos.length, maior(c.casos), c.prioritarios.length, maior(c.prioritarios), esc.length, esc[esc.length - 1] ?? '', c.remediosExtras ?? ''].join('|');
+    assinaturas.set(c, a);
+  }
+  return a;
+}
+
 /** O acompanhamento de uma pessoa, lido de tudo o que já foi escrito sobre ela. */
 export function acompanhamentoDaPessoa(m: Morador, f: Familia, c: Contexto): Acompanhamento {
+  const sig = assinatura(c);
+  if (!memoria || memoria.assinatura !== sig) memoria = { assinatura: sig, mapa: new Map() };
+  const k = [f.id, m.id, f.atualizadoEm ?? '', f.relatosAnteriores?.length ?? 0, m.nome, m.grupos.join(','), m.situacao, m.nascimento].join('|');
+  const ja = memoria.mapa.get(k);
+  if (ja) return ja;
+  const a = lerAcompanhamento(m, f, c);
+  memoria.mapa.set(k, a);
+  return a;
+}
+
+function lerAcompanhamento(m: Morador, f: Familia, c: Contexto): Acompanhamento {
   const fora = c.escondidas instanceof Set ? (c.escondidas as Set<string>) : new Set(c.escondidas ?? []);
   const prio = c.prioritarios.find((p) => p.moradorId === m.id);
   const textos = textosDaPessoa(m, f, c.visitas, c.casos, prio);

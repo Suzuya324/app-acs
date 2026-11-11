@@ -16,6 +16,9 @@
   import RoteiroDia from './telas/RoteiroDia.svelte';
   import Agenda from './telas/Agenda.svelte';
   import Sumidos from './telas/Sumidos.svelte';
+  import Confirmar from './telas/Confirmar.svelte';
+  import Gestantes from './telas/Gestantes.svelte';
+  import MudancasSbcd from './telas/MudancasSbcd.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -83,7 +86,7 @@
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos', 'confirmar', 'gestantes', 'mudancas'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -175,6 +178,12 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'confirmar'}
+    <Confirmar />
+  {:else if rota.tela === 'gestantes'}
+    <Gestantes />
+  {:else if rota.tela === 'mudancas'}
+    <MudancasSbcd />
   {:else if rota.tela === 'dia'}
     <RoteiroDia />
   {:else if rota.tela === 'agenda'}
