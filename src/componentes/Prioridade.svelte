@@ -7,8 +7,8 @@
 
   let { familia, aberto = false }: { familia: Familia; aberto?: boolean } = $props();
   const hoje = hojeISO();
-  const nv = $derived(nivelDaFamilia(familia, hoje, app.prioritarios));
-  const prox = $derived(proximaVisita(familia, app.visitas, hoje, app.prioritarios));
+  const nv = $derived(nivelDaFamilia(familia, hoje, app.prioritarios, app.casos));
+  const prox = $derived(proximaVisita(familia, app.visitas, hoje, app.prioritarios, app.casos));
   const perguntas = $derived(perguntasDaFamilia(familia, hoje));
 </script>
 

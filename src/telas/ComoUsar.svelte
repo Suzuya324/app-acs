@@ -27,7 +27,7 @@
       <li>Na família, toque em <strong>Nova VD</strong>. Confira a <strong>data</strong> no topo.</li>
       <li>Toque em <strong>quem estava presente</strong>. O app escolhe o desfecho sozinho (dá para trocar).</li>
       <li>Se quiser, marque orientações, sinais vitais e escreva uma observação (pode ditar pelo microfone do teclado).</li>
-      <li><strong>Salvar</strong>. O relato fica pronto na <strong>Fila do Fast</strong>.</li>
+      <li><strong>Salvar</strong>. O relato fica pronto na <strong>Fila</strong> (do Fast).</li>
     </ol>
     <p class="suave pequeno">Se sair no meio, a VD fica guardada e aparece no Início como “Visita pela metade”.</p>
   </details>
@@ -36,7 +36,7 @@
 <section class="cartao">
   <details>
     <summary>3. Lançar no Fast</summary>
-    <p>Aba <strong>Fila do Fast</strong> → <strong>Lançar em sequência</strong>: copie o prontuário, copie o relato, cole no Fast e toque em <strong>Lancei no Fast, próxima</strong>. O app nunca envia nada ao Fast: você copia e cola.</p>
+    <p>Aba <strong>Fila</strong> (do Fast) → <strong>Lançar em sequência</strong>: copie o prontuário, copie o relato, cole no Fast e toque em <strong>Lancei no Fast, próxima</strong>. O app nunca envia nada ao Fast: você copia e cola.</p>
   </details>
 </section>
 
@@ -81,6 +81,7 @@
       <li><strong>Prioritários</strong> (aba da estrela): toque em <strong>Importar lista</strong> e escolha o arquivo dos pacientes prioritários. Os números de cima filtram (acamados, O₂, HAS, DM…).</li>
       <li><strong>Ficha da pessoa:</strong> na família, toque no morador. Ela mostra as condições, a prioridade e a linha do tempo com tudo o que foi escrito sobre a pessoa.</li>
       <li><strong>Na VD</strong>, use <strong>“Sobre cada pessoa”</strong> para anotar. O app sugere o que atualizar na ficha (ex.: “ficou acamada” → Acamado); só muda o que você tocar.</li>
+      <li><strong>Casos</strong> (aba da prancheta): o app acha casos no que você escreve na VD (“precisa da assistente social”, “caiu”, “pedir VD da enfermeira”) e oferece abrir o caso já com a categoria, a eMulti e o ponto para a reunião. Na aba, <strong>Copiar a pauta</strong> monta a lista da reunião de equipe. Caso aberto sobe a prioridade da casa (urgente = nível A).</li>
       <li><strong>Cadastro atualizado no SBCD?</strong> Ajustes → <strong>Atualizar cadastro pelo SBCD</strong>: o app mostra só as diferenças (prontuário, pessoa nova, casa nova, óbito…). Marque o que aceitar e salve. Nada é apagado.</li>
       <li><strong>Acompanhamento:</strong> o app lê tudo o que você escreve (VDs, anotações, casos) e monta para cada pessoa: remédios, P.A. e glicemia, pendências (exame, consulta, resultado) e <strong>o que perguntar na próxima VD</strong>. Aparece na ficha, no cartão de prioritário e na tela da VD. Ele só procura palavras: confira. Toque em <strong>Confirmar</strong> ou <strong>Não é</strong> nas condições achadas e em <strong>Resolvida</strong> nas pendências.</li>
       <li><strong>Achados pelo app:</strong> quem não está na lista importada, mas tem condição marcada, condição achada nas VDs ou remédio, entra sozinho na aba Prioritários. Use <strong>Todos / Lista / Achados</strong> para filtrar.</li>

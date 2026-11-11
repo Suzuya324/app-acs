@@ -50,15 +50,20 @@
   });
 
   const pendentes = $derived(app.visitas.filter((v) => !v.lancadaNoFast).length);
+  /** Casos urgentes abertos (número vermelho na aba Casos). */
+  const urgentes = $derived(app.casos.filter((c) => !c.resolvidoEm && c.categoria === 'urgente' && app.familias.some((f) => f.id === c.familiaId)).length);
   const abas = [
     { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
     { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
     { tela: 'prioritarios', caminho: 'prioritarios', rotulo: 'Prioritários', icone: 'estrela' },
-    { tela: 'fila', caminho: 'fila', rotulo: 'Fila do Fast', icone: 'fila' },
+    { tela: 'casos', caminho: 'casos', rotulo: 'Casos', icone: 'pasta' },
+    { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
   const abaAtiva = $derived(
-    ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'caso', 'pessoa'].includes(rota.tela)
+    rota.tela === 'caso'
+      ? 'casos'
+      : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'
       : ['prioritario', 'importar-prioritarios', 'revisar-fichas'].includes(rota.tela)
         ? 'prioritarios'
@@ -66,7 +71,7 @@
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'casos'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -191,6 +196,8 @@
           <Icone nome={aba.icone} tamanho={26} />
           {#if aba.tela === 'fila' && pendentes > 0}
             <span class="contador">{pendentes}</span>
+          {:else if aba.tela === 'casos' && urgentes > 0}
+            <span class="contador">{urgentes}</span>
           {/if}
         </span>
         <span>{aba.rotulo}</span>
@@ -271,10 +278,11 @@
     border: 0;
     background: transparent;
     color: var(--texto-suave);
-    font-size: 0.74rem;
+    font-size: 0.7rem;
     font-weight: 700;
     cursor: pointer;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
   .aba.ativa {
     color: var(--primaria);
@@ -286,7 +294,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 50px;
+    width: min(50px, 100%);
     height: 32px;
     border-radius: 999px;
   }
