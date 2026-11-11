@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // NÃO pode se conectar a nenhum outro endereço da internet, exceto a API do GitHub
 // (sincronização entre os aparelhos do ACS, só com dados criptografados).
 // Só é aplicada no build final (o modo de desenvolvimento precisa de conexões locais).
-const CSP = [
+export const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",

@@ -279,6 +279,22 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 3. Siga os passos (confirmar pelo celular / SMS) e, se quiser, adicione o app autenticador.
 4. Guarde os **códigos alternativos** (backup codes) num lugar seguro.
 
+### GitHub: avisos de segurança e proteção da branch principal
+1. Entre em **github.com/Suzuya324/app-acs** pelo navegador, com **"Site para computador"** ligado.
+2. **Settings** (no alto da página do repositório) → **Code security** (menu da esquerda).
+3. Ative **Dependabot alerts** e **Dependabot security updates** (botão **Enable** em cada um).
+   O GitHub passa a avisar quando alguma peça do app tem falha conhecida e abre um pedido de correção.
+4. Ainda em **Settings** → **Branches** → **Add branch ruleset** (ou "Add rule"): nome **main**,
+   alvo **main**, marque **Require a pull request before merging** e **Block force pushes** → **Create**.
+   Assim nada muda no app sem um pedido aceito por você.
+
+### Se perder o celular
+1. Em outro aparelho seu: Ajustes → **Sincronizar aparelhos** → **Trocar a chave**.
+2. No GitHub: foto → **Settings** → **Developer settings** → **Fine-grained tokens** → apague a chave
+   antiga.
+3. Os dados no celular perdido continuam trancados pelo PIN (depois de 13 erros, ele espera 1 hora
+   entre as tentativas).
+
 ### Celular
 - Bloqueio de tela com **senha ou digital**.
 - O **PIN do app** deve ser diferente da senha do celular e de qualquer outra senha.

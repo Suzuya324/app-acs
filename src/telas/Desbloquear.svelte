@@ -53,7 +53,7 @@
     <p class="suave">Digite seu PIN</p>
     <TecladoPin bind:valor={pin} onconfirmar={entrar} desabilitado={abrindo || espera > 0} />
     <p class="estado" aria-live="assertive">
-      {#if abrindo}Abrindo…{:else if espera > 0}{mensagem} Aguarde {espera} s para tentar de novo.{:else}{mensagem}{/if}
+      {#if abrindo}Abrindo…{:else if espera > 0}{mensagem} Aguarde {espera >= 60 ? `${Math.floor(espera / 60)} min ${String(espera % 60).padStart(2, '0')} s` : `${espera} s`} para tentar de novo.{:else}{mensagem}{/if}
     </p>
     <button class="link" onclick={() => (esqueci = true)}>Esqueci o PIN</button>
   {:else}
