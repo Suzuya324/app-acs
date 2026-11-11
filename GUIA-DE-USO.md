@@ -135,6 +135,15 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Hoje na rua (Início):**
+  - **Roteiro de hoje:** as casas mais importantes do dia (15 por padrão; dá para escolher 10, 20 ou
+    todas), em ordem de rua: caso urgente, nível A/B vencido, revisita, consulta ou cirurgia que acabou de
+    passar ou é amanhã, caso parado e quem está sumido. Cada casa diz por que está ali e tem o botão
+    **Registrar VD**. Casa visitada hoje sai da lista.
+  - **Lembretes:** "amanhã: Fulana – consulta", "seg 09/11: Ciclano – cirurgia (perguntar como foi)".
+  - **Agenda:** todas as datas que você escreveu nas VDs ("consulta dia 24/11") e as revisitas marcadas.
+    O que já passou fica até você tocar em **"Já perguntei / resolvido"**.
+  - **Sumidos:** casas sem VD há 60, 90 ou 180 dias (ou nunca), a mais esquecida primeiro.
 - **Casos parados e resposta da reunião:** caso sem novidade há 2 semanas ou mais ganha a etiqueta
   **"Sem resposta há…"** e sobe na lista; os 5 mais esquecidos entram sozinhos na pauta da reunião. Depois
   da reunião, abra o caso e escreva em **"O que a equipe decidiu"** → **Anotar resposta** (marque "Resolveu

@@ -13,6 +13,9 @@
   import RevisarFichas from './telas/RevisarFichas.svelte';
   import AtualizarCadastro from './telas/AtualizarCadastro.svelte';
   import Tecnica from './telas/Tecnica.svelte';
+  import RoteiroDia from './telas/RoteiroDia.svelte';
+  import Agenda from './telas/Agenda.svelte';
+  import Sumidos from './telas/Sumidos.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -72,7 +75,7 @@
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -161,6 +164,12 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'dia'}
+    <RoteiroDia />
+  {:else if rota.tela === 'agenda'}
+    <Agenda />
+  {:else if rota.tela === 'sumidos'}
+    <Sumidos />
   {:else if rota.tela === 'tecnica'}
     <Tecnica />
   {:else if rota.tela === 'atualizar-cadastro'}

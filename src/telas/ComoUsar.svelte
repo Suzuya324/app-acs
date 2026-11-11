@@ -82,6 +82,7 @@
       <li><strong>Ficha da pessoa:</strong> na família, toque no morador. Ela mostra as condições, a prioridade e a linha do tempo com tudo o que foi escrito sobre a pessoa.</li>
       <li><strong>Na VD</strong>, use <strong>“Sobre cada pessoa”</strong> para anotar. O app sugere o que atualizar na ficha (ex.: “ficou acamada” → Acamado); só muda o que você tocar.</li>
       <li><strong>Casos</strong> (aba da prancheta): o app acha casos no que você escreve na VD (“precisa da assistente social”, “caiu”, “pedir VD da enfermeira”) e oferece abrir o caso já com a categoria, a eMulti e o ponto para a reunião. Na aba, <strong>Copiar a pauta</strong> monta a lista da reunião de equipe. Caso aberto sobe a prioridade da casa (urgente = nível A).</li>
+      <li><strong>Hoje na rua</strong> (Início): <strong>Roteiro de hoje</strong> com as casas mais importantes em ordem de rua, lembretes das consultas e cirurgias, <strong>Agenda</strong> e <strong>Sumidos</strong>.</li>
       <li><strong>Caso parado</strong> (2 semanas sem novidade) sobe na lista e entra na pauta. Depois da reunião, abra o caso e toque em <strong>Anotar resposta</strong>.</li>
       <li><strong>Lista para a técnica</strong> (aba Casos): quem precisa de P.A., glicemia, curativo, sonda ou coleta. <strong>Copiar a lista</strong> e mande para ela.</li>
       <li><strong>Cadastro atualizado no SBCD?</strong> Ajustes → <strong>Atualizar cadastro pelo SBCD</strong>: o app mostra só as diferenças (prontuário, pessoa nova, casa nova, óbito…). Marque o que aceitar e salve. Nada é apagado.</li>
