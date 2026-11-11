@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
   import { formatarData, hojeISO, proximoDiaDaSemana } from '../lib/datas';
-  import { casoDoAchado, casosAchados, casosDaPauta, DIAS_PARADO, PARADOS_NA_PAUTA, ultimaNovidade, diasParado, ordenarCasos, textoDaPauta, textoParado, type CasoAchado } from '../lib/casos-auto';
+  import { casoDoAchado, casosAchados, casosDaPauta, DIAS_PARADO, PARADOS_NA_PAUTA, textoDoCaso, ultimaNovidade, diasParado, ordenarCasos, textoDaPauta, textoParado, type CasoAchado } from '../lib/casos-auto';
   import { app, enderecoCurto, esconderDoAcompanhamento, familiaPorId, mostrarAviso, resolverCaso, responderCaso, salvarCaso } from '../lib/estado.svelte';
   import { NOMES_CATEGORIA_CASO } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
@@ -74,10 +74,20 @@
     }
   }
   const NOME_CAT: Record<CategoriaCaso, string> = { urgente: 'Urgente', importante: 'Importante', social: 'Social', npv: 'NPV' };
+  /** Endereço com o prontuário (para a pauta e para mandar à equipe). */
   const endereco = (id: string) => {
     const f = familiaPorId(id);
-    return f ? enderecoCurto(f) : '';
+    return f ? `${enderecoCurto(f)} (${f.prontuario.trim() ? `pront. ${f.prontuario.trim()}` : 'sem prontuário'})` : '';
   };
+  async function copiarCaso(c: Caso) {
+    try {
+      await navigator.clipboard.writeText(textoDoCaso(c, endereco, hoje));
+      app.desfazer = null;
+      mostrarAviso('Caso copiado ✓ Cole no WhatsApp de quem vai ajudar.');
+    } catch {
+      mostrarAviso('Não consegui copiar.');
+    }
+  }
   async function copiarPauta() {
     try {
       await navigator.clipboard.writeText(textoDaPauta(abertos, endereco, reuniao ? formatarData(reuniao) : '', hoje));
@@ -157,7 +167,7 @@
       <button class="cab" onclick={() => { aberto = aberto === c.id ? null : c.id; resposta = ''; resolverJunto = false; }} aria-expanded={aberto === c.id}>
         <span class="tag {c.categoria}">{NOMES_CATEGORIA_CASO[c.categoria]}</span>
         <strong>{c.titulo}</strong>
-        <span class="suave pequeno">{f ? enderecoCurto(f) : ''} · última novidade {ultimaNovidade(c) ? formatarData(ultimaNovidade(c)) : '—'}</span>
+        <span class="suave pequeno">{f ? enderecoCurto(f) : ''}{f?.prontuario.trim() ? ` · pront. ${f.prontuario.trim()}` : ''} · última novidade {ultimaNovidade(c) ? formatarData(ultimaNovidade(c)) : '—'}</span>
         {#if !c.resolvidoEm && diasParado(c, hoje) >= DIAS_PARADO}<span class="tag parado">Sem resposta {textoParado(diasParado(c, hoje))}</span>{/if}
         {#if c.emulti}<span class="tag emulti">eMulti: {c.emulti}</span>{/if}
         {#if aberto !== c.id}<span class="previa">{c.texto}</span>{/if}
@@ -187,6 +197,7 @@
           </div>
         {/if}
         <div class="linha-botoes">
+          <button class="botao pequeno" onclick={() => copiarCaso(c)}><Icone nome="copiar" tamanho={18} /> Copiar caso</button>
           <button class="botao secundario pequeno" onclick={() => ir(`familia/${c.familiaId}`)}>Ver família</button>
           <button class="botao secundario pequeno" onclick={() => ir(`caso/${c.familiaId}/${c.id}`)}>Editar</button>
           <button class="botao pequeno" onclick={() => resolverCaso(c.id, !c.resolvidoEm)}>{c.resolvidoEm ? 'Reabrir' : 'Resolvido'}</button>

@@ -292,3 +292,17 @@ export function textoDaPauta(casos: Caso[], endereco: (familiaId: string) => str
   });
   return linhas.join('\n');
 }
+
+/** Um caso em texto, para mandar a um profissional da equipe (WhatsApp): quem, onde, prontuário e o que fazer. */
+export function textoDoCaso(c: Caso, endereco: (familiaId: string) => string, hoje = ''): string {
+  const cat = { urgente: 'URGENTE', importante: 'Importante', social: 'Social', npv: 'NPV' }[c.categoria];
+  const parado = hoje ? diasParado(c, hoje) : 0;
+  const linhas = [`[${cat}] ${c.titulo}`, endereco(c.familiaId)];
+  if (c.emulti?.trim()) linhas.push(`eMulti: ${c.emulti.trim()}`);
+  if (c.texto.trim()) linhas.push(c.texto.trim());
+  if (c.npv?.trim()) linhas.push(c.npv.trim());
+  const ultima = c.respostas?.[c.respostas.length - 1];
+  if (ultima) linhas.push(`Última resposta (${dataCurta(ultima.data)}): ${ultima.texto}`);
+  if (parado >= DIAS_PARADO) linhas.push(`Sem resposta ${textoParado(parado)}.`);
+  return linhas.join('\n');
+}
