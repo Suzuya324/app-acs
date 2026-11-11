@@ -135,6 +135,15 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Números do mês:**
+  - **Previsão da meta** (Início e Painel): "No ritmo de agora (8,5 por dia de campo), você fecha o mês com
+    ~190 famílias". Amarelo = não vai bater; verde = vai bater.
+  - **Indicadores** (Painel): por grupo (hipertensos, diabéticos, gestantes, crianças, acamados, idosos…),
+    quantas pessoas tiveram a casa visitada e quantas tiveram P.A./glicemia registrada na VD no mês.
+  - **Relatório em PDF** (Painel → Relatório de produção): agora com previsão, indicadores e casos
+    (abertos, resolvidos, por eMulti). Continua sem nomes nem endereços.
+  - **Versão do app:** no fim de Ajustes aparece a data e a hora da versão. Serve para conferir se o
+    celular já atualizou.
 - **Não perder ninguém (Início):**
   - **A confirmar:** óbito a confirmar e "gestante?" da lista de prioritários, e tudo o que você anotou
     "a confirmar". Um toque resolve ("Confirmar óbito", "Está vivo(a)", "Está grávida", "Já confirmei").

@@ -6,6 +6,7 @@
   import { formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import { app, opcoesPainel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
+  import { indicadores, pct as porcento, previsaoDaMeta } from '../lib/indicadores';
   import { voltar } from '../lib/rotas.svelte';
   import type { Desfecho } from '../lib/tipos';
 
@@ -18,6 +19,24 @@
   const diasComVisita = $derived(painel.porDia.filter((d) => d.contam + d.naoContam > 0).length);
   const media = $derived(diasComVisita ? (painel.familiasVisitadas / diasComVisita).toFixed(1).replace('.', ',') : '0');
   const pct = $derived(Math.round((painel.familiasVisitadas / painel.meta) * 100));
+  const previsao = $derived(previsaoDaMeta(painel, hoje, opcoes.ehDiaDeCampo!));
+  const inds = $derived(indicadores(app.familias, app.visitas, painel.periodo.inicio, painel.periodo.fim));
+  /** Casos (só números): abertos no período, resolvidos no período, abertos hoje, por eMulti. */
+  const casos = $derived.by(() => {
+    const ini = painel.periodo.inicio;
+    const fim = painel.periodo.fim;
+    const dentro = (iso?: string) => !!iso && iso.slice(0, 10) >= ini && iso.slice(0, 10) <= fim;
+    const ativos = app.casos.filter((c) => app.familias.some((f) => f.id === c.familiaId));
+    const porEmulti = new Map<string, number>();
+    for (const c of ativos) if (!c.resolvidoEm && c.emulti?.trim()) porEmulti.set(c.emulti.trim(), (porEmulti.get(c.emulti.trim()) ?? 0) + 1);
+    return {
+      novos: ativos.filter((c) => dentro(c.criadoEm)).length,
+      resolvidos: ativos.filter((c) => dentro(c.resolvidoEm)).length,
+      abertos: ativos.filter((c) => !c.resolvidoEm).length,
+      urgentes: ativos.filter((c) => !c.resolvidoEm && c.categoria === 'urgente').length,
+      porEmulti: [...porEmulti.entries()].sort((a, b) => b[1] - a[1]),
+    };
+  });
   const ordem: Desfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
   const geradoEm = new Date().toLocaleString('pt-BR');
 
@@ -70,6 +89,41 @@
       </tbody>
     </table>
     <p class="nota">Cada família conta uma vez no período. O total de visitas inclui revisitas e visitas que não contam.</p>
+  </section>
+
+  {#if previsao}
+    <p class="nota">Previsão pelo ritmo até {formatarData(hoje)} ({previsao.ritmo.toFixed(1).replace('.', ',')} famílias por dia de campo): cerca de {previsao.previsto} famílias no fim do período.</p>
+  {/if}
+
+  {#if inds.length}
+    <section>
+      <h2>Indicadores por grupo</h2>
+      <table>
+        <thead><tr><th>Grupo</th><th class="n">Pessoas</th><th class="n">Com a casa visitada</th><th class="n">Medida registrada</th></tr></thead>
+        <tbody>
+          {#each inds as i (i.grupo)}
+            <tr>
+              <td>{i.nome}</td>
+              <td class="n">{i.total}</td>
+              <td class="n">{i.visitadas} ({porcento(i.visitadas, i.total)}%)</td>
+              <td class="n">{i.medida ? `${i.medida.feitas} (${porcento(i.medida.feitas, i.total)}%) – ${i.medida.nome}` : '—'}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </section>
+  {/if}
+
+  <section>
+    <h2>Casos acompanhados</h2>
+    <table>
+      <tbody>
+        <tr><td>Casos abertos no período</td><td class="n">{casos.novos}</td></tr>
+        <tr><td>Casos resolvidos no período</td><td class="n">{casos.resolvidos}</td></tr>
+        <tr><td>Casos em aberto hoje (urgentes)</td><td class="n">{casos.abertos} ({casos.urgentes})</td></tr>
+        {#each casos.porEmulti as [nome, n] (nome)}<tr><td>Encaminhados à eMulti: {nome}</td><td class="n">{n}</td></tr>{/each}
+      </tbody>
+    </table>
   </section>
 
   <section>

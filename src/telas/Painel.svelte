@@ -6,6 +6,7 @@
   import { formatarData, hojeISO } from '../lib/datas';
   import { app, opcoesPainel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
+  import { indicadores, pct as porcento, previsaoDaMeta } from '../lib/indicadores';
   import { ir, voltar } from '../lib/rotas.svelte';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
@@ -17,6 +18,8 @@
   const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
   const diasDeCampo = $derived(contarDiasDeCampo(painel.periodo.inicio, painel.periodo.fim, opcoes.ehDiaDeCampo!));
   const ritmo = $derived(diasDeCampo > 0 ? Math.ceil(painel.meta / diasDeCampo) : 0);
+  const previsao = $derived(previsaoDaMeta(painel, hoje, opcoes.ehDiaDeCampo!));
+  const inds = $derived(indicadores(app.familias, app.visitas, painel.periodo.inicio, painel.periodo.fim));
   const ordem: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function mudar(direcao: -1 | 1) {
@@ -55,7 +58,33 @@
     </p>
   {/if}
   <p class="suave pequeno">{painel.totalVisitasMes} visitas no período · {diasDeCampo} dias de campo (sem fins de semana, feriados e dias marcados em Ajustes)</p>
+  {#if previsao}
+    <p class="previsao" class:bom={previsao.vaiBater}>
+      {previsao.vaiBater ? '📈' : '⚠️'} No ritmo de agora ({previsao.ritmo.toFixed(1).replace('.', ',')} por dia de campo), você fecha o mês com
+      <strong>~{previsao.previsto}</strong> famílias{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
+    </p>
+  {/if}
 </section>
+
+{#if inds.length}
+  <section class="cartao">
+    <h2>Indicadores do período</h2>
+    <p class="suave pequeno">Por grupo: quantas pessoas tiveram a casa visitada (VD que conta) e, para hipertensos e diabéticos, quantas tiveram a medida registrada na VD.</p>
+    <table class="ind">
+      <thead><tr><th>Grupo</th><th>Pessoas</th><th>Visitadas</th><th>Medida</th></tr></thead>
+      <tbody>
+        {#each inds as i (i.grupo)}
+          <tr>
+            <td>{i.nome}</td>
+            <td class="n">{i.total}</td>
+            <td class="n">{i.visitadas} <span class="suave">({porcento(i.visitadas, i.total)}%)</span></td>
+            <td class="n">{#if i.medida}{i.medida.feitas} <span class="suave">({porcento(i.medida.feitas, i.total)}%)</span>{:else}—{/if}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </section>
+{/if}
 
 <section class="cartao">
   <h2>Famílias visitadas por dia</h2>
@@ -166,5 +195,31 @@
   }
   .desfechos li:last-child {
     border-bottom: 0;
+  }
+  .previsao {
+    margin: 8px 0 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--aviso-fundo);
+    color: var(--aviso-texto);
+  }
+  .previsao.bom {
+    background: var(--primaria-clara);
+    color: var(--texto);
+  }
+  .ind {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  .ind th,
+  .ind td {
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--borda);
+    text-align: left;
+  }
+  .ind .n {
+    text-align: right;
+    white-space: nowrap;
   }
 </style>
