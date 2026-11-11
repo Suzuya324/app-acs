@@ -217,25 +217,78 @@ export function casoDoAchado(a: CasoAchado): Omit<Caso, 'id' | 'criadoEm' | 'atu
 
 const PESO: Record<CategoriaCaso, number> = { urgente: 0, importante: 1, social: 2, npv: 3 };
 
-/** Ordem dos casos abertos: urgente; depois os que vão para a reunião ou eMulti; depois o mais antigo sem novidade. */
-export function ordenarCasos(casos: Caso[]): Caso[] {
-  const reuniao = (c: Caso) => (c.npv?.trim() || c.emulti?.trim() ? 0 : 1);
-  return [...casos].sort((a, b) => PESO[a.categoria] - PESO[b.categoria] || reuniao(a) - reuniao(b) || a.atualizadoEm.localeCompare(b.atualizadoEm));
+/** A partir de quantos dias sem novidade o caso conta como parado (e entra sozinho na pauta). */
+export const DIAS_PARADO = 14;
+
+/** Dia da última novidade do caso: a resposta mais nova, a última edição ou quando foi aberto. */
+export function ultimaNovidade(c: Caso): string {
+  const datas = [(c.novidadeEm ?? c.criadoEm ?? '').slice(0, 10), ...(c.respostas ?? []).map((r) => r.data)];
+  return datas.filter(Boolean).sort().pop() ?? '';
 }
 
-/** Casos da pauta da reunião de equipe: abertos, urgentes ou com ponto de reunião/eMulti. */
-export const casosDaPauta = (casos: Caso[]) =>
-  ordenarCasos(casos.filter((c) => !c.resolvidoEm && (c.categoria === 'urgente' || c.categoria === 'npv' || !!c.npv?.trim() || !!c.emulti?.trim())));
+/** Há quantos dias o caso está sem novidade (0 se não souber). */
+export function diasParado(c: Caso, hoje: string): number {
+  const u = ultimaNovidade(c);
+  return u && u <= hoje ? diferencaDias(u, hoje) : 0;
+}
+
+/** "há 3 semanas", "há 10 dias". */
+export function textoParado(dias: number): string {
+  if (dias >= 60) return `há ${Math.floor(dias / 30)} meses`;
+  if (dias >= 14) return `há ${Math.floor(dias / 7)} semanas`;
+  return dias === 1 ? 'há 1 dia' : `há ${dias} dias`;
+}
+
+/**
+ * Ordem dos casos abertos: urgente primeiro; depois os parados (o mais esquecido sobe); depois os que vão para
+ * a reunião ou eMulti; por fim os mais antigos.
+ */
+export function ordenarCasos(casos: Caso[], hoje = ''): Caso[] {
+  const parado = (c: Caso) => (hoje ? diasParado(c, hoje) : 0);
+  const reuniao = (c: Caso) => (c.npv?.trim() || c.emulti?.trim() ? 0 : 1);
+  return [...casos].sort(
+    (a, b) =>
+      Number(!!a.resolvidoEm) - Number(!!b.resolvidoEm) ||
+      Number(a.categoria !== 'urgente') - Number(b.categoria !== 'urgente') ||
+      Number(parado(b) >= DIAS_PARADO) - Number(parado(a) >= DIAS_PARADO) ||
+      (parado(a) >= DIAS_PARADO && parado(b) >= DIAS_PARADO ? parado(b) - parado(a) : 0) ||
+      reuniao(a) - reuniao(b) ||
+      PESO[a.categoria] - PESO[b.categoria] ||
+      ultimaNovidade(a).localeCompare(ultimaNovidade(b)),
+  );
+}
+
+/** Quantos casos parados (fora os da reunião) entram por semana na pauta: os mais esquecidos primeiro. */
+export const PARADOS_NA_PAUTA = 5;
+
+/**
+ * Casos da pauta da reunião: abertos e urgentes, com ponto de reunião/eMulti, e os PARADOS_NA_PAUTA mais esquecidos
+ * (parados há DIAS_PARADO dias ou mais). Respondendo, eles saem e os próximos sobem na semana seguinte.
+ */
+export function casosDaPauta(casos: Caso[], hoje = ''): Caso[] {
+  const abertos = casos.filter((c) => !c.resolvidoEm);
+  const fixos = abertos.filter((c) => c.categoria === 'urgente' || c.categoria === 'npv' || !!c.npv?.trim() || !!c.emulti?.trim());
+  const parados = hoje
+    ? abertos
+        .filter((c) => !fixos.includes(c) && diasParado(c, hoje) >= DIAS_PARADO)
+        .sort((a, b) => diasParado(b, hoje) - diasParado(a, hoje))
+        .slice(0, PARADOS_NA_PAUTA)
+    : [];
+  return ordenarCasos([...fixos, ...parados], hoje);
+}
 
 /** Texto da pauta para copiar (WhatsApp da equipe, caderno da reunião). */
-export function textoDaPauta(casos: Caso[], endereco: (familiaId: string) => string, dia: string): string {
-  const pauta = casosDaPauta(casos);
+export function textoDaPauta(casos: Caso[], endereco: (familiaId: string) => string, dia: string, hoje = ''): string {
+  const pauta = casosDaPauta(casos, hoje);
   const linhas = [`Pauta da reunião de equipe${dia ? ` ${dia}` : ''} (${pauta.length} ${pauta.length === 1 ? 'caso' : 'casos'})`];
   pauta.forEach((c, i) => {
     const cat = { urgente: 'URGENTE', importante: 'Importante', social: 'Social', npv: 'NPV' }[c.categoria];
-    linhas.push(`${i + 1}. [${cat}] ${c.titulo} – ${endereco(c.familiaId)}${c.emulti ? ` – eMulti: ${c.emulti}` : ''}`);
+    const parado = hoje ? diasParado(c, hoje) : 0;
+    linhas.push(`${i + 1}. [${cat}] ${c.titulo} – ${endereco(c.familiaId)}${c.emulti ? ` – eMulti: ${c.emulti}` : ''}${parado >= DIAS_PARADO ? ` – SEM RESPOSTA ${textoParado(parado).toUpperCase()}` : ''}`);
     const texto = (c.texto.split('\n').find((l) => l.trim()) || c.npv || '').trim();
     if (texto) linhas.push(`   ${texto.length > 180 ? `${texto.slice(0, 180)}…` : texto}`);
+    const ultima = c.respostas?.[c.respostas.length - 1];
+    if (ultima) linhas.push(`   Última resposta (${dataCurta(ultima.data)}): ${ultima.texto}`);
   });
   return linhas.join('\n');
 }

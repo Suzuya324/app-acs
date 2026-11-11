@@ -573,9 +573,24 @@ export const salvarCaso = (c: Omit<Caso, 'id' | 'criadoEm' | 'atualizadoEm'> & {
   comDesfazer(c.id ? 'Salvar caso' : 'Novo caso', async () => {
     const quando = agora();
     const i = c.id ? app.casos.findIndex((x) => x.id === c.id) : -1;
-    if (i >= 0) app.casos[i] = { ...app.casos[i], ...c, id: app.casos[i].id, atualizadoEm: quando };
-    else app.casos.push({ ...c, id: novoId('c'), criadoEm: quando, atualizadoEm: quando });
+    if (i >= 0) app.casos[i] = { ...app.casos[i], ...c, id: app.casos[i].id, atualizadoEm: quando, novidadeEm: quando };
+    else app.casos.push({ ...c, id: novoId('c'), criadoEm: quando, atualizadoEm: quando, novidadeEm: quando });
     app.historico.push(...criarAlteracoes(c.familiaId, [`Caso ${i >= 0 ? 'atualizado' : 'aberto'}: ${c.titulo}`]));
+    await gravar({ casos: app.casos, historico: app.historico });
+  });
+
+/** Anota no caso o que a equipe decidiu (ou outra novidade). Pode resolver o caso junto. */
+export const responderCaso = (id: string, texto: string, opcoes: { reuniao?: boolean; resolver?: boolean; data?: string } = {}) =>
+  comDesfazer('Resposta do caso', async () => {
+    const c = app.casos.find((x) => x.id === id);
+    if (!c || !texto.trim()) return;
+    const quando = agora();
+    const data = opcoes.data ?? hojeISO();
+    c.respostas = [...(c.respostas ?? []), { data, texto: texto.trim(), ...(opcoes.reuniao ? { reuniao: true } : {}) }];
+    c.atualizadoEm = quando;
+    c.novidadeEm = quando;
+    if (opcoes.resolver) c.resolvidoEm = quando;
+    app.historico.push(...criarAlteracoes(c.familiaId, [`Caso ${c.titulo}: ${opcoes.reuniao ? 'resposta da reunião' : 'novidade'} – ${texto.trim()}${opcoes.resolver ? ' (resolvido)' : ''}`]));
     await gravar({ casos: app.casos, historico: app.historico });
   });
 

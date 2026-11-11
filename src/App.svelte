@@ -12,6 +12,7 @@
   import ImportarGrupos from './telas/ImportarGrupos.svelte';
   import RevisarFichas from './telas/RevisarFichas.svelte';
   import AtualizarCadastro from './telas/AtualizarCadastro.svelte';
+  import Tecnica from './telas/Tecnica.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -61,7 +62,7 @@
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
   const abaAtiva = $derived(
-    rota.tela === 'caso'
+    rota.tela === 'caso' || rota.tela === 'tecnica'
       ? 'casos'
       : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'
@@ -160,6 +161,8 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'tecnica'}
+    <Tecnica />
   {:else if rota.tela === 'atualizar-cadastro'}
     <AtualizarCadastro />
   {:else if rota.tela === 'revisar-fichas'}

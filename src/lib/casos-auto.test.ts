@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { casoDoAchado, casosAchados, casosDaPauta, motivoDaFrase, ordenarCasos, textoDaPauta } from './casos-auto';
+import { casoDoAchado, casosAchados, casosDaPauta, diasParado, motivoDaFrase, ordenarCasos, textoDaPauta, textoParado } from './casos-auto';
 import { nivelDaFamilia } from './nivel';
 import type { Caso, Familia, Morador, Visita } from './tipos';
 
@@ -107,5 +107,31 @@ describe('prioridade e pauta', () => {
     expect(nivelDaFamilia(f, '2026-11-10', [], [casos[0]]).nivel).toBe('B');
     expect(nivelDaFamilia(f, '2026-11-10', [], [casos[1]]).nivel).toBe('A');
     expect(nivelDaFamilia(f, '2026-11-10', [], [casos[3]]).nivel).toBe('C');
+  });
+});
+
+describe('casos parados e respostas', () => {
+  const c = (id: string, extra: Partial<Caso>): Caso => ({ id, familiaId: 'f1', categoria: 'importante', titulo: id, texto: 'x', criadoEm: '2026-10-01T12:00:00Z', atualizadoEm: '2026-11-10T12:00:00Z', ...extra });
+  it('conta dias sem novidade pela resposta, pela edição ou pela abertura', () => {
+    expect(diasParado(c('a', {}), '2026-11-11')).toBe(41);
+    expect(diasParado(c('a', { novidadeEm: '2026-11-01T10:00:00Z' }), '2026-11-11')).toBe(10);
+    expect(diasParado(c('a', { respostas: [{ data: '2026-11-09', texto: 'VD médica marcada' }] }), '2026-11-11')).toBe(2);
+    expect(textoParado(41)).toBe('há 5 semanas');
+  });
+  it('parado sobe na pauta e entra nela sozinho; a última resposta vai junto', () => {
+    const casos = [
+      c('novo', { emulti: 'Psicologia', novidadeEm: '2026-11-10T00:00:00Z' }),
+      c('parado', { novidadeEm: '2026-10-01T00:00:00Z' }),
+      c('urgente', { categoria: 'urgente', novidadeEm: '2026-11-10T00:00:00Z' }),
+      c('respondido', { npv: 'x', respostas: [{ data: '2026-11-05', texto: 'Encaminhado para a psicologia', reuniao: true }] }),
+    ];
+    expect(ordenarCasos(casos, '2026-11-11').map((x) => x.id)).toEqual(['urgente', 'parado', 'respondido', 'novo']);
+    expect(casosDaPauta(casos, '2026-11-11').map((x) => x.id)).toEqual(['urgente', 'parado', 'respondido', 'novo']);
+    const muitos = Array.from({ length: 8 }, (_, i) => c(`p${i}`, { novidadeEm: `2026-09-0${i + 1}T00:00:00Z` }));
+    expect(casosDaPauta(muitos, '2026-11-11').map((x) => x.id)).toEqual(['p0', 'p1', 'p2', 'p3', 'p4']);
+    expect(casosDaPauta(casos).map((x) => x.id)).not.toContain('parado');
+    const t = textoDaPauta(casos, () => 'Rua das Acácias, 12', '12/11', '2026-11-11');
+    expect(t).toContain('2. [Importante] parado – Rua das Acácias, 12 – SEM RESPOSTA HÁ 5 SEMANAS');
+    expect(t).toContain('Última resposta (05/11): Encaminhado para a psicologia');
   });
 });

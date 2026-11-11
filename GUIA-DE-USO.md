@@ -135,6 +135,14 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Casos parados e resposta da reunião:** caso sem novidade há 2 semanas ou mais ganha a etiqueta
+  **"Sem resposta há…"** e sobe na lista; os 5 mais esquecidos entram sozinhos na pauta da reunião. Depois
+  da reunião, abra o caso e escreva em **"O que a equipe decidiu"** → **Anotar resposta** (marque "Resolveu
+  o caso" se for o caso). A resposta vai na próxima pauta e o caso sai da lista de parados.
+- **Lista para a técnica de enfermagem:** aba **Casos** → **"Lista para a técnica"**. Mostra quem precisa
+  de P.A. ou glicemia (hipertenso/diabético sem medida há 60 dias, ou medida alta recente para repetir),
+  curativo, sonda, aplicação ou coleta, em ordem de rua. **"Copiar a lista"** monta o texto para mandar.
+  Quando a técnica fizer, registre a VD compartilhada com a P.A./glicemia: a pessoa sai da lista sozinha.
 - **Casos:** a aba **Casos** lista o que acompanhar de perto (urgente, importante,
   social/cadastro, NPV), com filtro de eMulti e a data da próxima reunião de equipe (toda quarta; dá para mudar em Ajustes). Para abrir um
   caso: na família → **"Abrir caso"**. Para fechar: **"Resolvido"** (nada é apagado).

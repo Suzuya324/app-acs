@@ -1,8 +1,8 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
   import { formatarData, hojeISO, proximoDiaDaSemana } from '../lib/datas';
-  import { casoDoAchado, casosAchados, casosDaPauta, ordenarCasos, textoDaPauta, type CasoAchado } from '../lib/casos-auto';
-  import { app, enderecoCurto, esconderDoAcompanhamento, familiaPorId, mostrarAviso, resolverCaso, salvarCaso } from '../lib/estado.svelte';
+  import { casoDoAchado, casosAchados, casosDaPauta, DIAS_PARADO, PARADOS_NA_PAUTA, ultimaNovidade, diasParado, ordenarCasos, textoDaPauta, textoParado, type CasoAchado } from '../lib/casos-auto';
+  import { app, enderecoCurto, esconderDoAcompanhamento, familiaPorId, mostrarAviso, resolverCaso, responderCaso, salvarCaso } from '../lib/estado.svelte';
   import { NOMES_CATEGORIA_CASO } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
   import type { Caso, CategoriaCaso } from '../lib/tipos';
@@ -19,19 +19,35 @@
     ['resolvidos', 'Resolvidos'],
   ];
   let filtro = $state<Filtro>('todos');
+  const hoje = hojeISO();
+  const parados = $derived(abertosParados());
+  function abertosParados() {
+    return app.casos.filter((c) => !c.resolvidoEm && familiaPorId(c.familiaId) && diasParado(c, hoje) >= DIAS_PARADO).length;
+  }
+  /** Resposta sendo escrita no caso aberto. */
+  let resposta = $state('');
+  let daReuniao = $state(true);
+  let resolverJunto = $state(false);
+  async function responder(c: Caso) {
+    if (!resposta.trim()) return;
+    await responderCaso(c.id, resposta, { reuniao: daReuniao, resolver: resolverJunto });
+    mostrarAviso(resolverJunto ? 'Resposta anotada e caso resolvido ✓' : 'Resposta anotada ✓');
+    resposta = '';
+    resolverJunto = false;
+  }
   let aberto = $state<string | null>(null);
 
   const ativos = $derived(app.casos.filter((c) => familiaPorId(c.familiaId)));
   const abertos = $derived(ativos.filter((c) => !c.resolvidoEm));
   const lista = $derived.by(() => {
     const base = filtro === 'resolvidos' ? ativos.filter((c) => c.resolvidoEm) : abertos;
-    if (filtro === 'pauta') return casosDaPauta(abertos);
+    if (filtro === 'pauta') return casosDaPauta(abertos, hoje);
     const f = (c: Caso) =>
       filtro === 'todos' || filtro === 'resolvidos' ? true : filtro === 'emulti' ? !!c.emulti?.trim() : c.categoria === filtro;
-    return ordenarCasos(base.filter(f));
+    return ordenarCasos(base.filter(f), hoje);
   });
   const conta = (f: Filtro) =>
-    f === 'todos' ? abertos.length : f === 'pauta' ? casosDaPauta(abertos).length : f === 'resolvidos' ? ativos.length - abertos.length : f === 'emulti' ? abertos.filter((c) => c.emulti?.trim()).length : abertos.filter((c) => c.categoria === f).length;
+    f === 'todos' ? abertos.length : f === 'pauta' ? casosDaPauta(abertos, hoje).length : f === 'resolvidos' ? ativos.length - abertos.length : f === 'emulti' ? abertos.filter((c) => c.emulti?.trim()).length : abertos.filter((c) => c.categoria === f).length;
 
   /** Casos que o app achou no que você escreveu e que ainda não foram abertos. */
   const achados = $derived(casosAchados(app.familias, app.visitas, app.casos, hojeISO(), app.config.sugestoesEscondidas ?? [], app.prioritarios));
@@ -64,7 +80,7 @@
   };
   async function copiarPauta() {
     try {
-      await navigator.clipboard.writeText(textoDaPauta(abertos, endereco, reuniao ? formatarData(reuniao) : ''));
+      await navigator.clipboard.writeText(textoDaPauta(abertos, endereco, reuniao ? formatarData(reuniao) : '', hoje));
       app.desfazer = null;
       mostrarAviso('Pauta copiada ✓ Cole no WhatsApp da equipe ou no caderno.');
     } catch {
@@ -85,7 +101,8 @@
   <section class="cartao reuniao">
     <p>
       <strong>Reunião de equipe: {reuniao === hojeISO() ? 'hoje' : `${DIAS[diaReuniao]}, ${formatarData(reuniao)}`}</strong><br />
-      <span class="suave pequeno">{conta('pauta')} {conta('pauta') === 1 ? 'caso' : 'casos'} na pauta (urgentes, eMulti e os marcados para a reunião).</span>
+      <span class="suave pequeno">{conta('pauta')} {conta('pauta') === 1 ? 'caso' : 'casos'} na pauta (urgentes, eMulti, os marcados para a reunião e os parados).</span>
+      {#if parados}<br /><span class="pequeno"><strong>{parados} {parados === 1 ? 'caso parado' : 'casos parados'}</strong> há {DIAS_PARADO} dias ou mais sem resposta. Os {Math.min(parados, PARADOS_NA_PAUTA)} mais esquecidos entram na pauta; anotando a resposta, os próximos sobem.</span>{/if}
     </p>
     <div class="linha-botoes">
       <button class="botao secundario pequeno" onclick={() => (filtro = 'pauta')}>Ver a pauta</button>
@@ -93,6 +110,8 @@
     </div>
   </section>
 {/if}
+
+<button class="botao secundario largo tecnica" onclick={() => ir('tecnica')}>Lista para a técnica de enfermagem (P.A., glicemia, curativo)</button>
 
 {#if achados.length}
   <section class="cartao achados">
@@ -135,16 +154,38 @@
   {#each lista as c (c.id)}
     {@const f = familiaPorId(c.familiaId)}
     <li class="cartao caso {c.categoria}" class:resolvido={!!c.resolvidoEm}>
-      <button class="cab" onclick={() => (aberto = aberto === c.id ? null : c.id)} aria-expanded={aberto === c.id}>
+      <button class="cab" onclick={() => { aberto = aberto === c.id ? null : c.id; resposta = ''; resolverJunto = false; }} aria-expanded={aberto === c.id}>
         <span class="tag {c.categoria}">{NOMES_CATEGORIA_CASO[c.categoria]}</span>
         <strong>{c.titulo}</strong>
-        <span class="suave pequeno">{f ? enderecoCurto(f) : ''} · atualizado {formatarData(c.atualizadoEm.slice(0, 10))}</span>
+        <span class="suave pequeno">{f ? enderecoCurto(f) : ''} · última novidade {ultimaNovidade(c) ? formatarData(ultimaNovidade(c)) : '—'}</span>
+        {#if !c.resolvidoEm && diasParado(c, hoje) >= DIAS_PARADO}<span class="tag parado">Sem resposta {textoParado(diasParado(c, hoje))}</span>{/if}
         {#if c.emulti}<span class="tag emulti">eMulti: {c.emulti}</span>{/if}
         {#if aberto !== c.id}<span class="previa">{c.texto}</span>{/if}
       </button>
       {#if aberto === c.id}
         <p class="texto">{c.texto}</p>
         {#if c.npv}<p class="pequeno"><strong>NPV:</strong> {c.npv}</p>{/if}
+        {#if c.respostas?.length}
+          <div class="respostas">
+            <p class="pequeno"><strong>Respostas e andamento</strong></p>
+            <ol>
+              {#each [...c.respostas].reverse() as r, i (i)}
+                <li><span class="suave pequeno">{formatarData(r.data)}{r.reuniao ? ' · reunião' : ''}</span><br />{r.texto}</li>
+              {/each}
+            </ol>
+          </div>
+        {/if}
+        {#if !c.resolvidoEm}
+          <div class="responder">
+            <label class="campo">
+              <span>O que a equipe decidiu / novidade</span>
+              <textarea rows="2" bind:value={resposta} placeholder="Ex.: VD médica marcada dia 20; encaminhado para a psicologia"></textarea>
+            </label>
+            <label class="opcao pequeno"><input type="checkbox" bind:checked={daReuniao} /> Foi na reunião de equipe</label>
+            <label class="opcao pequeno"><input type="checkbox" bind:checked={resolverJunto} /> Resolveu o caso</label>
+            <button class="botao pequeno" disabled={!resposta.trim()} onclick={() => responder(c)}>Anotar resposta</button>
+          </div>
+        {/if}
         <div class="linha-botoes">
           <button class="botao secundario pequeno" onclick={() => ir(`familia/${c.familiaId}`)}>Ver família</button>
           <button class="botao secundario pequeno" onclick={() => ir(`caso/${c.familiaId}/${c.id}`)}>Editar</button>
@@ -284,5 +325,31 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+  .tag.parado {
+    background: var(--aviso-fundo);
+    color: var(--aviso-texto);
+    border: 1px solid var(--aviso-texto);
+  }
+  .respostas ol {
+    margin: 4px 0 8px;
+    padding-left: 18px;
+  }
+  .respostas li {
+    margin: 4px 0;
+    overflow-wrap: anywhere;
+  }
+  .responder {
+    border-top: 1px solid var(--borda);
+    padding-top: 8px;
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .responder .opcao {
+    display: flex;
+    gap: 8px;
+    align-items: center;
   }
 </style>
