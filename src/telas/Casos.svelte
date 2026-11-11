@@ -34,7 +34,7 @@
     f === 'todos' ? abertos.length : f === 'pauta' ? casosDaPauta(abertos).length : f === 'resolvidos' ? ativos.length - abertos.length : f === 'emulti' ? abertos.filter((c) => c.emulti?.trim()).length : abertos.filter((c) => c.categoria === f).length;
 
   /** Casos que o app achou no que você escreveu e que ainda não foram abertos. */
-  const achados = $derived(casosAchados(app.familias, app.visitas, app.casos, hojeISO(), app.config.sugestoesEscondidas ?? []));
+  const achados = $derived(casosAchados(app.familias, app.visitas, app.casos, hojeISO(), app.config.sugestoesEscondidas ?? [], app.prioritarios));
   let verTodosAchados = $state(false);
   let ocupado = $state(false);
   async function abrirAchado(a: CasoAchado) {
@@ -97,7 +97,7 @@
 {#if achados.length}
   <section class="cartao achados">
     <h2>Achei nas VDs <span class="suave">({achados.length})</span></h2>
-    <p class="suave pequeno">Casos no que você escreveu nos últimos 60 dias que ainda não foram abertos. Confira e toque em <strong>Abrir caso</strong>.</p>
+    <p class="suave pequeno">Casos em tudo o que você já escreveu (VDs, relatos, observações, lista de prioritários) que ainda não foram abertos. Confira e toque em <strong>Abrir caso</strong>.</p>
     {#each verTodosAchados ? achados : achados.slice(0, 5) as a (a.chave)}
       <div class="achado {a.categoria}">
         <p class="topo-achado">
@@ -106,7 +106,7 @@
           {#if a.reuniao}<span class="tag reun">Reunião</span>{/if}
         </p>
         <p><strong>{a.titulo}</strong> <span class="suave pequeno">· {endereco(a.familiaId)}</span></p>
-        <p class="pequeno">“{a.provas[0].frase}” <span class="suave">({formatarData(a.provas[0].data).slice(0, 5)}{a.provas.length > 1 ? ` e mais ${a.provas.length - 1}` : ''})</span></p>
+        <p class="pequeno">“{a.provas[0].frase}” <span class="suave">({a.provas[0].data ? formatarData(a.provas[0].data).slice(0, 5) : a.provas[0].origem}{a.provas.length > 1 ? ` e mais ${a.provas.length - 1}` : ''})</span></p>
         <div class="linha-botoes">
           <button class="botao pequeno" disabled={ocupado} onclick={() => abrirAchado(a)}>Abrir caso</button>
           <button class="botao secundario pequeno" disabled={ocupado} onclick={() => naoE(a)}>Não é caso</button>

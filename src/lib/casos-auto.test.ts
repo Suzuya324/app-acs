@@ -24,6 +24,29 @@ describe('o que a frase pede', () => {
     expect(mot('Nega dor no peito e falta de ar.')).toBeNull();
     expect(mot('Orientada sobre prevenção de quedas.')).toBeNull();
   });
+  it('reconhece muitos jeitos de escrever (inclusive erro de ditado)', () => {
+    expect(mot('A família está passando necessidade, sem gás.')).toBe('social|Serviço social|R');
+    expect(mot('Quer falar com a acistente social sobre o benefício.')).toBe('social|Serviço social|R');
+    expect(mot('Chora muito desde que o marido morreu.')).toBe('importante|Psicologia|R');
+    expect(mot('Engasga com a comida.')).toBe('importante|Fonoaudiologia|R');
+    expect(mot('Confunde os remédios, precisa de ajuda para organizar.')).toBe('importante|Farmácia|R');
+    expect(mot('Está com dor de dente, pede dentista.')).toBe('importante|Odontologia|R');
+    expect(mot('Não consegue ir até a UBS.')).toBe('importante|R');
+    expect(mot('Receita vencida.')).toBe('importante|R');
+    expect(mot('Filho parou de frequentar a escola.')).toBe('importante|R');
+    expect(mot('Está bebendo muito.')).toBe('importante|R');
+    expect(mot('Gestante sem pré-natal.')).toBe('urgente|R');
+  });
+  it('não cai em armadilhas', () => {
+    expect(mot('Risco de queda, orientada.')).toBeNull();
+    expect(mot('Falta de ar melhorando com a bombinha.')).toBeNull();
+    expect(mot('PA normal (09/2026).')).toBeNull();
+    expect(mot('Visita domiciliar realizada no período da manhã.')).toBeNull();
+    expect(mot('Diabética, sem insulina, só comprimidos.')).toBeNull();
+    // Resumo antigo (lista, observação): só pedido explícito.
+    expect(motivoDaFrase('Depressão e ansiedade, caiu em 2024.', true)).toBeNull();
+    expect(motivoDaFrase('Precisa de psicólogo.', true)?.emulti).toBe('Psicologia');
+  });
   it('reunião de equipe', () => {
     expect(mot('Pedir VD da enfermeira para avaliar a ferida.')).toBe('importante|R');
     expect(mot('Levar para a reunião de equipe.')).toBe('importante|R');

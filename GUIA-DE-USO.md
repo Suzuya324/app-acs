@@ -133,7 +133,7 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
 - **Casos achados nas VDs:** ao escrever na VD ("precisa da assistente social", "caiu ontem", "pedir VD da
   enfermeira", "sem insulina"), aparece **"Abrir caso"** já marcado, com a categoria (urgente, importante,
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
-  **"Achei nas VDs"** (o que foi escrito nos últimos 60 dias e ainda não virou caso) e **"Copiar a pauta"**
+  **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
 - **Casos:** a aba **Casos** lista o que acompanhar de perto (urgente, importante,
   social/cadastro, NPV), com filtro de eMulti e a data da próxima reunião de equipe (toda quarta; dá para mudar em Ajustes). Para abrir um

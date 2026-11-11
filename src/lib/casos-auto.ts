@@ -2,44 +2,55 @@
 // O app sugere abrir o caso já com a categoria (urgente, importante, social), a eMulti e o ponto para a reunião de
 // equipe. Só procura palavras, no aparelho; o caso só é aberto quando o ACS confirma. Funções "puras".
 import { codigo } from './acompanhamento';
-import { dataCurta, frases, NEGACAO, semAcento, textosDaPessoa, type TextoDaFamilia } from './anotacoes';
+import { dataCurta, frases, NEGACAO, semAcento, textosDaPessoa, trechosDaPessoa, type TextoDaFamilia } from './anotacoes';
+import type { Prioritario } from './prioritarios';
 import { diferencaDias, idade } from './datas';
 import type { Caso, CategoriaCaso, Familia, Morador, Visita } from './tipos';
 
-/** Profissionais da eMulti e as palavras que levam a cada um. */
+/**
+ * Profissionais da eMulti e as palavras que levam a cada um. Aceita erros comuns de digitação e de ditado
+ * ("acistente social", "assistente sócia", "psicologa"). O texto já chega sem acento e em minúsculas.
+ */
 export const EMULTI: [string, RegExp][] = [
-  ['Serviço social', /\b(assistentes? socia(l|is)|servico social|cras|creas|bpc|loas|beneficio|bolsa familia|cesta basica|auxilio|cadunico|cad unico|documentos?|vulnerab\w*)\b/],
-  ['Psicologia', /\b(psicolog\w*|acompanhamento psicologico|terapia)\b/],
-  ['Nutrição', /\b(nutricionista|nutricao)\b/],
-  ['Fisioterapia', /\b(fisioterap\w*|fisio|reabilitacao)\b/],
-  ['Fonoaudiologia', /\b(fono\w*)\b/],
-  ['Farmácia', /\b(farmaceutic[oa]|farmacia)\b/],
-  ['Odontologia', /\b(dentista|odonto\w*|saude bucal)\b/],
-  ['Terapia ocupacional', /\b(terapeuta ocupacional)\b/],
-  ['Educação física', /\b(educador fisico|educacao fisica)\b/],
+  ['Serviço social', /\b(a[sc]+istentes? soci(al|ais|a)|servico social|social da ubs|cras|creas|bpc|loas|beneficio\w*|aposentadoria|pensao|auxilio\w*|bolsa familia|cesta\w* basica\w*|cadunico|cad unico|cadastro unico|vulnerab\w*|passando (necessidade|fome)|sem (dinheiro|renda|comida|alimento\w*|gas|luz|agua)|fome|desempregad\w*|despejo|moradia|sem casa|morando na rua|situacao de rua|conselho tutelar|guarda (do|da|dos|das) (filh|net|crianc)\w*|documento\w*|rg|cpf|certidao|cartao (do )?sus|cns|curatela|interdicao|cuidador\w*\s+sobrecarregad\w*|sobrecarga)\b/],
+  ['Psicologia', /\b(psic[oó]log\w*|psicologia|acompanhamento psicologico|terapia|terapeuta(?! ocupacional)|luto|depress\w*|ansiedade|crise\w* de ansiedade|panico|chor(a|ando|ou) muito|muito triste|tristeza|desanimad\w*|isolad\w*|nao sai de casa|automutil\w*)\b/],
+  ['Nutrição', /\b(nutricionista|nutricao|desnutri\w*|baixo peso|abaixo do peso|perdeu (muito )?peso|emagreceu|obesidade|dieta)\b/],
+  ['Fisioterapia', /\b(fisioterap\w*|fisio|reabilitacao|nao (consegue|esta conseguindo) andar|dificuldade (para|de|pra) andar|andador|bengala|cadeira de rodas|sequela\w*|fortalecimento)\b/],
+  ['Fonoaudiologia', /\b(fono\w*|nao fala|atraso (na|da|de) fala|engasg\w*|dificuldade (para|de|pra) engolir|disfagia)\b/],
+  ['Farmácia', /\b(farmaceutic[oa]|farmacia|confund\w* (os )?remedios|nao sabe tomar|muitos remedios|toma errado|organizar (os )?remedios)\b/],
+  ['Odontologia', /\b(dentista|odonto\w*|saude bucal|dor de dente|dente\w* (doendo|quebrad\w*|podre)|protese dentaria|dentadura)\b/],
+  ['Terapia ocupacional', /\b(terapeuta ocupacional|terapia ocupacional)\b/],
+  ['Educação física', /\b(educador fisico|educacao fisica|academia da saude|atividade fisica)\b/],
 ];
 /** Na frase, alguém precisa de algo (senão "acompanha com a psicóloga" é só notícia). */
-const PRECISA = /\b(precis\w*|necessit\w*|pede\w*|pediu|pedir|quer|queria|gostaria|encaminh\w*|avaliar|avaliacao|ajuda|solicit\w*|levar|falar com|passar com|passar n[ao]|agendar|marcar|orientar|sem|nao tem|nao conseguiu|nao consegue|aguard\w*|esperando|falta (marcar|agendar|fazer|pedir|levar|conseguir)|urgente|vaga)\b/;
+const PRECISA = /\b(precis\w*|necessit\w*|pede\w*|pediu|pedir|pedindo|quer|queria|gostaria|encaminh\w*|avaliar|avaliacao|ajuda|socorro|solicit\w*|levar|falar com|passar com|passar n[ao]|agendar|marcar|orientar|sem|nao tem|nao conseguiu|nao consegue|nao esta conseguindo|aguard\w*|esperando|falta (marcar|agendar|fazer|pedir|levar|conseguir)|urgente|vaga|interesse|aceit\w*|indicad\w*|sugerid\w*|sugiro|seria bom|importante)\b/;
+/** Palavras que já são o problema (não precisam de "precisa"): passar fome, depressão, desnutrição… */
+const SEM_PRECISA = /\b(passando (necessidade|fome)|fome|sem (dinheiro|renda|comida|alimento\w*|gas|luz|agua)|despejo|morando na rua|situacao de rua|desnutri\w*|depress\w*|crise\w* de ansiedade|panico|chor(a|ando|ou) muito|automutil\w*|sobrecarga|cuidador\w*\s+sobrecarregad\w*|engasg\w*|desempregad\w*)\b/;
 
 /** Situações urgentes (sem precisar de "precisa"). */
 const URGENTE: [RegExp, string][] = [
-  [/\b(caiu|queda|cai[ud]a)\b/, 'queda'],
-  [/\b(falta de ar|cansaco forte|dor no peito|aperto no peito|dor forte no peito)\b/, 'falta de ar ou dor no peito'],
-  [/\b(sangramento|sangrando|vomit\w* sangue|desmai\w*|convuls\w*|febre alta|inconscien\w*|confus[ao] mental)\b/, 'sinal de alerta'],
-  [/\b(escara\w*|ferida (infeccionad|infectad|aberta|piorou|com pus)\w*|lesao por pressao)\b/, 'ferida ou escara'],
-  [/\b(ideacao|suicid\w*|se matar|tirar a propria vida|automutil\w*)\b/, 'risco à vida'],
-  [/\b(violencia|agress\w*|maus[- ]tratos|abandon\w*|negligenc\w*|abuso)\b/, 'violência ou abandono'],
-  [/\b(sem (remedio|remedios|medicacao|medicamento|insulina|comida|alimento)|acabou (o|a) (remedio|insulina|medicacao)|nao (esta comendo|come mais|consegue comer|consegue andar|levanta mais))\b/, 'sem remédio ou sem comer'],
-  [/\b(urgente|urgencia|com urgencia|o quanto antes|avaliacao rapida|o mais rapido)\b/, 'pedido urgente'],
+  [/\b(caiu|queda|cai[ud]a|tombo|levou um tombo|escorregou)\b/, 'queda'],
+  [/\b(falta de ar|cansaco forte|dor no peito|aperto no peito|dor forte no peito|dor do lado do coracao|chiado no peito|roxo|labios roxos)\b/, 'falta de ar ou dor no peito'],
+  [/\b(sangramento|sangrando|sangue (na|no|nas|nos) (urina|fezes|vomito|tosse)|vomit\w* sangue|desmai\w*|convuls\w*|febre alta|inconscien\w*|confus[ao] mental|desorientad\w*|boca torta|perdeu a (forca|fala)|nao mexe (o|a) (braco|perna))\b/, 'sinal de alerta'],
+  [/\b(escara\w*|ferida (infeccionad|infectad|aberta|piorou|com pus|cheirando)\w*|lesao por pressao|pe diabetico|ferida no pe)\b/, 'ferida ou escara'],
+  [/\b(ideacao|suicid\w*|se matar|tirar a propria vida|nao quer mais viver|vontade de morrer|automutil\w*|se cortando)\b/, 'risco à vida'],
+  [/\b(violencia|agress\w*|apanh\w*|bat(e|eu|endo) n[ao]|maus[- ]tratos|abandon\w*|negligenc\w*|abuso|ameaca\w*)\b/, 'violência ou abandono'],
+  [/\b(sem (remedio|remedios|medicacao|medicamento|comida|alimento|oxigenio)|(esta|ficou|estao|ficaram) sem (a )?insulina|acabou (o|a) (remedio|insulina|medicacao|oxigenio)|parou (de tomar )?(todos )?(os )?remedios por conta|nao (esta comendo|come mais|consegue comer|consegue andar|levanta mais|esta bebendo agua)|sem cuidador|sozinh\w* (e|e esta) acamad\w*|acamad\w* (e )?sozinh\w*)\b/, 'sem remédio, sem comer ou sem cuidador'],
+  [/\b(alcool|bebida|bebendo muito|alcoolism\w*|embriagad\w*|droga\w*|crack|cocaina|maconha|dependencia quimica)\b/, 'álcool ou drogas'],
+  [/\b(gestante|gravida)\b[^.;]*\b(sem pre[- ]natal|nao (fez|faz|comecou) (o )?pre[- ]natal|sangramento|perdendo liquido|sem consulta)\b|\b(sem pre[- ]natal)\b/, 'gestante sem pré-natal'],
+  [/\b(vacina\w* (atrasad\w*|em atraso|vencid\w*)|nao (vacinou|esta vacinad\w*)|fora da escola|parou de (ir|frequentar) (a )?escola)\b/, 'criança: vacina ou escola'],
+  [/\b(urgente|urgencia|com urgencia|o quanto antes|avaliacao rapida|o mais rapido|piorou muito|esta pior|muito mal)\b/, 'pedido urgente'],
 ];
-/** Para levar na reunião de equipe (médico, enfermagem, discutir o caso). */
-const REUNIAO = /\b(levar (para|pra|na) (a )?reuniao|reuniao de equipe|discutir (com a equipe|o caso|na reuniao)|passar (para|pra) a equipe|npv|(vd|visita|avaliacao) (medica|de enfermagem|da enfermagem|do medico|da medica|da enfermeira|do enfermeiro)|(pedir|solicitar) (vd|visita|avaliacao)|(medic[oa]|enfermeir[oa]|doutor[a]?|dra?) (precisa|tem que|deve) (ir|ver|visitar|avaliar)|(precisa|precisando) (de )?(vd|visita|avaliacao) (medica|da enfermagem|do medico)|(chamar|avisar) (o|a) (medic[oa]|enfermeir[oa]))\b/;
+/** O que é "urgente" só quando recente; os outros acima (álcool, vacina, escola…) são importantes, não urgentes. */
+const SO_IMPORTANTE = new Set(['álcool ou drogas', 'criança: vacina ou escola']);
 
-const PA_ALTA = /\b(?:p\.?\s?a\.?|pressao)[^0-9.;]{0,25}?(\d{2,3})\s*[x/]\s*(\d{2,3})/;
+/** Para levar na reunião de equipe (médico, enfermagem, discutir o caso). */
+const REUNIAO = /\b(levar (para|pra|na) (a )?reuniao|reuniao de equipe|discutir (com a equipe|o caso|na reuniao)|passar (para|pra) a equipe|npv|(vd|visita|avaliacao) (medica|de enfermagem|da enfermagem|do medico|da medica|da enfermeira|do enfermeiro)|(pedir|solicitar) (vd|visita|avaliacao)|(medic[oa]|enfermeir[oa]|doutor[a]?|dra?) (precisa|tem que|deve) (ir|ver|visitar|avaliar)|(precisa|precisando) (de )?(vd|visita|avaliacao) (medica|da enfermagem|do medico)|(chamar|avisar) (o|a) (medic[oa]|enfermeir[oa])|precisa (de )?(medico|enfermeir[oa]) em casa|nao (consegue|pode|tem como) (ir|chegar) (ate )?(a|na) (ubs|unidade|posto)|sem acompanhante|sem transporte|receita vencid\w*|renovar (a )?receita|(cama|colchao) hospitalar|fralda\w*|curativo\w*|sonda|oxigenio (acabando|com problema)|caso (social|grave|complexo))\b/;
+
+const PA_ALTA = /\b(?:p\.?\s?a\.?|pressao)[^0-9.;]{0,25}?(\d{2,3})\s*[x/]\s*(\d{2,3})(?![\d/])/;
 const GLIC = /\b(?:dextro|destro|glicemia|hgt)\b[^0-9.;]{0,20}?(\d{2,3})(?![\dx/])/;
 
-/** Até quantos dias um texto ainda vira caso sugerido; urgente só se for recente. */
-export const DIAS_CASO = 60;
+/** Urgente só vale para texto recente; mais antigo vira "importante" (o texto todo é lido, de qualquer data). */
 export const DIAS_URGENTE = 15;
 
 export interface MotivoCaso {
@@ -51,30 +62,38 @@ export interface MotivoCaso {
   porque: string;
 }
 
-/** O pedaço antes da palavra (na mesma parte da frase) nega o que vem depois? ("nega dor no peito", "sem queda") */
+/** O pedaço antes da palavra (na mesma parte da frase) nega o que vem depois? ("nega dor no peito", "sem queda", "risco de queda") */
 function negado(baixo: string, i: number): boolean {
   const antes = baixo.slice(0, i);
-  return NEGACAO.test(antes.slice(antes.lastIndexOf(',') + 1)) && !/\bsem (remedio|medicacao|medicamento|insulina|comida|alimento)/.test(baixo.slice(i - 4));
+  const perto = antes.slice(antes.lastIndexOf(',') + 1);
+  if (/\b(risco|prevencao|prevenir|evitar|historico|antecedente)s? (de|da|do|para)?\s*$/.test(perto)) return true;
+  return NEGACAO.test(perto) && !/\bsem (remedio|medicacao|medicamento|insulina|comida|alimento)/.test(baixo.slice(i - 4));
 }
+/** Já melhorou ("falta de ar melhorando", "a dor passou"): não é urgente. */
+const MELHOROU = /\b(melhor\w*|controlad\w*|estavel|passou|cicatriz\w*|resolvid\w*|normal)\b/;
 
-/** O que a frase pede: caso urgente, eMulti, reunião… (null = nada). */
-export function motivoDaFrase(frase: string): MotivoCaso | null {
+/**
+ * O que a frase pede: caso urgente, eMulti, reunião… (null = nada). `historico` = resumo de lista ou observação
+ * antiga: lá "depressão" ou "caiu em 2024" é história, então só conta pedido explícito ("precisa de…") ou reunião.
+ */
+export function motivoDaFrase(frase: string, historico = false): MotivoCaso | null {
   const baixo = semAcento(frase).replace(/[-–]/g, ' ');
   if (/\b(orientad\w*|orientei|orientacao) sobre\b/.test(baixo) && !PRECISA.test(baixo.replace(/\borient\w*/g, ''))) return null;
   let urgente = '';
   for (const [re, nome] of URGENTE) {
+    if (historico && nome !== 'pedido urgente') continue;
     const x = baixo.match(re);
-    if (x && !negado(baixo, x.index ?? 0)) {
+    if (x && !negado(baixo, x.index ?? 0) && !MELHOROU.test(baixo.slice(x.index ?? 0))) {
       urgente = nome;
       break;
     }
   }
-  const pa = baixo.match(PA_ALTA);
-  if (!urgente && pa && (Number(pa[1]) >= 180 || Number(pa[2]) >= 110)) urgente = `P.A. ${pa[1]}x${pa[2]}`;
-  const gl = baixo.match(GLIC);
-  if (!urgente && gl && (Number(gl[1]) >= 300 || Number(gl[1]) <= 60)) urgente = `glicemia ${gl[1]}`;
+  const pa = historico ? null : baixo.match(PA_ALTA);
+  if (!urgente && pa && Number(pa[1]) >= 70 && Number(pa[1]) > Number(pa[2]) && (Number(pa[1]) >= 180 || Number(pa[2]) >= 110)) urgente = `P.A. ${pa[1]}x${pa[2]}`;
+  const gl = historico ? null : baixo.match(GLIC);
+  if (!urgente && gl && (Number(gl[1]) >= 300 || (Number(gl[1]) <= 60 && Number(gl[1]) >= 20))) urgente = `glicemia ${gl[1]}`;
   let emulti: string | undefined;
-  if (PRECISA.test(baixo)) {
+  if (PRECISA.test(baixo) || (!historico && SEM_PRECISA.test(baixo))) {
     for (const [nome, re] of EMULTI) {
       const x = baixo.match(re);
       if (x && !negado(baixo, x.index ?? 0)) {
@@ -85,7 +104,7 @@ export function motivoDaFrase(frase: string): MotivoCaso | null {
   }
   const reuniao = REUNIAO.test(baixo);
   if (!urgente && !emulti && !reuniao) return null;
-  const categoria: CategoriaCaso = urgente ? 'urgente' : emulti === 'Serviço social' ? 'social' : 'importante';
+  const categoria: CategoriaCaso = urgente && !SO_IMPORTANTE.has(urgente) ? 'urgente' : emulti === 'Serviço social' ? 'social' : 'importante';
   return { categoria, emulti, reuniao: reuniao || !!emulti || !!urgente, porque: [urgente, emulti, reuniao && !emulti ? 'reunião de equipe' : ''].filter(Boolean).join(' · ') };
 }
 
@@ -122,23 +141,41 @@ function jaTemCaso(casos: Caso[], familiaId: string, frase: string, m: MotivoCas
 }
 
 /**
- * Casos que o app acha no que já foi escrito (anotações, observações, relatos trazidos), dos últimos DIAS_CASO dias,
- * que ainda não viraram caso. Urgente só vale se for recente; senão vira "importante".
+ * Casos que o app acha em tudo o que já foi escrito sobre cada pessoa, de qualquer data: anotações e observações
+ * das VDs, relatos trazidos, resumo da lista de prioritários, observações do morador e da casa, recado de atenção.
+ * Só os que ainda não viraram caso. Urgente só se o texto for recente; senão vira "importante".
  */
-export function casosAchados(familias: Familia[], visitas: Visita[], casos: Caso[], hoje: string, escondidas: Iterable<string> = []): CasoAchado[] {
+export function casosAchados(
+  familias: Familia[],
+  visitas: Visita[],
+  casos: Caso[],
+  hoje: string,
+  escondidas: Iterable<string> = [],
+  prioritarios: Prioritario[] = [],
+): CasoAchado[] {
   const fora = new Set(escondidas);
-  const comTexto = new Set(visitas.filter((v) => diferencaDias(v.data, hoje) <= DIAS_CASO).map((v) => v.familiaId));
   const porChave = new Map<string, CasoAchado>();
   for (const f of familias) {
-    if (f.situacaoCasa !== 'habitada' || (!comTexto.has(f.id) && !f.relatosAnteriores?.length)) continue;
+    if (f.situacaoCasa !== 'habitada') continue;
+    const daCasa = [f.obs, f.atencao].map((t) => t?.trim()).filter((t): t is string => !!t);
     for (const m of f.moradores) {
       if (m.situacao !== 'mora') continue;
-      const textos: TextoDaFamilia[] = textosDaPessoa(m, f, visitas, []).filter((t) => t.data && t.data <= hoje && diferencaDias(t.data, hoje) <= DIAS_CASO);
+      const prio = prioritarios.find((p) => p.moradorId === m.id);
+      const textos: TextoDaFamilia[] = [
+        ...textosDaPessoa(m, f, visitas, [], prio),
+        ...(m.obs?.trim() ? [{ data: '', origem: 'Observação do morador', texto: m.obs.trim() }] : []),
+        // Recado e observação da casa: valem para o responsável (ou para quem o texto citar pelo nome).
+        ...daCasa.flatMap((t) => {
+          const meus = trechosDaPessoa(t, m, f);
+          return (meus.length ? meus : f.responsavelId === m.id ? [t] : []).map((texto) => ({ data: '', origem: 'Observação da casa', texto }));
+        }),
+      ].filter((t) => !t.data || t.data <= hoje);
       for (const t of textos) {
         for (const frase of frases(t.texto)) {
-          const mot = motivoDaFrase(frase);
+          // Resumo da lista e observações são história: só pedido explícito vira caso.
+          const mot = motivoDaFrase(frase, !!t.lista || !t.data);
           if (!mot) continue;
-          if (mot.categoria === 'urgente' && diferencaDias(t.data, hoje) > DIAS_URGENTE) mot.categoria = mot.emulti === 'Serviço social' ? 'social' : 'importante';
+          if (mot.categoria === 'urgente' && (!t.data || t.lista || diferencaDias(t.data, hoje) > DIAS_URGENTE)) mot.categoria = mot.emulti === 'Serviço social' ? 'social' : 'importante';
           if (jaTemCaso(casos, f.id, frase, mot)) continue;
           const grupo = `${f.id}|${m.id}|${mot.categoria}|${mot.emulti ?? ''}`;
           let it = porChave.get(grupo);
@@ -165,7 +202,7 @@ export const npvDoMotivo = (m: { reuniao: boolean; emulti?: string }) =>
 
 /** O caso pronto para abrir a partir do que foi achado. */
 export function casoDoAchado(a: CasoAchado): Omit<Caso, 'id' | 'criadoEm' | 'atualizadoEm'> {
-  const linhas = a.provas.map((p) => `${dataCurta(p.data)}: ${p.frase}`);
+  const linhas = a.provas.map((p) => (p.data ? `${dataCurta(p.data)}: ${p.frase}` : `${p.origem}: ${p.frase}`));
   return {
     familiaId: a.familiaId,
     categoria: a.categoria,
