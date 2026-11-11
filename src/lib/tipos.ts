@@ -247,6 +247,10 @@ export interface Config {
    * pendências resolvidas (moradorId|p-…) e remédios errados (moradorId|r-…).
    */
   sugestoesEscondidas?: string[];
+  /** Frases prontas do ACS para a VD (uma por item). Vazio = as frases padrão do app. */
+  frasesProntas?: string[];
+  /** Modo rua: letra maior e mais contraste, para ler no sol. */
+  modoRua?: boolean;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */
   remediosExtras?: string;
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */

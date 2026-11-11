@@ -19,6 +19,7 @@
     trocarPin,
   } from '../lib/estado.svelte';
   import { ir } from '../lib/rotas.svelte';
+  import { FRASES_PADRAO, lerFrasesProprias } from '../lib/frases-prontas';
   import Sincronizacao from '../componentes/Sincronizacao.svelte';
   import type { Desfecho } from '../lib/tipos';
 
@@ -190,6 +191,21 @@
   <button class="botao secundario largo espaco-b" onclick={() => ir('lixeira')}>
     Lixeira ({app.lixeira.filter((i) => !i.restauradoEm).length})
   </button>
+</section>
+
+<!-- VD MAIS RÁPIDA -->
+<section class="cartao">
+  <h2>VD mais rápida</h2>
+  <label class="opcao modo-rua">
+    <input type="checkbox" checked={!!app.config.modoRua} onchange={(e) => { app.config.modoRua = (e.currentTarget as HTMLInputElement).checked; salvarConfig(); }} />
+    <span><strong>Modo rua</strong>: letra maior e mais contraste, para ler no sol (também no botão “A+” lá em cima)</span>
+  </label>
+  <details>
+    <summary><strong>Frases prontas</strong> <span class="suave pequeno">({(app.config.frasesProntas?.length ? app.config.frasesProntas : FRASES_PADRAO).length})</span></summary>
+    <p class="suave pequeno">Aparecem como botões na VD: um toque escreve a frase. Uma por linha. O app também mostra as frases que você mais escreve.</p>
+    <textarea rows="8" value={(app.config.frasesProntas?.length ? app.config.frasesProntas : FRASES_PADRAO).join('\n')} onchange={(e) => { const l = lerFrasesProprias((e.currentTarget as HTMLTextAreaElement).value); app.config.frasesProntas = l.length ? l : undefined; salvarConfig(); }}></textarea>
+    <button class="link-simples" onclick={() => { app.config.frasesProntas = undefined; salvarConfig(); }}>Voltar às frases padrão</button>
+  </details>
 </section>
 
 <!-- BACKUP -->

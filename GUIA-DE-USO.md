@@ -135,6 +135,15 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **VD mais rápida:**
+  - **Frases prontas:** embaixo de "O que foi conversado" e de cada "Sobre Fulana" aparecem botões com
+    frases ("Todos bem, sem queixas.", "Renovar a receita."…). Um toque escreve a frase. O app junta as
+    frases que você mais escreve. Para mudar a lista: Ajustes → **VD mais rápida** → **Frases prontas**
+    (uma por linha).
+  - **"↺ Igual à última VD":** copia da última VD da casa quem estava, o desfecho, o motivo, a visita
+    compartilhada e as orientações. A data continua a de hoje; a observação e as anotações começam vazias.
+  - **Modo rua:** botão **"A+"** no topo (ou Ajustes → VD mais rápida): letra maior e mais contraste para
+    ler no sol. Toque de novo para voltar ao normal.
 - **Hoje na rua (Início):**
   - **Roteiro de hoje:** as casas mais importantes do dia (15 por padrão; dá para escolher 10, 20 ou
     todas), em ordem de rua: caso urgente, nível A/B vencido, revisita, consulta ou cirurgia que acabou de

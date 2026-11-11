@@ -25,6 +25,7 @@
   import { sugestoesDaAnotacao, type Sugestao } from '../lib/anotacoes';
   import { acompanhamentoDaPessoa } from '../lib/acompanhamento';
   import { frases } from '../lib/anotacoes';
+  import { frasesParaVD, juntarFrase } from '../lib/frases-prontas';
   import { motivoDaFrase, npvDoMotivo, tituloDoCaso, type MotivoCaso } from '../lib/casos-auto';
   import Acompanhamento from '../componentes/Acompanhamento.svelte';
   import { contextoAcompanhamento, salvarCaso, type AtualizacaoFicha } from '../lib/estado.svelte';
@@ -160,6 +161,32 @@
     juntar(undefined, observacao);
     return lista;
   });
+  /** Frases prontas (as do ACS ou as padrão, mais as que ele mais escreve). */
+  const prontas = $derived(frasesParaVD(app.config.frasesProntas, app.visitas));
+  const escreverObs = (f: string) => (observacao = juntarFrase(observacao, f));
+  const escreverSobre = (mid: string, f: string) => (anotacoes[mid] = juntarFrase(anotacoes[mid] ?? '', f));
+
+  /** A última VD desta família (para "igual à última VD"). */
+  const ultimaVD = $derived(
+    corrigindo || !familia ? undefined : [...app.visitas].filter((v) => v.familiaId === familia.id && v.data <= data).sort((a, b) => b.data.localeCompare(a.data))[0],
+  );
+  /** Copia da última VD o que costuma se repetir: presentes, desfecho, motivo, compartilhada e orientações. */
+  function igualAUltima() {
+    const u = ultimaVD;
+    if (!u) return;
+    presentes = u.presentes.filter((id) => ativos.some((m) => m.id === id));
+    conversou = u.conversouComFamilia;
+    recusou = u.desfecho === 'recusa';
+    desfechoManual = null;
+    motivo = u.motivo || motivo;
+    compartilhada = !!u.compartilhadaCom;
+    compartilhadaCom = u.compartilhadaCom;
+    const conhecidos = separarNomes(u.orientacoes);
+    temas = conhecidos.filter((t) => TEMAS_ORIENTACAO.includes(t));
+    outrosTemas = conhecidos.filter((t) => !TEMAS_ORIENTACAO.includes(t)).join(', ');
+    mostrarAviso(`Copiado da VD de ${formatarData(u.data)}. Confira e mude o que for diferente.`, 4000);
+  }
+
   /** Casos que o ACS desmarcou (os outros abrem ao salvar). */
   let casosRecusados = $state<string[]>([]);
   const alternarCaso = (k: string) => (casosRecusados = casosRecusados.includes(k) ? casosRecusados.filter((x) => x !== k) : [...casosRecusados, k]);
@@ -478,6 +505,10 @@
   </section>
 
   <!-- QUEM ESTAVA EM CASA -->
+  {#if ultimaVD}
+    <button class="botao secundario largo igual" onclick={igualAUltima}>↺ Igual à última VD ({formatarData(ultimaVD.data).slice(0, 5)}): presentes, orientações, motivo</button>
+  {/if}
+
   <section class="cartao">
     <h2>Quem estava em casa?</h2>
     <p class="suave pequeno">Toque nos moradores presentes.</p>
@@ -589,6 +620,9 @@
       <span>O que foi conversado / observado (opcional)</span>
       <textarea rows="3" bind:value={observacao} placeholder="Ex.: refere dor nas costas, aguarda resultado de exame"></textarea>
     </label>
+    <div class="prontas" aria-label="Frases prontas">
+      {#each prontas as f (f)}<button class="pronta" onclick={() => escreverObs(f)}>＋ {f}</button>{/each}
+    </div>
     {#each casosNaVD.filter((c) => !c.moradorId) as c (c.chave)}
       {@const ok = !casosRecusados.includes(c.chave)}
       <div class="sugs">
@@ -616,6 +650,9 @@
             <span>Sobre {m.nome}</span>
             <textarea rows="2" bind:value={anotacoes[m.id]} placeholder="Ex.: começou insulina, refere tontura, consulta de cardio dia 20"></textarea>
           </label>
+          <div class="prontas" aria-label="Frases prontas">
+            {#each prontas.slice(0, 8) as f (f)}<button class="pronta" onclick={() => escreverSobre(m.id, f)}>＋ {f}</button>{/each}
+          </div>
           {#if sugestoes[m.id]?.length}
             <div class="sugs">
               <span class="suave pequeno">Atualizar a ficha?</span>
@@ -938,5 +975,27 @@
     gap: 8px;
     cursor: pointer;
     padding: 6px 0;
+  }
+  .igual {
+    margin-bottom: 12px;
+  }
+  .prontas {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px 0;
+    scrollbar-width: thin;
+  }
+  .pronta {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--borda);
+    background: var(--fundo);
+    color: var(--texto);
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
   }
 </style>
