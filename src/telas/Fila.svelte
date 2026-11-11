@@ -55,6 +55,7 @@
 {#if pendentes.length}
   <button class="botao largo sequencia" onclick={() => ir('lancar')}>Lançar em sequência ({pendentes.length})</button>
 {/if}
+<button class="botao secundario largo sequencia" onclick={() => ir('conferir-fast')}>Conferir com o Fast (colar a lista)</button>
 {#if app.config.urlFast}
   <a class="botao secundario largo sequencia" href={app.config.urlFast} target="_blank" rel="noopener noreferrer">Abrir o Fast ↗</a>
 {/if}

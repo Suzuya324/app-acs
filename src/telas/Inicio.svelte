@@ -53,6 +53,14 @@
   });
   const alertasGC = $derived(gestantes(app.familias, app.visitas, hoje).filter((g) => g.alerta).length + criancas(app.familias, hoje).filter((c) => c.conferir).length);
   const nMudancas = $derived(mudancasParaSbcd(app.historico, app.familias, app.config.sbcdAtualizadoAte ?? `${somarDias(hoje, -30)}T00:00:00.000Z`).length);
+  /** Outro aparelho (tablet, computador) sem sincronizar há 3 dias ou mais. */
+  const atrasados = $derived(
+    app.sinc.estado === 'desligada'
+      ? []
+      : Object.entries(app.config.aparelhos ?? {})
+          .filter(([nome, quando]) => nome !== app.sinc.aparelho && diferencaDias(quando.slice(0, 10), hoje) >= 3)
+          .map(([nome, quando]) => ({ nome, dias: diferencaDias(quando.slice(0, 10), hoje) })),
+  );
   const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   const quandoCurto = (iso: string) => (iso === hoje ? 'hoje' : iso > hoje ? 'amanhã' : `${DIAS_SEMANA[new Date(`${iso}T12:00:00`).getDay()]} ${formatarData(iso).slice(0, 5)}`);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
@@ -65,6 +73,10 @@
 </script>
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
+
+{#each atrasados as a (a.nome)}
+  <p class="alerta lembrete pequeno">📱 O <strong>{a.nome}</strong> não sincroniza há {a.dias} dias. Abra o app nele (com internet) para ele pegar as novidades.</p>
+{/each}
 
 {#if app.sinc.estado === 'erro'}
   <button class="alerta lembrete sinc-erro" onclick={() => ir('ajustes')}>⚠️ A sincronização parou: {app.sinc.mensagem} Toque para ver.</button>

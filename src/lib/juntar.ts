@@ -96,7 +96,10 @@ function juntarConfig(daqui: Config, dela: Config | undefined): Config {
   if (!dela) return daqui;
   const maisNova = (dela.alteradaEm ?? '') > (daqui.alteradaEm ?? '') ? dela : daqui;
   const ultimoBackup = [daqui.ultimoBackup ?? '', dela.ultimoBackup ?? ''].sort().at(-1) ?? '';
-  return { ...maisNova, ultimoBackup };
+  // Última sincronização de cada aparelho: vale a mais recente de cada um, venha de qual lado vier.
+  const aparelhos: Record<string, string> = { ...(daqui.aparelhos ?? {}) };
+  for (const [nome, quando] of Object.entries(dela.aparelhos ?? {})) if (!aparelhos[nome] || quando > aparelhos[nome]) aparelhos[nome] = quando;
+  return { ...maisNova, ultimoBackup, ...(Object.keys(aparelhos).length ? { aparelhos } : {}) };
 }
 
 export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: ResumoJuncao } {

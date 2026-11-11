@@ -135,6 +135,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Conferir com o Fast:** aba **Fila** → **"Conferir com o Fast"**. No Fast, abra a lista das VDs
+  lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
+  que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
+  O app não entra no Fast: só lê o texto colado.
+- **Aparelho sem sincronizar:** se o tablet ou o computador ficar 3 dias ou mais sem sincronizar, o
+  Início avisa ("O Tablet não sincroniza há 5 dias"). É só abrir o app nele com internet.
 - **Números do mês:**
   - **Previsão da meta** (Início e Painel): "No ritmo de agora (8,5 por dia de campo), você fecha o mês com
     ~190 famílias". Amarelo = não vai bater; verde = vai bater.
