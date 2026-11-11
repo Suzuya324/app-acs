@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
-  import { app, desfazerUltima, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
+  import { salvarConfig, app, desfazerUltima, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
@@ -46,6 +46,14 @@
   $effect(() => {
     document.documentElement.dataset.tema = escuro ? 'escuro' : 'claro';
   });
+  // Modo rua: letra maior e mais contraste (fica salvo nos ajustes).
+  $effect(() => {
+    document.documentElement.classList.toggle('modo-rua', !!app.config.modoRua);
+  });
+  function alternarModoRua() {
+    app.config.modoRua = !app.config.modoRua;
+    if (app.fase === 'aberto') void salvarConfig();
+  }
 
   onMount(() => {
     iniciar();
@@ -98,6 +106,9 @@
     {#if app.fase === 'aberto' && app.config.micro}<span class="suave pequeno">{app.config.micro}</span>{/if}
   </div>
   <div class="acoes-topo">
+    {#if app.fase === 'aberto'}
+      <button class="botao-topo aa" class:ligado={!!app.config.modoRua} onclick={alternarModoRua} aria-pressed={!!app.config.modoRua} aria-label={app.config.modoRua ? 'Desligar o modo rua (letra normal)' : 'Ligar o modo rua (letra maior, para o sol)'}>A+</button>
+    {/if}
     <button class="botao-topo" onclick={() => (escuro = !escuro)} aria-label={escuro ? 'Usar modo claro' : 'Usar modo escuro'}>
       <Icone nome={escuro ? 'sol' : 'lua'} />
     </button>
@@ -358,5 +369,14 @@
   }
   .toast.sem-abas {
     bottom: 24px;
+  }
+  .aa {
+    font-weight: 900;
+    font-size: 1rem;
+  }
+  .aa.ligado {
+    background: var(--primaria);
+    color: var(--primaria-texto);
+    border-color: var(--primaria);
   }
 </style>

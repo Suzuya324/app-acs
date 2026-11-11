@@ -332,3 +332,31 @@ details[open] > summary::after {
     padding: 0;
   }
 }
+
+/* Modo rua: letra maior e mais contraste, para ler no sol forte (Ajustes ou botão "A+"). */
+html.modo-rua body {
+  font-size: 21px;
+  line-height: 1.5;
+}
+html.modo-rua:not([data-tema='escuro']) {
+  --texto: #000000;
+  --texto-suave: #1c2624;
+  --borda: #6f7d7a;
+  --fundo: #ffffff;
+  --primaria: #064e42;
+}
+html.modo-rua[data-tema='escuro'] {
+  --texto: #ffffff;
+  --texto-suave: #dbe6e3;
+  --borda: #6f8580;
+}
+html.modo-rua .pequeno {
+  font-size: 1rem;
+}
+html.modo-rua .botao {
+  min-height: 58px;
+  font-size: 1.05em;
+}
+html.modo-rua .cartao {
+  border-width: 2px;
+}
