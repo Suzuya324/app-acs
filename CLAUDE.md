@@ -139,6 +139,19 @@ Depois da versão 1, novas funções em pacotes pequenos (colmeia com cores, cal
 lembretes, roteiros de orientação por grupo, relatório do mês em PDF paisagem, lista de prontuários
 em ordem numérica em PDF paisagem, ditado por voz etc.).
 
+### Plano de blocos (combinado com o usuário; um bloco por vez, prints antes de publicar)
+1. **Equipe e reunião**: casos parados sobem sozinhos na pauta; resposta da reunião (o que a equipe
+   decidiu em cada caso); lista para a técnica de enfermagem (P.A., glicemia, curativo).
+2. **O dia na rua**: roteiro do dia em ordem de rua; agenda e lembretes das datas marcadas; quem está
+   sumido há 60/90 dias.
+3. **VD mais rápida**: frases prontas; "igual à última VD"; modo rua (letra grande, sol).
+4. **Não perder ninguém**: lista "a confirmar"; gestantes e crianças (DPP, pré-natal, vacinas); alerta
+   de idade antes de acontecer; mudanças da semana para atualizar no SBCD.
+5. **Números e relatórios**: previsão da meta; indicadores do mês; relatório do mês em PDF.
+6. **Fast, segurança e extras**: conferir o lançado no Fast (colando a lista); desbloquear com a
+   digital; aviso de aparelho sem sincronizar; exportar resumo; foto de documento trancada (mostrar
+   prós e contras de privacidade antes).
+
 ## Fora do escopo
 - Qualquer integração, login automático, raspagem (scraping) ou envio de dados para o Fast, e-SUS ou
   qualquer outro sistema (a sincronização criptografada entre os aparelhos do próprio ACS não conta).

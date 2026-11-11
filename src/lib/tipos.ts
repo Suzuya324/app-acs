@@ -76,6 +76,15 @@ export interface Familia {
 
 export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';
 
+/** Uma novidade do caso: a resposta da reunião de equipe ou outro andamento. */
+export interface RespostaCaso {
+  /** aaaa-mm-dd */
+  data: string;
+  texto: string;
+  /** Veio da reunião de equipe. */
+  reuniao?: boolean;
+}
+
 /** Caso para acompanhar (urgente, importante, social/cadastro ou NPV), ligado a uma família. */
 export interface Caso {
   id: string;
@@ -93,6 +102,10 @@ export interface Caso {
   atualizadoEm: string;
   /** Quando foi resolvido (ISO), se foi. */
   resolvidoEm?: string;
+  /** O que a equipe decidiu / o que aconteceu, do mais antigo ao mais novo (ex.: resposta da reunião). */
+  respostas?: RespostaCaso[];
+  /** Última novidade de verdade (aberto, editado à mão ou com resposta), ISO. Sem ela, vale criadoEm. */
+  novidadeEm?: string;
 }
 
 export interface RelatoAnterior {
