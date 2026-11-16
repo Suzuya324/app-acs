@@ -146,7 +146,7 @@ export function criancas(familias: Familia[], hoje: string): Crianca[] {
 // ---------------------------------------------------------------- mudanças para o SBCD
 
 /** O que no histórico é mudança de cadastro (o que precisa ser passado para o SBCD). */
-const CADASTRO = /^(Família cadastrada|Rua:|Número:|Complemento:|Prontuário|Situação da casa|Responsável|Nome:|Casa nova|Pessoa nova|Família excluída|Família tirada|Excluído \(foi para a lixeira\)|Endereço )|: (morador incluído|sexo |nascimento |Mora aqui →|Mudou-se →|Não pertence à área →|Faleceu →|Recusa →)|mudou para |veio de /;
+const CADASTRO = /^(Família cadastrada|Rua:|Número:|Complemento:|Prontuário|Telefone:|Situação da casa|Responsável|Nome:|Casa nova|Pessoa nova|Família excluída|Família tirada|Excluído \(foi para a lixeira\)|Endereço )|: (morador incluído|sexo |nascimento |Mora aqui →|Mudou-se →|Não pertence à área →|Faleceu →|Recusa →)|mudou para |veio de /;
 
 export interface MudancaSbcd {
   familia?: Familia;

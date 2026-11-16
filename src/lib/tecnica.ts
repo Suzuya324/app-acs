@@ -1,12 +1,15 @@
 // Lista para a técnica de enfermagem: quem precisa de P.A., glicemia, curativo ou outro cuidado dela.
 // Lida do que já está no app (condições, medidas das VDs, o que foi escrito, casos). Tudo no aparelho.
-import { medidasDaPessoa } from './acompanhamento';
+import { hospitalDosTextos, medidasDaPessoa } from './acompanhamento';
 import { dataCurta, frases, NEGACAO, semAcento, textosDaPessoa } from './anotacoes';
 import { diferencaDias, idade } from './datas';
 import type { Prioritario } from './prioritarios';
 import type { Caso, Familia, Morador, Visita } from './tipos';
 
 export type TipoTecnica = 'pa' | 'glicemia' | 'curativo' | 'outro';
+
+/** Origem da devolutiva da técnica (o que ela fez na casa), guardada nos relatos da família. */
+export const ORIGEM_TECNICA = 'Técnica de enfermagem';
 
 export interface PedidoTecnica {
   tipo: TipoTecnica;
@@ -35,10 +38,11 @@ const CUIDADO: [RegExp, string][] = [
   [/\b(aplicar|aplicacao de) (injecao|insulina|medicacao|vacina|benzetacil)\b|\b(injecao|vacina) em casa\b/, 'Aplicação (injeção / vacina)'],
   [/\b(sonda\w*|trocar a sonda|troca de sonda)\b/, 'Sonda'],
   [/\b(coleta|coletar) (de )?(sangue|exame|urina)\b|\bcoleta em casa\b/, 'Coleta em casa'],
+  [/\b(nao sabe|dificuldade (para|de|pra)|confund\w*|erra|esquece de) (aplicar|tomar|usar|os remedios|a insulina|o remedio)\b|\bconfunde os remedios\b/, 'Orientar os remédios / insulina'],
   [/\b(tecnica de enfermagem|tecnico de enfermagem|da tecnica|pela tecnica)\b[^.;]*\b(precisa|pedir|passar|ir|visitar|vir)\b|\b(precisa|pedir|passar|ir|visitar)\b[^.;]*\b(tecnica|tecnico) de enfermagem\b/, 'Pedido para a técnica'],
 ];
 /** Já resolvido: a ferida fechou, o curativo terminou. */
-const FECHOU = /\b(cicatriz\w*|fechou|fechada|curad[oa]|sarou|terminou o curativo|nao precisa mais|alta do curativo)\b/;
+const FECHOU = /\b(cicatriz\w*|fechou|fechada|curad[oa]|sarou|terminou o curativo|nao precisa mais|alta do curativo|curativo (feito|realizado)|fez o curativo|(trocou|trocaram) a sonda|sonda trocada|coleta (feita|realizada)|coletou|aplicad[oa]|aplicou|orientad[oa] (sobre|a|o)? ?(os remedios|a insulina))\b/;
 
 const pa = (v: string) => {
   const m = v.match(/(\d{2,3})\s*[x/]\s*(\d{2,3})/);
@@ -69,6 +73,28 @@ export function pedidosDaPessoa(m: Morador, f: Familia, visitas: Visita[], casos
     pedidos.push({ tipo: 'glicemia', texto: `Repetir glicemia (última ${ultGl.valor} em ${dataCurta(ultGl.data)})`, peso: vGl >= 300 || vGl <= 60 ? 90 : 70 });
   } else if (dm && (!ultGl || diferencaDias(ultGl.data, hoje) > DIAS_MEDIDA)) {
     pedidos.push({ tipo: 'glicemia', texto: ultGl ? `Glicemia (última ${ultGl.valor} em ${dataCurta(ultGl.data)})` : 'Glicemia (sem registro no app)', peso: 40 });
+  }
+
+  // Última vez que a enfermagem esteve com a pessoa: VD compartilhada com a técnica/enfermeiro ou devolutiva anotada.
+  const enfermagem = [
+    ...visitas.filter((v) => v.familiaId === f.id && /enferm|tecn/i.test(v.compartilhadaCom ?? '')).map((v) => v.data),
+    ...textos.filter((t) => t.origem === ORIGEM_TECNICA).map((t) => t.data),
+  ].filter((d) => d && d <= hoje).sort().pop();
+  const desdeEnf = enfermagem ? diferencaDias(enfermagem, hoje) : null;
+  const ultimaEnf = enfermagem ? `última com a enfermagem ${dataCurta(enfermagem)}` : 'nenhuma VD de enfermagem registrada';
+  if ((m.grupos.includes('acamado') || m.grupos.includes('oxigenio')) && (desdeEnf === null || desdeEnf > 30)) {
+    pedidos.push({ tipo: 'outro', texto: `${m.grupos.includes('acamado') ? 'Acamado' : 'Oxigênio'}: VD de enfermagem (${ultimaEnf})`, peso: 55 });
+  }
+  const hosp = hospitalDosTextos(textos, hoje);
+  if (hosp?.tipo === 'alta' && diferencaDias(hosp.data, hoje) <= 15 && (!enfermagem || enfermagem < hosp.data)) {
+    pedidos.push({ tipo: 'outro', texto: `Pós-alta (${dataCurta(hosp.data)}): avaliar e orientar`, peso: 85 });
+  }
+  const dias = m.nascimento ? diferencaDias(m.nascimento, hoje) : null;
+  if (dias !== null && dias >= 0 && dias <= 30 && (!enfermagem || enfermagem < m.nascimento)) {
+    pedidos.push({ tipo: 'outro', texto: `Recém-nascido (${dias} dias): VD da 1ª semana (teste do pezinho, vacina, umbigo, amamentação)`, peso: 75 });
+  }
+  if (m.grupos.includes('puerpera') && (desdeEnf === null || desdeEnf > 42)) {
+    pedidos.push({ tipo: 'outro', texto: `Puérpera: VD puerperal (${ultimaEnf})`, peso: 70 });
   }
 
   // Cuidados escritos nas VDs e nos casos abertos (o mais novo vale; "cicatrizou" depois tira da lista).

@@ -120,6 +120,18 @@
         </select>
       </label>
     {/if}
+    <label class="campo">
+      <span>Telefone (um ou mais)</span>
+      <input type="tel" bind:value={f.telefone} placeholder="Ex.: (11) 9xxxx-xxxx – filha" autocomplete="off" />
+    </label>
+    <label class="campo">
+      <span>Melhor dia / horário para achar alguém</span>
+      <input type="text" bind:value={f.melhorHorario} placeholder="Ex.: à tarde, depois das 14h; sábado de manhã" autocomplete="off" />
+    </label>
+    <label class="campo">
+      <span>Ponto de referência</span>
+      <input type="text" bind:value={f.referencia} placeholder="Ex.: portão azul, depois da ponte, casa dos fundos" autocomplete="off" />
+    </label>
     <label class="campo"><span>Observações</span><textarea rows="3" bind:value={f.obs}></textarea></label>
     <label class="campo">
       <span>Atenção (recado que aparece na ficha e na VD)</span>

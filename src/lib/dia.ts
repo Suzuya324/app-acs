@@ -89,6 +89,38 @@ export function sumidos(familias: Familia[], visitas: Visita[], hoje: string, di
   return lista.sort((a, b) => (b.dias ?? 99999) - (a.dias ?? 99999));
 }
 
+// ---------------------------------------------------------------- ninguém em casa
+
+export interface Ausente {
+  familia: Familia;
+  /** As tentativas seguidas sem ninguém em casa (a mais nova primeiro). */
+  tentativas: string[];
+  /** Dias da semana das tentativas (ex.: "seg, qua, sex"). */
+  dias: string;
+}
+const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+/** Casas com N tentativas seguidas (as mais recentes) de "ninguém em casa": mudar o horário ou conferir se mudou. */
+export function ausentesSeguidos(familias: Familia[], visitas: Visita[], n = 3): Ausente[] {
+  const porCasa = new Map<string, Visita[]>();
+  for (const v of visitas) porCasa.set(v.familiaId, [...(porCasa.get(v.familiaId) ?? []), v]);
+  const lista: Ausente[] = [];
+  for (const f of familias) {
+    if (f.situacaoCasa !== 'habitada') continue;
+    const vs = (porCasa.get(f.id) ?? []).sort((a, b) => b.data.localeCompare(a.data));
+    const tentativas: string[] = [];
+    for (const v of vs) {
+      if (v.desfecho !== 'ausencia_completa') break;
+      if (!tentativas.includes(v.data)) tentativas.push(v.data);
+    }
+    if (tentativas.length >= n) {
+      const dias = [...new Set(tentativas.map((d) => SEMANA[new Date(`${d}T12:00:00`).getDay()]))].join(', ');
+      lista.push({ familia: f, tentativas, dias });
+    }
+  }
+  return lista.sort((a, b) => b.tentativas.length - a.tentativas.length);
+}
+
 // ---------------------------------------------------------------- roteiro do dia
 
 export interface MotivoDia {
@@ -149,6 +181,22 @@ export function roteiroDoDia(
   for (const c of lembretes((compromissos ?? agenda(familias, [], ctx)).filter((x) => x.tipo !== 'Revisita'), hoje)) {
     const quem = c.morador?.nome.split(' ')[0] ?? '';
     add(c.familia.id, c.data < hoje ? `${quem}: ${c.tipo.toLowerCase()} dia ${dataCurta(c.data)} – perguntar como foi` : `${quem}: ${c.tipo.toLowerCase()} ${c.data === hoje ? 'hoje' : 'amanhã'} – lembrar`, 55);
+  }
+  // Internação e alta (o que foi escrito nos últimos 30 dias).
+  for (const f of familias) {
+    if (f.situacaoCasa !== 'habitada') continue;
+    for (const m of f.moradores) {
+      if (m.situacao !== 'mora') continue;
+      const h = acompanhamentoDaPessoa(m, f, ctx).hospital;
+      if (!h) continue;
+      const quem = m.nome.split(' ')[0];
+      if (h.tipo === 'alta' && diferencaDias(h.data, hoje) <= 15) add(f.id, `${quem}: alta do hospital (${dataCurta(h.data)}) – VD pós-alta`, 85);
+      else if (h.tipo === 'internado') add(f.id, `${quem}: internação (${dataCurta(h.data)}) – saber se já voltou`, 45);
+    }
+  }
+  // Ninguém em casa 3 vezes seguidas: tentar outro horário.
+  for (const a of ausentesSeguidos(familias, visitas)) {
+    add(a.familia.id, `Ninguém em casa ${a.tentativas.length} vezes (${a.dias}): tentar outro horário${a.familia.melhorHorario ? ` – melhor: ${a.familia.melhorHorario}` : ''}`, 35);
   }
   const porId = new Map(familias.map((f) => [f.id, f]));
   const casas: CasaDoDia[] = [];

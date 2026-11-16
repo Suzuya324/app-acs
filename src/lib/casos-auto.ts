@@ -39,10 +39,11 @@ const URGENTE: [RegExp, string][] = [
   [/\b(alcool|bebida|bebendo muito|alcoolism\w*|embriagad\w*|droga\w*|crack|cocaina|maconha|dependencia quimica)\b/, 'álcool ou drogas'],
   [/\b(gestante|gravida)\b[^.;]*\b(sem pre[- ]natal|nao (fez|faz|comecou) (o )?pre[- ]natal|sangramento|perdendo liquido|sem consulta)\b|\b(sem pre[- ]natal)\b/, 'gestante sem pré-natal'],
   [/\b(vacina\w* (atrasad\w*|em atraso|vencid\w*)|nao (vacinou|esta vacinad\w*)|fora da escola|parou de (ir|frequentar) (a )?escola)\b/, 'criança: vacina ou escola'],
+  [/\b(internad[oa]|teve alta|recebeu alta|alta hospitalar|saiu do hospital|voltou do hospital)\b/, 'internação ou alta'],
   [/\b(urgente|urgencia|com urgencia|o quanto antes|avaliacao rapida|o mais rapido|piorou muito|esta pior|muito mal)\b/, 'pedido urgente'],
 ];
 /** O que é "urgente" só quando recente; os outros acima (álcool, vacina, escola…) são importantes, não urgentes. */
-const SO_IMPORTANTE = new Set(['álcool ou drogas', 'criança: vacina ou escola']);
+const SO_IMPORTANTE = new Set(['álcool ou drogas', 'criança: vacina ou escola', 'internação ou alta']);
 
 /** Para levar na reunião de equipe (médico, enfermagem, discutir o caso). */
 const REUNIAO = /\b(levar (para|pra|na) (a )?reuniao|reuniao de equipe|discutir (com a equipe|o caso|na reuniao)|passar (para|pra) a equipe|npv|(vd|visita|avaliacao) (medica|de enfermagem|da enfermagem|do medico|da medica|da enfermeira|do enfermeiro)|(pedir|solicitar) (vd|visita|avaliacao)|(medic[oa]|enfermeir[oa]|doutor[a]?|dra?) (precisa|tem que|deve) (ir|ver|visitar|avaliar)|(precisa|precisando) (de )?(vd|visita|avaliacao) (medica|da enfermagem|do medico)|(chamar|avisar) (o|a) (medic[oa]|enfermeir[oa])|precisa (de )?(medico|enfermeir[oa]) em casa|nao (consegue|pode|tem como) (ir|chegar) (ate )?(a|na) (ubs|unidade|posto)|sem acompanhante|sem transporte|receita vencid\w*|renovar (a )?receita|(cama|colchao) hospitalar|fralda\w*|curativo\w*|sonda|oxigenio (acabando|com problema)|caso (social|grave|complexo))\b/;

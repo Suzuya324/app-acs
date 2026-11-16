@@ -66,3 +66,27 @@ describe('lista para a técnica', () => {
     ]);
   });
 });
+
+describe('mais motivos para a técnica', () => {
+  it('acamado sem VD de enfermagem, pós-alta, recém-nascido e puérpera', () => {
+    const a = mor('a', 'Ana Teste', { grupos: ['acamado'] });
+    const b = mor('b', 'Bebê Teste', { nascimento: '2026-11-05' });
+    const c = mor('c', 'Cris Teste', { grupos: ['puerpera'] });
+    const f = fam('f1', '12', [a, b, c]);
+    const visitas = [vd('f1', '2026-11-08', { anotacoes: { a: 'Teve alta do hospital ontem (inventado).' } })];
+    const pa = pedidosDaPessoa(a, f, visitas, [], HOJE).map((p) => p.texto);
+    expect(pa).toContain('Pós-alta (08/11): avaliar e orientar');
+    expect(pa).toContain('Acamado: VD de enfermagem (nenhuma VD de enfermagem registrada)');
+    expect(pedidosDaPessoa(b, f, visitas, [], HOJE)[0].texto).toMatch(/^Recém-nascido \(6 dias\)/);
+    expect(pedidosDaPessoa(c, f, visitas, [], HOJE)[0].texto).toBe('Puérpera: VD puerperal (nenhuma VD de enfermagem registrada)');
+    // VD compartilhada com a técnica depois da alta: sai da lista.
+    const comTecnica = [...visitas, vd('f1', '2026-11-10', { compartilhadaCom: 'técnica de enfermagem' })];
+    expect(pedidosDaPessoa(a, f, comTecnica, [], HOJE).map((p) => p.texto)).toEqual([]);
+  });
+
+  it('devolutiva da técnica (relato com a origem dela) conta como medida e como VD de enfermagem', () => {
+    const a = mor('a', 'Ana Teste', { grupos: ['hipertenso', 'acamado'] });
+    const f = { ...fam('f1', '12', [a]), relatosAnteriores: [{ id: 'r', titulo: 'Técnica de enfermagem', texto: 'Ana Teste: P.A. 130x80. Curativo feito.', data: '2026-11-09', origem: 'Técnica de enfermagem' }] };
+    expect(pedidosDaPessoa(a, f, [], [], HOJE)).toEqual([]);
+  });
+});

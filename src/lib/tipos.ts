@@ -76,6 +76,12 @@ export interface Familia {
   /** Data (aaaa-mm-dd) da última VD feita fora do app (ex.: lançada só no Fast), para calcular a próxima. */
   ultimaVdFora?: string;  /** Código do domicílio no SBCD (vem do arquivo de atualização do cadastro). */
   codSbcd?: string;
+  /** Telefone(s) da família, como o ACS anotou. */
+  telefone?: string;
+  /** Melhor dia/horário para achar alguém em casa (ex.: "à tarde, depois das 14h"). */
+  melhorHorario?: string;
+  /** Ponto de referência para achar a casa (ex.: "portão azul, depois da ponte"). */
+  referencia?: string;
 }
 
 export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';
@@ -255,6 +261,8 @@ export interface Config {
   frasesProntas?: string[];
   /** Modo rua: letra maior e mais contraste, para ler no sol. */
   modoRua?: boolean;
+  /** Dia em que a técnica de enfermagem vem à área e quem ela vai ver (ids dos moradores). */
+  agendaTecnica?: { data: string; moradores: string[] };
   /** Última sincronização de cada aparelho (nome → ISO), para avisar quando um ficou para trás. */
   aparelhos?: Record<string, string>;
   /** Até quando (ISO) as mudanças do cadastro já foram passadas para o SBCD. */

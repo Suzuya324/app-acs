@@ -29,6 +29,9 @@ export function mudancasFamilia(antes: Familia | null, depois: Familia): string[
   }
   campo('Observações', antes.obs, depois.obs);
   campo('Atenção', antes.atencao ?? '', depois.atencao ?? '');
+  campo('Telefone', antes.telefone ?? '', depois.telefone ?? '');
+  campo('Melhor horário', antes.melhorHorario ?? '', depois.melhorHorario ?? '');
+  campo('Ponto de referência', antes.referencia ?? '', depois.referencia ?? '');
   if ((antes.nivel ?? '') !== (depois.nivel ?? '')) m.push(`Nível: ${antes.nivel ?? 'automático'} → ${depois.nivel ?? 'automático'}`);
   if ((antes.ultimaVdFora ?? '') !== (depois.ultimaVdFora ?? '')) {
     m.push(`Última VD fora do app: ${antes.ultimaVdFora ? formatarData(antes.ultimaVdFora) : '(vazio)'} → ${depois.ultimaVdFora ? formatarData(depois.ultimaVdFora) : '(vazio)'}`);

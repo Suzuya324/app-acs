@@ -369,8 +369,37 @@ export interface Acompanhamento {
   /** Os três textos mais novos sobre a pessoa. */
   noticias: TextoDaFamilia[];
   perguntas: string[];
+  /** Internação ou alta do hospital citada nos últimos 30 dias (a mais recente). */
+  hospital?: Hospital;
   /** Não há nada para mostrar. */
   vazio: boolean;
+}
+
+export interface Hospital {
+  tipo: 'alta' | 'internado';
+  data: string;
+  frase: string;
+}
+
+const ALTA = /\b(teve alta|recebeu alta|deu alta|alta (hospitalar|do hospital|da upa)|saiu do hospital|voltou do hospital|voltou para casa depois da internac\w+)\b/;
+const INTERNADO = /\b(internad[oa]s?|internac\w+|esta no hospital|ficou no hospital|foi (para|pro|levad[oa] (para|pro)) (o |a )?(hospital|pronto[- ]socorro|ps|upa|uti))\b/;
+
+/** Internação ou alta citada sobre a pessoa nos últimos 30 dias (a mais recente). */
+export function hospitalDosTextos(textos: TextoDaFamilia[], hoje: string): Hospital | undefined {
+  for (const t of [...textos].filter((x) => x.data && !x.lista && x.data <= hoje && diferencaDias(x.data, hoje) <= 30).sort((a, b) => b.data.localeCompare(a.data))) {
+    for (const frase of frases(t.texto).reverse()) {
+      const b = semAcento(frase);
+      const antes = (re: RegExp) => {
+        const x = b.match(re);
+        if (!x) return false;
+        const a = b.slice(0, x.index);
+        return !NEGACAO.test(a.slice(a.lastIndexOf(',') + 1)) && !OUTRA_PESSOA.test(a.split(RELATOU).pop() ?? '') && !/\b(em|no ano|ha) (\d{4}|\d+ anos)\b/.test(b);
+      };
+      if (antes(ALTA)) return { tipo: 'alta', data: t.data, frase };
+      if (antes(INTERNADO)) return { tipo: 'internado', data: t.data, frase };
+    }
+  }
+  return undefined;
 }
 
 export interface Contexto {
@@ -464,8 +493,10 @@ function lerAcompanhamento(m: Morador, f: Familia, c: Contexto): Acompanhamento 
   const noticias = [...textos].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 3);
   const base = { achadas, remedios, medidas, pendencias };
   const perguntas = perguntasDaPessoa(base, queixasRecentes(textos, c.hoje), c.hoje);
+  const hospital = hospitalDosTextos(textos, c.hoje);
+  if (hospital) perguntas.unshift(hospital.tipo === 'alta' ? `Teve alta em ${dm(hospital.data)}: como está? Precisa de VD da enfermagem?` : `Internação (${dm(hospital.data)}): já voltou para casa?`);
   const vazio = !achadas.length && !remedios.length && !pendencias.length && !medidas.pa.length && !medidas.glicemia.length && !noticias.length;
-  return { ...base, noticias, perguntas, vazio };
+  return { ...base, noticias, perguntas, vazio, ...(hospital ? { hospital } : {}) };
 }
 
 // ---------------------------------------------------------------- achados pelo app (aba Prioritários)
