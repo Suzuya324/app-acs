@@ -23,6 +23,7 @@ import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
 import type { Comparacao } from './atualizar-cadastro';
+import { ORIGEM_TECNICA } from './tecnica';
 import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
@@ -775,6 +776,35 @@ export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) 
     const tirar = escolhida.filter((m) => m.tipo === 'tirar').map((m) => (m as { familiaId: string }).familiaId);
     if (tirar.length) await tirarFamiliasDaArea(tirar, 'não veio do SBCD');
   });
+
+/**
+ * Devolutiva da técnica de enfermagem: o que ela fez na casa (P.A., glicemia, curativo…), sem precisar
+ * registrar uma VD (não vai para a fila do Fast nem para a meta). Fica nos relatos da família, entra na ficha,
+ * nas medidas e tira a pessoa da lista da técnica.
+ */
+export const registrarDevolutivaTecnica = (familiaId: string, moradorId: string, d: { data: string; pa?: string; glicemia?: string; texto?: string }) =>
+  comDesfazer('Devolutiva da técnica', async () => {
+    const f = app.familias.find((x) => x.id === familiaId);
+    const m = f?.moradores.find((x) => x.id === moradorId);
+    if (!f || !m) return;
+    const partes = [d.pa?.trim() && `P.A. ${d.pa.trim()}`, d.glicemia?.trim() && `glicemia ${d.glicemia.trim()}`].filter(Boolean).join(', ');
+    const texto = `${m.nome}: ${[partes, d.texto?.trim()].filter(Boolean).join('. ') || 'visita da técnica feita'}.`.replace(/\.\./g, '.');
+    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: ORIGEM_TECNICA, texto, data: d.data, origem: ORIGEM_TECNICA }];
+    f.atualizadoEm = agora();
+    app.historico.push(...criarAlteracoes(f.id, [`Devolutiva da técnica (${d.data.split('-').reverse().join('/')}): ${texto}`], m.id));
+    const ag = app.config.agendaTecnica;
+    if (ag?.moradores.includes(moradorId)) {
+      app.config.agendaTecnica = { ...ag, moradores: ag.moradores.filter((x) => x !== moradorId) };
+      app.config.alteradaEm = agora();
+    }
+    await gravar({ familias: app.familias, historico: app.historico, config: app.config });
+  });
+
+/** Monta (ou limpa) o dia da técnica na área: a data e quem ela vai ver. */
+export function salvarAgendaTecnica(agenda: { data: string; moradores: string[] } | undefined) {
+  app.config.agendaTecnica = agenda && agenda.moradores.length ? agenda : undefined;
+  return salvarConfig();
+}
 
 /** Marca grupos em vários moradores de uma vez (ex.: lista de hipertensos colada do Fast). */
 export const marcarGruposEmLote = (itens: { familiaId: string; moradorId: string; grupos: Grupo[] }[]) =>

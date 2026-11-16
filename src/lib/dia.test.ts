@@ -67,3 +67,15 @@ describe('roteiro do dia', () => {
     ]);
   });
 });
+
+describe('ninguém em casa várias vezes', () => {
+  it('3 tentativas seguidas sem ninguém (as mais recentes)', async () => {
+    const { ausentesSeguidos } = await import('./dia');
+    const f1 = fam('f1', 'Rua das Acácias', '1', [mor('a', 'Ana Teste')]);
+    const f2 = fam('f2', 'Rua das Acácias', '2', [mor('b', 'Beto Teste')]);
+    const aus = (familiaId: string, data: string) => vd(familiaId, data, { desfecho: 'ausencia_completa' });
+    const visitas = [aus('f1', '2026-11-02'), aus('f1', '2026-11-04'), aus('f1', '2026-11-06'), vd('f2', '2026-11-01'), aus('f2', '2026-11-03'), aus('f2', '2026-11-05')];
+    const l = ausentesSeguidos([f1, f2], visitas);
+    expect(l.map((x) => `${x.familia.id}:${x.tentativas.length}:${x.dias}`)).toEqual(['f1:3:sex, qua, seg']);
+  });
+});

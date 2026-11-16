@@ -78,6 +78,13 @@
     {:else if prontuarioIncompleto(familia.prontuario)}
       <p class="alerta">Prontuário incompleto: completar quando possível.</p>
     {/if}
+    {#if familia.referencia}<p class="pequeno">📍 {familia.referencia}</p>{/if}
+    {#if familia.telefone || familia.melhorHorario}
+      <p class="contato pequeno">
+        {#if familia.telefone}📞 {#each familia.telefone.split(/[;,/]|\s{2,}/).map((t) => t.trim()).filter(Boolean) as tel, i (i)}{#if i} · {/if}{#if tel.replace(/\D/g, '').length >= 8}<a href="tel:{tel.replace(/[^\d+]/g, '')}">{tel}</a>{:else}{tel}{/if}{/each}{/if}
+        {#if familia.melhorHorario}{familia.telefone ? ' · ' : ''}🕒 {familia.melhorHorario}{/if}
+      </p>
+    {/if}
     {#if familia.obs}<p class="obs"><strong>Obs.:</strong> {familia.obs}</p>{/if}
     {#if familia.atencao}<p class="alerta atencao"><strong>Atenção:</strong> {familia.atencao}</p>{/if}
   </section>

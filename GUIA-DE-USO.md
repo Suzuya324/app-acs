@@ -135,6 +135,20 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   social), a eMulti e o ponto para a reunião. Desmarque se não for caso. A aba **Casos** também mostra
   **"Achei nas VDs"** (tudo o que já foi escrito, de qualquer data, que ainda não virou caso) e **"Copiar a pauta"**
   da reunião de equipe. Caso aberto sobe a prioridade da casa: urgente = nível A; os outros = B.
+- **Técnica de enfermagem** (aba Casos → Lista para a técnica):
+  - A lista agora também mostra: acamado ou com oxigênio sem VD de enfermagem há 30 dias, **pós-alta**
+    do hospital (até 15 dias), **recém-nascido** (até 30 dias), **puérpera** e quem tem dificuldade com
+    os remédios ou a insulina.
+  - **Dia da técnica na área:** escolha a data e marque **"Levar no dia dela"** nas pessoas. **"Copiar o
+    roteiro dela"** monta a lista em ordem de rua, com o ponto de referência. O Início lembra na véspera.
+  - **"✓ Técnica foi":** anote o que ela fez (P.A., glicemia, curativo…). Não vai para a fila do Fast nem
+    para a meta; entra na ficha da pessoa e tira ela da lista.
+- **Telefone, melhor horário e ponto de referência:** em **Editar família**. Aparecem na família (o
+  telefone dá para tocar e ligar), no roteiro do dia e no roteiro da técnica.
+- **Internação e alta:** quando você escreve "internado", "teve alta", "saiu do hospital", o app põe a
+  casa no roteiro (VD pós-alta) e pergunta "como está?" no acompanhamento.
+- **Ninguém em casa 3 vezes:** em **Sumidos** e no roteiro, com os dias da semana já tentados e o melhor
+  horário, para tentar outro dia ou ligar antes.
 - **Conferir com o Fast:** aba **Fila** → **"Conferir com o Fast"**. No Fast, abra a lista das VDs
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.

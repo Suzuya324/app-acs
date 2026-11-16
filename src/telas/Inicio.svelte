@@ -172,6 +172,11 @@
       <span><strong>Roteiro de hoje</strong><br /><span class="suave pequeno">casos urgentes, nível A/B vencido, revisitas, consultas… em ordem de rua</span></span>
       <span class="num-pend" class:urgente={roteiro.some((c) => c.peso >= 80)}>{Math.min(15, roteiro.length)}</span>
     </button>
+    {#if app.config.agendaTecnica?.moradores.length && app.config.agendaTecnica.data >= hoje && app.config.agendaTecnica.data <= somarDias(hoje, 1)}
+      <button class="item-link" onclick={() => ir('tecnica')}>
+        <strong>{app.config.agendaTecnica.data === hoje ? 'Hoje' : 'Amanhã'} a técnica vem:</strong> {app.config.agendaTecnica.moradores.length} {app.config.agendaTecnica.moradores.length === 1 ? 'pessoa' : 'pessoas'} para ver
+      </button>
+    {/if}
     {#if avisos.length}
       <ul class="lembretes">
         {#each avisos.slice(0, 4) as c, i (i)}

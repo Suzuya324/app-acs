@@ -1,25 +1,65 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
-  import { hojeISO } from '../lib/datas';
-  import { app, enderecoCurto, mostrarAviso } from '../lib/estado.svelte';
+  import { formatarData, hojeISO, somarDias } from '../lib/datas';
+  import { app, enderecoCurto, mostrarAviso, registrarDevolutivaTecnica, salvarAgendaTecnica } from '../lib/estado.svelte';
   import { ir, voltar } from '../lib/rotas.svelte';
   import { listaParaTecnica, textoParaTecnica, type TipoTecnica } from '../lib/tecnica';
 
   const hoje = hojeISO();
   const todos = $derived(listaParaTecnica(app.familias, app.visitas, app.casos, app.prioritarios, hoje, app.config.ruas));
-  type Filtro = 'todos' | 'importantes' | TipoTecnica;
+  type Filtro = 'todos' | 'importantes' | 'agenda' | TipoTecnica;
   let filtro = $state<Filtro>('importantes');
   const FILTROS: [Filtro, string][] = [
     ['importantes', 'Mais importantes'],
     ['todos', 'Todos'],
+    ['agenda', 'Dia da técnica'],
     ['pa', 'P.A.'],
     ['glicemia', 'Glicemia'],
     ['curativo', 'Curativo'],
     ['outro', 'Outros'],
   ];
   const passa = (f: Filtro) => (it: (typeof todos)[number]) =>
-    f === 'todos' ? true : f === 'importantes' ? it.peso >= 50 : it.pedidos.some((p) => p.tipo === f);
-  const lista = $derived(todos.filter(passa(filtro)).map((it) => ({ ...it, pedidos: filtro === 'todos' || filtro === 'importantes' ? it.pedidos : it.pedidos.filter((p) => p.tipo === filtro) })));
+    f === 'todos' ? true : f === 'importantes' ? it.peso >= 50 : f === 'agenda' ? naAgenda(it.morador.id) : it.pedidos.some((p) => p.tipo === f);
+  const lista = $derived(
+    todos.filter(passa(filtro)).map((it) => ({ ...it, pedidos: ['todos', 'importantes', 'agenda'].includes(filtro) ? it.pedidos : it.pedidos.filter((p) => p.tipo === filtro) })),
+  );
+
+  // ---- Dia da técnica na área
+  const agenda = $derived(app.config.agendaTecnica);
+  const naAgenda = (id: string) => !!agenda?.moradores.includes(id);
+  let diaTecnica = $state(app.config.agendaTecnica?.data ?? somarDias(hojeISO(), 1));
+  function alternarAgenda(id: string) {
+    const atuais = agenda?.moradores ?? [];
+    salvarAgendaTecnica({ data: diaTecnica, moradores: atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id] });
+  }
+  function mudarDia(d: string) {
+    diaTecnica = d;
+    if (agenda) salvarAgendaTecnica({ ...agenda, data: d });
+  }
+  async function copiarAgenda() {
+    const itens = todos.filter((it) => naAgenda(it.morador.id));
+    const texto = textoParaTecnica(itens, hoje, (f) => `${enderecoCurto(f)}${f.referencia ? ` (${f.referencia})` : ''}`).replace(/^Para a técnica de enfermagem \([^)]*\)/, `Dia da técnica na área (${formatarData(diaTecnica)})`);
+    try {
+      await navigator.clipboard.writeText(texto);
+      app.desfazer = null;
+      mostrarAviso('Roteiro da técnica copiado ✓');
+    } catch {
+      mostrarAviso('Não consegui copiar.');
+    }
+  }
+
+  // ---- Devolutiva (o que a técnica fez)
+  let devolvendo = $state<string | null>(null);
+  let dv = $state({ data: hojeISO(), pa: '', glicemia: '', texto: '' });
+  function abrirDevolutiva(id: string) {
+    devolvendo = devolvendo === id ? null : id;
+    dv = { data: hojeISO(), pa: '', glicemia: '', texto: '' };
+  }
+  async function salvarDevolutiva(familiaId: string, moradorId: string) {
+    await registrarDevolutivaTecnica(familiaId, moradorId, $state.snapshot(dv));
+    devolvendo = null;
+    mostrarAviso('Devolutiva anotada ✓ Entrou na ficha.');
+  }
   const conta = (f: Filtro) => todos.filter(passa(f)).length;
 
   async function copiar() {
@@ -47,6 +87,21 @@
   {/each}
 </div>
 
+<section class="cartao dia-tecnica">
+  <h2>Dia da técnica na área</h2>
+  <label class="campo"><span class="pequeno">Quando ela vem</span><input type="date" value={diaTecnica} onchange={(e) => mudarDia((e.currentTarget as HTMLInputElement).value)} /></label>
+  <p class="pequeno">
+    {agenda?.moradores.length ? `${agenda.moradores.length} ${agenda.moradores.length === 1 ? 'pessoa marcada' : 'pessoas marcadas'} para ${formatarData(agenda.data)}.` : 'Marque “Levar no dia dela” nas pessoas abaixo.'}
+  </p>
+  {#if agenda?.moradores.length}
+    <div class="botoes">
+      <button class="botao pequeno" onclick={copiarAgenda}><Icone nome="copiar" tamanho={18} /> Copiar o roteiro dela</button>
+      <button class="botao secundario pequeno" onclick={() => (filtro = 'agenda')}>Ver só o dia dela</button>
+      <button class="botao secundario pequeno" onclick={() => salvarAgendaTecnica(undefined)}>Limpar</button>
+    </div>
+  {/if}
+</section>
+
 {#if lista.length}
   <button class="botao largo" onclick={copiar}><Icone nome="copiar" tamanho={20} /> Copiar a lista ({lista.length})</button>
 {:else}
@@ -63,6 +118,22 @@
       <ul class="pedidos">
         {#each it.pedidos as p, i (i)}<li class={p.tipo}>{p.texto}</li>{/each}
       </ul>
+      <div class="acoes">
+        <label class="opcao pequeno"><input type="checkbox" checked={naAgenda(it.morador.id)} onchange={() => alternarAgenda(it.morador.id)} /> Levar no dia dela</label>
+        <button class="botao secundario pequeno" onclick={() => abrirDevolutiva(it.morador.id)}>✓ Técnica foi</button>
+      </div>
+      {#if devolvendo === it.morador.id}
+        <div class="devolutiva">
+          <p class="suave pequeno">O que a técnica fez (não vai para a fila do Fast nem para a meta; entra na ficha).</p>
+          <div class="duas">
+            <label class="campo"><span class="pequeno">Dia</span><input type="date" bind:value={dv.data} max={hoje} /></label>
+            <label class="campo"><span class="pequeno">P.A.</span><input type="text" inputmode="numeric" bind:value={dv.pa} placeholder="130x80" /></label>
+            <label class="campo"><span class="pequeno">Glicemia</span><input type="text" inputmode="numeric" bind:value={dv.glicemia} placeholder="110" /></label>
+          </div>
+          <label class="campo"><span class="pequeno">O que mais ela fez</span><input type="text" bind:value={dv.texto} placeholder="Ex.: curativo feito; orientou a insulina" /></label>
+          <button class="botao pequeno" onclick={() => salvarDevolutiva(it.familia.id, it.morador.id)}>Salvar devolutiva</button>
+        </div>
+      {/if}
     </li>
   {/each}
 </ul>
@@ -132,5 +203,40 @@
   .pedidos li {
     margin: 3px 0;
     overflow-wrap: anywhere;
+  }
+  .dia-tecnica {
+    border-left: 6px solid var(--primaria);
+    margin-bottom: 10px;
+  }
+  .dia-tecnica h2 {
+    margin: 0 0 6px;
+  }
+  .botoes,
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .acoes .opcao {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex: 1;
+  }
+  .acoes input[type='checkbox'] {
+    width: 22px;
+    height: 22px;
+  }
+  .devolutiva {
+    border-top: 1px solid var(--borda);
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .duas {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 6px;
   }
 </style>

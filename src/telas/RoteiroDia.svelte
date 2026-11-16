@@ -62,6 +62,8 @@
         <button class="topo" onclick={() => ir(`familia/${c.familia.id}`)}>
           <strong>{c.familia.numero}{c.familia.complemento ? ` – ${c.familia.complemento}` : ''}</strong>
           <span class="suave pequeno">{responsavel(c.familia)}</span>
+          {#if c.familia.referencia}<span class="pequeno">📍 {c.familia.referencia}</span>{/if}
+          {#if c.familia.telefone || c.familia.melhorHorario}<span class="pequeno">{c.familia.telefone ? `📞 ${c.familia.telefone}` : ''}{c.familia.telefone && c.familia.melhorHorario ? ' · ' : ''}{c.familia.melhorHorario ? `🕒 ${c.familia.melhorHorario}` : ''}</span>{/if}
         </button>
         <ul class="motivos">
           {#each c.motivos as m, i (i)}<li class:forte={m.peso >= 50}>{m.texto}</li>{/each}
