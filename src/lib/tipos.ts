@@ -48,6 +48,8 @@ export interface Morador {
   dpp?: string;
   /** Criança: última vez que o ACS conferiu a caderneta de vacinas (aaaa-mm-dd). */
   cadernetaEm?: string;
+  /** Última receita dos remédios de uso contínuo (aaaa-mm-dd), para lembrar de renovar. */
+  receitaEm?: string;
 }
 
 export interface Familia {
@@ -271,4 +273,6 @@ export interface Config {
   remediosExtras?: string;
   /** Quando os ajustes foram mudados pela última vez (ISO): na junção entre aparelhos vale o mais recente. */
   alteradaEm?: string;
+  /** A receita de uso contínuo vale quantos meses (padrão 6). */
+  mesesReceita?: number;
 }

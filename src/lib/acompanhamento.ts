@@ -371,8 +371,50 @@ export interface Acompanhamento {
   perguntas: string[];
   /** Internação ou alta do hospital citada nos últimos 30 dias (a mais recente). */
   hospital?: Hospital;
+  /** Última receita de uso contínuo (da ficha ou do que foi escrito) e quando vence. */
+  receita?: Receita;
   /** Não há nada para mostrar. */
   vazio: boolean;
+}
+
+export interface Receita {
+  /** Quando renovou (aaaa-mm-dd). */
+  desde: string;
+  /** Quando vence (aaaa-mm-dd). */
+  vence: string;
+  fonte: 'ficha' | 'vd';
+}
+
+/** Meses que a receita de uso contínuo vale, se o ACS não mudar em Ajustes. */
+export const MESES_RECEITA = 6;
+/** Avisar quantos dias antes de vencer. */
+export const DIAS_AVISO_RECEITA = 30;
+const RENOVOU = /\b(renovou|renovad[ao]s?|pegou (a |as )?receitas?|receitas? nova|trocou a receita|fez a receita|receita (feita|em dia))\b/;
+
+function somarMeses(iso: string, n: number): string {
+  const [a, m, d] = iso.split('-').map(Number);
+  const alvo = new Date(Date.UTC(a, m - 1 + n, 1));
+  const ultimo = new Date(Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth() + 1, 0)).getUTCDate();
+  alvo.setUTCDate(Math.min(d, ultimo));
+  return alvo.toISOString().slice(0, 10);
+}
+
+/** A receita mais nova: a data marcada na ficha ou "renovou a receita" escrito nas VDs. */
+export function receitaDaPessoa(m: Morador, textos: TextoDaFamilia[], hoje: string, meses = MESES_RECEITA): Receita | undefined {
+  let desde = m.receitaEm ?? '';
+  let fonte: Receita['fonte'] = 'ficha';
+  for (const t of textos) {
+    if (!t.data || t.data > hoje || t.data <= desde) continue;
+    for (const fr of frases(t.texto)) {
+      const baixo = semAcento(fr);
+      const x = baixo.match(RENOVOU);
+      if (!x || /\b(nao|ainda nao|precisa|vai|falta)\s*$/.test(baixo.slice(0, x.index)) || NEGACAO.test(baixo.slice(0, x.index).slice(-25))) continue;
+      desde = t.data;
+      fonte = 'vd';
+      break;
+    }
+  }
+  return desde ? { desde, vence: somarMeses(desde, meses), fonte } : undefined;
 }
 
 export interface Hospital {
@@ -410,6 +452,8 @@ export interface Contexto {
   escondidas?: Iterable<string>;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). */
   remediosExtras?: string;
+  /** Meses que a receita vale (padrão 6). */
+  mesesReceita?: number;
   hoje: string;
 }
 
@@ -464,7 +508,7 @@ function assinatura(c: Contexto): string {
   let a = assinaturas.get(c);
   if (a === undefined) {
     const esc = [...(c.escondidas ?? [])];
-    a = [c.hoje, c.visitas.length, maior(c.visitas), c.casos.length, maior(c.casos), c.prioritarios.length, maior(c.prioritarios), esc.length, esc[esc.length - 1] ?? '', c.remediosExtras ?? ''].join('|');
+    a = [c.hoje, c.visitas.length, maior(c.visitas), c.casos.length, maior(c.casos), c.prioritarios.length, maior(c.prioritarios), esc.length, esc[esc.length - 1] ?? '', c.remediosExtras ?? '', c.mesesReceita ?? ''].join('|');
     assinaturas.set(c, a);
   }
   return a;
@@ -474,7 +518,7 @@ function assinatura(c: Contexto): string {
 export function acompanhamentoDaPessoa(m: Morador, f: Familia, c: Contexto): Acompanhamento {
   const sig = assinatura(c);
   if (!memoria || memoria.assinatura !== sig) memoria = { assinatura: sig, mapa: new Map() };
-  const k = [f.id, m.id, f.atualizadoEm ?? '', f.relatosAnteriores?.length ?? 0, m.nome, m.grupos.join(','), m.situacao, m.nascimento].join('|');
+  const k = [f.id, m.id, f.atualizadoEm ?? '', f.relatosAnteriores?.length ?? 0, m.nome, m.grupos.join(','), m.situacao, m.nascimento, m.receitaEm ?? ''].join('|');
   const ja = memoria.mapa.get(k);
   if (ja) return ja;
   const a = lerAcompanhamento(m, f, c);
@@ -495,8 +539,14 @@ function lerAcompanhamento(m: Morador, f: Familia, c: Contexto): Acompanhamento 
   const perguntas = perguntasDaPessoa(base, queixasRecentes(textos, c.hoje), c.hoje);
   const hospital = hospitalDosTextos(textos, c.hoje);
   if (hospital) perguntas.unshift(hospital.tipo === 'alta' ? `Teve alta em ${dm(hospital.data)}: como está? Precisa de VD da enfermagem?` : `Internação (${dm(hospital.data)}): já voltou para casa?`);
-  const vazio = !achadas.length && !remedios.length && !pendencias.length && !medidas.pa.length && !medidas.glicemia.length && !noticias.length;
-  return { ...base, noticias, perguntas, vazio, ...(hospital ? { hospital } : {}) };
+  // Receita: só para quem toma remédio ou tem a data marcada.
+  const usaRemedio = remedios.some((r) => r.situacao === 'usa') || m.grupos.some((g) => g === 'hipertenso' || g === 'diabetico');
+  const receita = usaRemedio || m.receitaEm ? receitaDaPessoa(m, textos, c.hoje, c.mesesReceita) : undefined;
+  if (receita && diferencaDias(c.hoje, receita.vence) <= DIAS_AVISO_RECEITA) {
+    perguntas.splice(hospital ? 1 : 0, 0, receita.vence < c.hoje ? `Receita venceu em ${dm(receita.vence)}: já renovou?` : `Receita vence em ${dm(receita.vence)}: já marcou para renovar?`);
+  }
+  const vazio = !achadas.length && !remedios.length && !pendencias.length && !medidas.pa.length && !medidas.glicemia.length && !noticias.length && !receita;
+  return { ...base, noticias, perguntas, vazio, ...(hospital ? { hospital } : {}), ...(receita ? { receita } : {}) };
 }
 
 // ---------------------------------------------------------------- achados pelo app (aba Prioritários)

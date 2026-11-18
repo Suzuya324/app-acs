@@ -93,6 +93,8 @@
   async function salvar() {
     if (!(app.config.metaMensal > 0)) return mostrarAviso('A meta precisa ser maior que zero.');
     app.config.metaMensal = Math.round(app.config.metaMensal);
+    const meses = Number(app.config.mesesReceita);
+    app.config.mesesReceita = meses >= 1 && meses <= 24 ? Math.round(meses) : undefined;
     await salvarConfig();
     mostrarAviso('Salvo ✓');
   }
@@ -280,6 +282,7 @@
   <label class="campo"><span>Seu nome</span><input type="text" bind:value={app.config.nomeAcs} /></label>
   <label class="campo"><span>Micro / equipe</span><input type="text" bind:value={app.config.micro} /></label>
   <label class="campo"><span>Meta de famílias por mês</span><input type="number" inputmode="numeric" min="1" bind:value={app.config.metaMensal} /></label>
+  <label class="campo"><span>A receita de uso contínuo vale quantos meses</span><input type="number" inputmode="numeric" min="1" max="24" placeholder="6" bind:value={app.config.mesesReceita} /></label>
   <h3>Ruas da área</h3>
   <ul class="lista">
     {#each app.config.ruas as r, i (r)}

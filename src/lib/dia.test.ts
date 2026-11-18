@@ -104,3 +104,11 @@ describe('próxima casa do roteiro', () => {
     expect(roteiroDoDia([f], [], ctx([vd('f9', HOJE, { desfecho: 'ausencia_completa' })])).length).toBe(0);
   });
 });
+
+describe('receita no roteiro', () => {
+  it('entra no roteiro quando vence em até 15 dias ou já venceu', () => {
+    const f = fam('fr', 'Rua das Acácias', '5', [mor('r', 'Rosa Teste', { grupos: ['hipertenso'], receitaEm: '2026-05-20' })]);
+    const casas = roteiroDoDia([f], [], ctx([vd('fr', '2026-11-01')]));
+    expect(casas[0]?.motivos.map((m) => m.texto)).toContain('Rosa: receita vence 20/11 – lembrar de renovar');
+  });
+});

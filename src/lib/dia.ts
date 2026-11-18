@@ -32,6 +32,10 @@ export function agenda(familias: Familia[], revisitas: Revisita[], ctx: Contexto
     for (const m of f.moradores) {
       if (m.situacao !== 'mora') continue;
       const a = acompanhamentoDaPessoa(m, f, ctx);
+      // Receita que vence nos próximos 60 dias (ou já venceu há até 60).
+      if (a.receita && Math.abs(diferencaDias(ctx.hoje, a.receita.vence)) <= 60) {
+        lista.push({ data: a.receita.vence, familia: f, morador: m, tipo: 'Receita vence', texto: `Receita renovada em ${dataCurta(a.receita.desde)}`, origem: a.receita.fonte === 'ficha' ? 'Ficha' : 'VD', chaves: [] });
+      }
       for (const p of a.pendencias) {
         if (!p.quando) continue;
         lista.push({ data: p.quando, familia: f, morador: m, tipo: NOMES_PENDENCIA[p.tipo as TipoPendencia], texto: p.frase, origem: `${p.origem}`, chaves: p.chaves });
@@ -178,18 +182,23 @@ export function roteiroDoDia(
     add(r.familiaId, `Revisita: ${r.motivo}`, 60);
   }
   // Datas marcadas que acabaram de passar (perguntar como foi) ou são amanhã (lembrar).
-  for (const c of lembretes((compromissos ?? agenda(familias, [], ctx)).filter((x) => x.tipo !== 'Revisita'), hoje)) {
+  for (const c of lembretes((compromissos ?? agenda(familias, [], ctx)).filter((x) => x.tipo !== 'Revisita' && x.tipo !== 'Receita vence'), hoje)) {
     const quem = c.morador?.nome.split(' ')[0] ?? '';
     add(c.familia.id, c.data < hoje ? `${quem}: ${c.tipo.toLowerCase()} dia ${dataCurta(c.data)} – perguntar como foi` : `${quem}: ${c.tipo.toLowerCase()} ${c.data === hoje ? 'hoje' : 'amanhã'} – lembrar`, 55);
   }
-  // Internação e alta (o que foi escrito nos últimos 30 dias).
+  // Receita perto de vencer; internação e alta (o que foi escrito nos últimos 30 dias).
   for (const f of familias) {
     if (f.situacaoCasa !== 'habitada') continue;
     for (const m of f.moradores) {
       if (m.situacao !== 'mora') continue;
-      const h = acompanhamentoDaPessoa(m, f, ctx).hospital;
-      if (!h) continue;
+      const a = acompanhamentoDaPessoa(m, f, ctx);
       const quem = m.nome.split(' ')[0];
+      if (a.receita && diferencaDias(hoje, a.receita.vence) <= 15) {
+        const venceu = a.receita.vence < hoje;
+        add(f.id, `${quem}: receita ${venceu ? 'venceu' : 'vence'} ${dataCurta(a.receita.vence)} – ${venceu ? 'saber se renovou' : 'lembrar de renovar'}`, venceu ? 55 : 50);
+      }
+      const h = a.hospital;
+      if (!h) continue;
       if (h.tipo === 'alta' && diferencaDias(h.data, hoje) <= 15) add(f.id, `${quem}: alta do hospital (${dataCurta(h.data)}) – VD pós-alta`, 85);
       else if (h.tipo === 'internado') add(f.id, `${quem}: internação (${dataCurta(h.data)}) – saber se já voltou`, 45);
     }

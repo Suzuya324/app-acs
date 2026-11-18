@@ -77,6 +77,7 @@
       <label><input type="radio" bind:group={m.sexo} value="M" /> Masculino</label>
     </fieldset>
     <label class="campo"><span>Data de nascimento</span><input type="date" bind:value={m.nascimento} max={hoje} /></label>
+    <label class="campo"><span>Última receita (remédios de uso contínuo)</span><input type="date" bind:value={m.receitaEm} max={hoje} /></label>
     {#if m.situacao === 'mora'}
       <label class="opcao"><input type="checkbox" bind:checked={responsavel} /> <span>Responsável pela família</span></label>
     {/if}

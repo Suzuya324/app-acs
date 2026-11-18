@@ -158,6 +158,16 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.
 - **Próxima casa:** depois de salvar uma VD (ou "ninguém em casa" na ficha), aparece em cima **"Próxima casa do
   roteiro de hoje"**, seguindo a rua e o número. **"VD na próxima"** já abre a VD de lá.
+- **Receitas que vencem:** quem toma remédio (ou é hipertenso/diabético) tem o bloco **Receita** no
+  acompanhamento. Toque em **"✓ Renovou hoje"** (ou anote a data na ficha da pessoa). O app também entende
+  "renovou a receita" escrito na VD. Faltando 30 dias, a VD pergunta "Receita vence em 25/11: já marcou para
+  renovar?"; faltando 15, a casa entra no roteiro; a data aparece na **Agenda**. Quantos meses a receita vale:
+  **Ajustes → Seus dados** (padrão 6).
+- **Plano para fechar a meta:** no **Painel** (Início → "Ver o plano para fechar a meta"), as famílias que
+  faltam, as mais esquecidas primeiro, divididas pelos dias de campo que sobram e juntando a mesma rua.
+  **"Copiar o plano"** copia o texto.
+- **Apagar este aparelho (devolver o tablet):** **Ajustes → Apagar tudo deste aparelho**. Com a sincronização
+  ligada, o app manda tudo para a nuvem e confere antes de apagar; se não conseguir, não apaga nada.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,

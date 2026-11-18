@@ -502,6 +502,7 @@ export const contextoAcompanhamento = (): Contexto => ({
   prioritarios: app.prioritarios,
   escondidas: app.config.sugestoesEscondidas ?? [],
   remediosExtras: app.config.remediosExtras ?? '',
+  mesesReceita: app.config.mesesReceita,
   hoje: hojeISO(),
 });
 

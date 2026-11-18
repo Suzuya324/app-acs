@@ -4,7 +4,8 @@
   import { NOMES_PENDENCIA, type Acompanhamento, type Pendencia, type Remedio } from '../lib/acompanhamento';
   import type { SugestaoDasVDs } from '../lib/anotacoes';
   import { formatarData } from '../lib/datas';
-  import { aplicarSugestoesDasVDs, ensinarRemedios, esconderDoAcompanhamento, mostrarAviso } from '../lib/estado.svelte';
+  import { app, aplicarSugestoesDasVDs, ensinarRemedios, esconderDoAcompanhamento, mostrarAviso, salvarMorador } from '../lib/estado.svelte';
+  import { diferencaDias, hojeISO } from '../lib/datas';
   import { NOMES_GRUPO } from '../lib/rotulos';
   import type { Morador } from '../lib/tipos';
 
@@ -31,6 +32,17 @@
   const naoE = (s: SugestaoDasVDs) => fazer(() => esconderDoAcompanhamento([s.chave], 'Marcar “não é”'), 'Não aparece mais ✓');
   const resolver = (p: Pendencia) => fazer(() => esconderDoAcompanhamento([...p.chaves], 'Pendência resolvida'), 'Resolvida ✓');
   const tirar = (r: Remedio) => fazer(() => esconderDoAcompanhamento([r.chave], 'Tirar remédio'), `${r.nome} tirado ✓`);
+  // ---- Receita de uso contínuo
+  const hoje = hojeISO();
+  const usaRemedio = $derived(a.remedios.some((r) => r.situacao === 'usa') || morador.grupos.some((g) => g === 'hipertenso' || g === 'diabetico'));
+  const faltaReceita = $derived(a.receita ? diferencaDias(hoje, a.receita.vence) : null);
+  let dataReceita = $state(hojeISO());
+  async function renovou(data: string) {
+    const f = app.familias.find((x) => x.moradores.some((m) => m.id === morador.id));
+    const m = f?.moradores.find((x) => x.id === morador.id);
+    if (!f || !m || !data) return;
+    await fazer(() => salvarMorador(f.id, { ...($state.snapshot(m) as Morador), receitaEm: data }), `Receita de ${nome} anotada ✓`);
+  }
   async function ensinar() {
     const n = novoRemedio.trim();
     if (n.length < 3) return;
@@ -95,6 +107,27 @@
     </div>
   {/if}
 
+  {#if a.receita || (usaRemedio && modo !== 'cartao')}
+    <div class="bloco receita" class:vencendo={faltaReceita !== null && faltaReceita <= 30}>
+      <h3>Receita</h3>
+      {#if a.receita && faltaReceita !== null}
+        <p>
+          Renovada em {formatarData(a.receita.desde)}{a.receita.fonte === 'vd' ? ' (escrito na VD)' : ''} ·
+          <strong>{faltaReceita < 0 ? `venceu em ${formatarData(a.receita.vence)}` : faltaReceita === 0 ? 'vence hoje' : `vence em ${formatarData(a.receita.vence)} (${faltaReceita} dias)`}</strong>
+        </p>
+      {:else}
+        <p class="suave pequeno">Sem data da última receita. Anote quando {nome} renovar, para o app lembrar antes de vencer.</p>
+      {/if}
+      <div class="linha-receita">
+        <button class="botao secundario pequeno" disabled={ocupado} onclick={() => renovou(hoje)}>✓ Renovou hoje</button>
+        {#if modo === 'ficha'}
+          <input type="date" bind:value={dataReceita} max={hoje} aria-label="Data em que renovou a receita" />
+          <button class="botao secundario pequeno" disabled={ocupado || !dataReceita} onclick={() => renovou(dataReceita)}>Anotar</button>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   {#if a.medidas.pa.length || a.medidas.glicemia.length}
     <div class="bloco">
       <h3>Medidas</h3>
@@ -133,6 +166,22 @@
 </div>
 
 <style>
+  .receita.vencendo {
+    border-left: 4px solid var(--perigo);
+    padding-left: 8px;
+  }
+  .receita p {
+    margin: 0 0 6px;
+  }
+  .linha-receita {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .linha-receita input {
+    max-width: 170px;
+  }
   .acomp {
     display: flex;
     flex-direction: column;
