@@ -153,11 +153,16 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
   O app não entra no Fast: só lê o texto colado.
+- **Ninguém em casa com 1 toque:** no **roteiro de hoje** e na **busca** (quando acha até 3 casas) tem o botão
+  **🚪 Ninguém em casa**: confira a data e toque em **Confirmar**. A casa sai do roteiro de hoje, vai para
+  "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.
+- **Próxima casa:** depois de salvar uma VD (ou "ninguém em casa" na ficha), aparece em cima **"Próxima casa do
+  roteiro de hoje"**, seguindo a rua e o número. **"VD na próxima"** já abre a VD de lá.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,
-  visitada ou não no período, última VD e dias sem VD. Dá para mandar ao Claude e perguntar quais casas
-  faltam. **Cuidado:** a planilha sai sem senha; mande só o necessário (dá para tirar os nomes e o relato)
+  visitada ou não no período, última VD e dias sem VD. Para o Claude, use **"Arquivo único (com a pergunta
+  pronta)"**: anexe na conversa e mande "Siga as instruções do arquivo". **Cuidado:** a planilha sai sem senha; mande só o necessário (dá para tirar os nomes e o relato)
   e apague da pasta Downloads depois.
 - **Aparelho sem sincronizar:** se o tablet ou o computador ficar 3 dias ou mais sem sincronizar, o
   Início avisa ("O Tablet não sincroniza há 5 dias"). É só abrir o app nele com internet.

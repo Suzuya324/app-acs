@@ -116,3 +116,26 @@ export function csvFamilias(familias: Familia[], visitas: Visita[], o: OpcoesExp
   }
   return BOM + linhas.join('\r\n') + '\r\n';
 }
+
+/** Pergunta pronta para colar no assistente junto com as planilhas. */
+export function perguntaParaAssistente(rotulo: string, meta: number): string {
+  return [
+    `Sou agente comunitário de saúde. Anexei planilhas do meu app de visitas domiciliares (VDs), período: ${rotulo}.`,
+    '- "visitas": uma linha por VD (data, casa, prontuário, presentes, desfecho, se conta para a meta, se já foi lançada no Fast).',
+    '- "familias": uma linha por casa da área (se foi visitada no período, última VD, dias sem VD).',
+    '',
+    'Por favor:',
+    `1. Diga quantas famílias foram visitadas (só "Conta para a meta = Sim", cada família uma vez) e quanto falta para a meta de ${meta}.`,
+    '2. Liste as famílias habitadas NÃO visitadas no período, separadas por rua e em ordem de número, com o prontuário.',
+    '3. Liste as que estão há mais tempo sem VD (as 20 primeiras).',
+    '4. Liste as VDs que ainda não foram lançadas no Fast.',
+    '5. Aponte casas com várias tentativas sem ninguém em casa.',
+    'Responda em português, em listas curtas.',
+  ].join('\n');
+}
+
+/** Tudo num arquivo só (texto): a pergunta e as duas planilhas. */
+export function arquivoUnico(pergunta: string, visitasCsv: string, familiasCsv: string): string {
+  const sem = (t: string) => t.replace(/^\uFEFF/, '').trim();
+  return `\uFEFF${pergunta}\n\n===== visitas (CSV, separador ;) =====\n${sem(visitasCsv)}\n\n===== familias (CSV, separador ;) =====\n${sem(familiasCsv)}\n`;
+}

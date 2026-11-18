@@ -3,7 +3,6 @@
 import { acompanhamentoDaPessoa, NOMES_PENDENCIA, type Contexto, type TipoPendencia } from './acompanhamento';
 import { dataCurta } from './anotacoes';
 import { diasParado, DIAS_PARADO } from './casos-auto';
-import { contaParaMeta } from './desfecho';
 import { diferencaDias, somarDias } from './datas';
 import { nivelDaFamilia, proximaVisita, ultimaVisita } from './nivel';
 import { agruparPorRua } from './roteiro';
@@ -144,7 +143,8 @@ export function roteiroDoDia(
   compromissos?: Compromisso[],
 ): CasaDoDia[] {
   const { hoje, visitas, casos, prioritarios } = ctx;
-  const visitadaHoje = new Set(visitas.filter((v) => v.data === hoje && contaParaMeta(v.desfecho)).map((v) => v.familiaId));
+  // Já foi hoje (visitou ou tentou: ninguém em casa, recusa): sai do roteiro de hoje.
+  const visitadaHoje = new Set(visitas.filter((v) => v.data === hoje).map((v) => v.familiaId));
   const motivos = new Map<string, MotivoDia[]>();
   const add = (id: string, texto: string, peso: number) => {
     if (visitadaHoje.has(id)) return;
@@ -219,4 +219,18 @@ export function maisImportantes(casas: CasaDoDia[], n: number): CasaDoDia[] {
 export function emOrdemDeRua(casas: CasaDoDia[], ordemRuas: string[]): { rua: string; casas: CasaDoDia[] }[] {
   const porId = new Map(casas.map((c) => [c.familia.id, c]));
   return agruparPorRua(casas.map((c) => c.familia), ordemRuas).map((g) => ({ rua: g.rua, casas: g.familias.map((f) => porId.get(f.id)!) }));
+}
+
+/**
+ * A próxima casa do roteiro depois de `atual` (seguindo a rua e o número; no fim, volta ao começo).
+ * Funciona mesmo se `atual` já saiu do roteiro (acabou de ser visitada).
+ */
+export function proximaCasa(casas: CasaDoDia[], atual: Familia, ordemRuas: string[]): CasaDoDia | null {
+  const outras = casas.filter((c) => c.familia.id !== atual.id);
+  if (!outras.length) return null;
+  const porId = new Map(outras.map((c) => [c.familia.id, c]));
+  const ordem = agruparPorRua([...outras.map((c) => c.familia), atual], ordemRuas).flatMap((g) => g.familias);
+  const i = ordem.findIndex((f) => f.id === atual.id);
+  const prox = ordem[i + 1] ?? ordem[0];
+  return porId.get(prox.id) ?? null;
 }

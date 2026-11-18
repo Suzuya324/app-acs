@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
-  import { salvarConfig, app, desfazerUltima, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
+  import { salvarConfig, app, desfazerUltima, familiaPorId, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
   import { atualizarApp } from './lib/pwa';
   import { ir, rota } from './lib/rotas.svelte';
   import Ajustes from './telas/Ajustes.svelte';
@@ -21,6 +21,7 @@
   import MudancasSbcd from './telas/MudancasSbcd.svelte';
   import ConferirFast from './telas/ConferirFast.svelte';
   import ExportarVisitas from './telas/ExportarVisitas.svelte';
+  import ProximaCasa from './componentes/ProximaCasa.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -126,6 +127,10 @@
 </header>
 
 <main class="conteudo" class:sem-abas={app.fase !== 'aberto'}>
+  {#if app.fase === 'aberto' && app.proximaDepoisDe && ['busca', 'familia', 'dia', 'inicio', ''].includes(rota.tela)}
+    {@const atual = familiaPorId(app.proximaDepoisDe)}
+    {#if atual}<ProximaCasa {atual} />{/if}
+  {/if}
   {#if app.fase === 'carregando'}
     <p class="suave">Abrindo…</p>
   {:else if app.fase === 'erro'}

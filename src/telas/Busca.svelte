@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import AusenciaRapida from '../componentes/AusenciaRapida.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { buscar, grupoDaBusca } from '../lib/busca';
   import { contaParaMeta } from '../lib/desfecho';
@@ -88,6 +89,12 @@
             {#if f.situacaoCasa !== 'habitada'} · casa {NOMES_SITUACAO_CASA[f.situacaoCasa].toLowerCase()}{/if}
           </span>
         </button>
+        {#if resultados.length <= 3 && f.situacaoCasa === 'habitada'}
+          <div class="acoes-rapidas">
+            <button class="botao pequeno" onclick={() => ir(`vd/${f.id}`)}><Icone nome="mais" tamanho={18} /> Registrar VD</button>
+            <AusenciaRapida familia={f} />
+          </div>
+        {/if}
       </li>
     {/each}
   </ul>
@@ -97,6 +104,12 @@
 {/if}
 
 <style>
+  .acoes-rapidas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0 4px;
+  }
   .selo-a {
     font-size: 0.75rem;
     font-weight: 800;

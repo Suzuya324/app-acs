@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AusenciaRapida from '../componentes/AusenciaRapida.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { formatarData, hojeISO } from '../lib/datas';
   import { emOrdemDeRua, maisImportantes, roteiroDoDia } from '../lib/dia';
@@ -26,7 +27,7 @@
 <h1>Roteiro de hoje</h1>
 <p class="suave">
   {formatarData(hoje)} · <strong>{casas.length}</strong> {casas.length === 1 ? 'casa' : 'casas'}{importantes ? `, ${importantes} mais importantes (em vermelho)` : ''}.
-  Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado e quem está sumido. Em ordem de rua.
+  Quem já teve VD ou “ninguém em casa” hoje sai da lista. Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado e quem está sumido. Em ordem de rua.
 </p>
 
 <div class="chips" role="radiogroup" aria-label="Quantas casas">
@@ -68,13 +69,22 @@
         <ul class="motivos">
           {#each c.motivos as m, i (i)}<li class:forte={m.peso >= 50}>{m.texto}</li>{/each}
         </ul>
-        <button class="botao pequeno" onclick={() => ir(`vd/${c.familia.id}`)}><Icone nome="mais" tamanho={18} /> Registrar VD</button>
+        <div class="acoes-rapidas">
+          <button class="botao pequeno" onclick={() => ir(`vd/${c.familia.id}`)}><Icone nome="mais" tamanho={18} /> Registrar VD</button>
+          <AusenciaRapida familia={c.familia} />
+        </div>
       </li>
     {/each}
   </ul>
 {/each}
 
 <style>
+  .acoes-rapidas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
   .voltar {
     margin-bottom: 12px;
   }

@@ -52,6 +52,8 @@ export const app = $state({
   /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
   desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
+  /** Família onde acabou de salvar uma VD (a ficha dela mostra "Próxima casa do roteiro"). */
+  proximaDepoisDe: null as string | null,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
   /** O navegador prometeu não apagar os dados sozinho? */

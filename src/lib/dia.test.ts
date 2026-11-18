@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contexto } from './acompanhamento';
-import { agenda, emOrdemDeRua, lembretes, quandoE, roteiroDoDia, sumidos } from './dia';
+import { agenda, emOrdemDeRua, lembretes, proximaCasa, quandoE, roteiroDoDia, sumidos, type CasaDoDia } from './dia';
 import type { Caso, Familia, Morador, Revisita, Visita } from './tipos';
 
 // Tudo inventado.
@@ -77,5 +77,30 @@ describe('ninguém em casa várias vezes', () => {
     const visitas = [aus('f1', '2026-11-02'), aus('f1', '2026-11-04'), aus('f1', '2026-11-06'), vd('f2', '2026-11-01'), aus('f2', '2026-11-03'), aus('f2', '2026-11-05')];
     const l = ausentesSeguidos([f1, f2], visitas);
     expect(l.map((x) => `${x.familia.id}:${x.tentativas.length}:${x.dias}`)).toEqual(['f1:3:sex, qua, seg']);
+  });
+});
+
+describe('próxima casa do roteiro', () => {
+  const fs = [
+    fam('f1', 'Rua das Acácias', '12', [mor('a', 'Ana Teste')]),
+    fam('f2', 'Rua das Acácias', '30', [mor('b', 'Beto Teste')]),
+    fam('f3', 'Rua dos Ipês', '7', [mor('c', 'Caio Teste')]),
+    fam('f4', 'Rua das Acácias', '20', [mor('d', 'Duda Teste')]),
+  ];
+  const casa = (f: Familia): CasaDoDia => ({ familia: f, motivos: [{ texto: 'x', peso: 50 }], peso: 50 });
+  const ruas = ['Rua das Acácias', 'Rua dos Ipês'];
+
+  it('segue a rua e o número, mesmo quando a casa atual já saiu do roteiro; no fim volta ao começo', () => {
+    const casas = [fs[0], fs[1], fs[2]].map(casa);
+    expect(proximaCasa(casas, fs[3], ruas)?.familia.id).toBe('f2'); // Acácias 20 → 30
+    expect(proximaCasa(casas, fs[1], ruas)?.familia.id).toBe('f3'); // fim da rua → próxima rua
+    expect(proximaCasa(casas, fs[2], ruas)?.familia.id).toBe('f1'); // fim → começo
+    expect(proximaCasa([casa(fs[0])], fs[0], ruas)).toBeNull();
+  });
+
+  it('quem teve "ninguém em casa" hoje sai do roteiro de hoje', () => {
+    const f = fam('f9', 'Rua das Acácias', '1', [mor('z', 'Zeca Teste')]);
+    expect(roteiroDoDia([f], [], ctx([])).length).toBe(1);
+    expect(roteiroDoDia([f], [], ctx([vd('f9', HOJE, { desfecho: 'ausencia_completa' })])).length).toBe(0);
   });
 });
