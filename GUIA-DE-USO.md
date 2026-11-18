@@ -141,8 +141,10 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
     os remédios ou a insulina.
   - **Dia da técnica na área:** escolha a data e marque **"Levar no dia dela"** nas pessoas. **"Copiar o
     roteiro dela"** monta a lista em ordem de rua, com o ponto de referência. O Início lembra na véspera.
-  - **"✓ Técnica foi":** anote o que ela fez (P.A., glicemia, curativo…). Não vai para a fila do Fast nem
-    para a meta; entra na ficha da pessoa e tira ela da lista.
+  - **"✓ Técnica foi":** anote o que ela fez (P.A., glicemia, curativo…). Com **"Fui junto"** marcado (já vem
+    marcado), vira uma **VD compartilhada com a técnica**: conta para a sua meta e vai para a fila do Fast,
+    com o relato pronto (se você já tinha VD da casa nesse dia, o app completa a mesma). Desmarcado (ela foi
+    sozinha), só entra na ficha. Nos dois casos a pessoa sai da lista.
 - **Telefone, melhor horário e ponto de referência:** em **Editar família**. Aparecem na família (o
   telefone dá para tocar e ligar), no roteiro do dia e no roteiro da técnica.
 - **Internação e alta:** quando você escreve "internado", "teve alta", "saiu do hospital", o app põe a
