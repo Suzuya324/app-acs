@@ -50,15 +50,16 @@
 
   // ---- Devolutiva (o que a técnica fez)
   let devolvendo = $state<string | null>(null);
-  let dv = $state({ data: hojeISO(), pa: '', glicemia: '', texto: '' });
+  let dv = $state({ data: hojeISO(), pa: '', glicemia: '', texto: '', junto: true });
   function abrirDevolutiva(id: string) {
     devolvendo = devolvendo === id ? null : id;
-    dv = { data: hojeISO(), pa: '', glicemia: '', texto: '' };
+    dv = { data: hojeISO(), pa: '', glicemia: '', texto: '', junto: true };
   }
   async function salvarDevolutiva(familiaId: string, moradorId: string) {
     await registrarDevolutivaTecnica(familiaId, moradorId, $state.snapshot(dv));
+    const junto = dv.junto;
     devolvendo = null;
-    mostrarAviso('Devolutiva anotada ✓ Entrou na ficha.');
+    mostrarAviso(junto ? 'VD com a técnica salva ✓ Conta para a meta e foi para a fila do Fast.' : 'Devolutiva anotada ✓ Entrou na ficha.', 3500);
   }
   const conta = (f: Filtro) => todos.filter(passa(f)).length;
 
@@ -77,8 +78,8 @@
 
 <h1>Para a técnica de enfermagem</h1>
 <p class="suave">
-  Quem precisa de P.A., glicemia, curativo ou outro cuidado, pelo que está no app. Quando a técnica fizer, registre a VD
-  (compartilhada) com a P.A. ou a glicemia: a pessoa sai da lista sozinha.
+  Quem precisa de P.A., glicemia, curativo ou outro cuidado, pelo que está no app. Quando a técnica fizer, toque em
+  “✓ Técnica foi”: com você junto, vira VD compartilhada (conta para a meta). A pessoa sai da lista sozinha.
 </p>
 
 <div class="chips" role="tablist" aria-label="Filtrar">
@@ -124,14 +125,15 @@
       </div>
       {#if devolvendo === it.morador.id}
         <div class="devolutiva">
-          <p class="suave pequeno">O que a técnica fez (não vai para a fila do Fast nem para a meta; entra na ficha).</p>
+          <label class="opcao pequeno junto"><input type="checkbox" bind:checked={dv.junto} /> <span><strong>Fui junto</strong>: vira VD compartilhada com a técnica, conta para a meta e vai para a fila do Fast</span></label>
+          {#if !dv.junto}<p class="suave pequeno">Ela foi sozinha: fica só anotado na ficha (não conta para a meta nem vai para o Fast).</p>{/if}
           <div class="duas">
             <label class="campo"><span class="pequeno">Dia</span><input type="date" bind:value={dv.data} max={hoje} /></label>
             <label class="campo"><span class="pequeno">P.A.</span><input type="text" inputmode="numeric" bind:value={dv.pa} placeholder="130x80" /></label>
             <label class="campo"><span class="pequeno">Glicemia</span><input type="text" inputmode="numeric" bind:value={dv.glicemia} placeholder="110" /></label>
           </div>
           <label class="campo"><span class="pequeno">O que mais ela fez</span><input type="text" bind:value={dv.texto} placeholder="Ex.: curativo feito; orientou a insulina" /></label>
-          <button class="botao pequeno" onclick={() => salvarDevolutiva(it.familia.id, it.morador.id)}>Salvar devolutiva</button>
+          <button class="botao pequeno" onclick={() => salvarDevolutiva(it.familia.id, it.morador.id)}>{dv.junto ? 'Salvar VD com a técnica' : 'Salvar devolutiva'}</button>
         </div>
       {/if}
     </li>
@@ -228,6 +230,17 @@
   .acoes input[type='checkbox'] {
     width: 22px;
     height: 22px;
+  }
+  .junto {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .junto input {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
   }
   .devolutiva {
     border-top: 1px solid var(--borda);

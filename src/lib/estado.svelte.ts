@@ -19,6 +19,7 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
+import { sugerirDesfecho } from './desfecho';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
@@ -27,7 +28,7 @@ import { ORIGEM_TECNICA } from './tecnica';
 import { acharMesmaPessoa, etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, juntarRepetidos, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
-import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
+import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, SinaisVitais, Visita } from './tipos';
 
 export type Fase = 'carregando' | 'configurar' | 'trancado' | 'aberto' | 'erro';
 
@@ -797,21 +798,88 @@ export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) 
  * registrar uma VD (não vai para a fila do Fast nem para a meta). Fica nos relatos da família, entra na ficha,
  * nas medidas e tira a pessoa da lista da técnica.
  */
-export const registrarDevolutivaTecnica = (familiaId: string, moradorId: string, d: { data: string; pa?: string; glicemia?: string; texto?: string }) =>
-  comDesfazer('Devolutiva da técnica', async () => {
+/**
+ * O que a técnica fez na casa. Com o ACS junto (padrão), vira uma VD compartilhada com a técnica: conta para a
+ * meta e vai para a fila do Fast (se já havia VD da casa no dia, completa essa). Sem o ACS, fica só anotado na ficha.
+ */
+export const registrarDevolutivaTecnica = (
+  familiaId: string,
+  moradorId: string,
+  d: { data: string; pa?: string; glicemia?: string; texto?: string; junto?: boolean },
+) =>
+  comDesfazer(d.junto ? 'VD com a técnica' : 'Devolutiva da técnica', async () => {
     const f = app.familias.find((x) => x.id === familiaId);
     const m = f?.moradores.find((x) => x.id === moradorId);
     if (!f || !m) return;
-    const partes = [d.pa?.trim() && `P.A. ${d.pa.trim()}`, d.glicemia?.trim() && `glicemia ${d.glicemia.trim()}`].filter(Boolean).join(', ');
-    const texto = `${m.nome}: ${[partes, d.texto?.trim()].filter(Boolean).join('. ') || 'visita da técnica feita'}.`.replace(/\.\./g, '.');
-    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: ORIGEM_TECNICA, texto, data: d.data, origem: ORIGEM_TECNICA }];
-    f.atualizadoEm = agora();
-    app.historico.push(...criarAlteracoes(f.id, [`Devolutiva da técnica (${d.data.split('-').reverse().join('/')}): ${texto}`], m.id));
+    const sinais: SinaisVitais = {};
+    if (d.pa?.trim()) sinais.pa = d.pa.trim();
+    if (d.glicemia?.trim()) sinais.glicemia = d.glicemia.trim();
     const ag = app.config.agendaTecnica;
     if (ag?.moradores.includes(moradorId)) {
       app.config.agendaTecnica = { ...ag, moradores: ag.moradores.filter((x) => x !== moradorId) };
       app.config.alteradaEm = agora();
     }
+    if (d.junto) {
+      const nota = d.texto?.trim() ? `Técnica de enfermagem: ${d.texto.trim()}` : 'Visita com a técnica de enfermagem.';
+      const ja = app.visitas.find((v) => v.familiaId === f.id && v.data === d.data);
+      if (ja) {
+        // Já tinha VD da casa nesse dia: completa (sem criar outra na fila do Fast).
+        const antes = $state.snapshot(ja) as Visita;
+        const depois: Visita = {
+          ...antes,
+          presentes: antes.presentes.includes(m.id) ? antes.presentes : [...antes.presentes, m.id],
+          compartilhadaCom: antes.compartilhadaCom || ORIGEM_TECNICA,
+          sinais: { ...antes.sinais, [m.id]: { ...(antes.sinais[m.id] ?? {}), ...sinais } },
+          anotacoes: { ...(antes.anotacoes ?? {}), [m.id]: [antes.anotacoes?.[m.id], nota].filter(Boolean).join(' ') },
+          lancadaNoFast: false,
+          atualizadoEm: agora(),
+        };
+        const i = app.visitas.indexOf(ja);
+        app.visitas[i] = depois;
+        app.historico.push(...criarAlteracoes(f.id, [`VD de ${d.data.split('-').reverse().join('/')} completada com a técnica (${m.nome.split(' ')[0]})`], m.id));
+        await gravar({ visitas: app.visitas, historico: app.historico, config: app.config });
+        return;
+      }
+      const moram = f.moradores.filter((x) => x.situacao === 'mora');
+      const desfecho = sugerirDesfecho({ totalMoradores: moram.length, presentes: 1, conversouComFamilia: false, recusou: false });
+      const relato = gerarRelato({
+        desfecho,
+        presentes: [m],
+        ausentes: moram.filter((x) => x.id !== m.id),
+        conversouComFamilia: false,
+        sinais: Object.keys(sinais).length ? { [m.id]: sinais } : {},
+        orientacoes: '',
+        compartilhadaCom: ORIGEM_TECNICA,
+        observacao: d.texto?.trim() || undefined,
+        contador: app.visitas.length,
+      });
+      app.historico.push(...criarAlteracoes(f.id, [`VD com a técnica (${d.data.split('-').reverse().join('/')}): ${m.nome.split(' ')[0]}`], m.id));
+      // Grava direto (sem mexer numa VD pela metade que esteja guardada).
+      app.visitas.push({
+        id: novoId('v'),
+        atualizadoEm: agora(),
+        familiaId: f.id,
+        data: d.data,
+        presentes: [m.id],
+        conversouComFamilia: false,
+        desfecho,
+        motivo: app.config.motivoPadrao,
+        compartilhadaCom: ORIGEM_TECNICA,
+        sinais: Object.keys(sinais).length ? { [m.id]: sinais } : {},
+        orientacoes: '',
+        relato,
+        lancadaNoFast: false,
+        observacao: d.texto?.trim() ?? '',
+        anotacoes: { [m.id]: nota },
+      });
+      await gravar({ visitas: app.visitas, historico: app.historico, config: app.config });
+      return;
+    }
+    const partes = [d.pa?.trim() && `P.A. ${d.pa.trim()}`, d.glicemia?.trim() && `glicemia ${d.glicemia.trim()}`].filter(Boolean).join(', ');
+    const texto = `${m.nome}: ${[partes, d.texto?.trim()].filter(Boolean).join('. ') || 'visita da técnica feita'}.`.replace(/\.\./g, '.');
+    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: ORIGEM_TECNICA, texto, data: d.data, origem: ORIGEM_TECNICA }];
+    f.atualizadoEm = agora();
+    app.historico.push(...criarAlteracoes(f.id, [`Devolutiva da técnica (${d.data.split('-').reverse().join('/')}): ${texto}`], m.id));
     await gravar({ familias: app.familias, historico: app.historico, config: app.config });
   });
 
