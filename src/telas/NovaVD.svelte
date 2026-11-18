@@ -443,6 +443,7 @@
       }
       const partes = [atualizacoes.length && 'ficha atualizada', abrir.length && `${abrir.length} ${abrir.length === 1 ? 'caso aberto' : 'casos abertos'}`].filter(Boolean);
       mostrarAviso(partes.length ? `VD salva ✓ ${partes.join(', ')}.` : 'VD salva e colocada na fila do Fast ✓');
+      app.proximaDepoisDe = familia.id;
     }
     voltar(`familia/${familia.id}`);
   }

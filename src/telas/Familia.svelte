@@ -49,6 +49,7 @@
     confirmandoAusencia = false;
     dataAusencia = hoje;
     mostrarAviso('Ausência registrada ✓ Vai para “Revisitar” e para a fila do Fast.', 3500);
+    app.proximaDepoisDe = id;
   }
 
   function quando(iso: string): string {

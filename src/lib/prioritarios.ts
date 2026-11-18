@@ -175,6 +175,79 @@ export function ligar(p: Prioritario, familias: Familia[]): { familiaId?: string
   return achados.length === 1 ? (procurar(achados) ?? {}) : {};
 }
 
+// ---------------------------------------------------------------- mesma pessoa (sem repetir)
+
+const partes = (nome: string) => chaveNome(nome).split(' ').filter(Boolean);
+
+/**
+ * É a mesma pessoa? Reconhece mesmo com o nome escrito diferente (acento, maiúscula, "de/da", nome do meio
+ * faltando) ou sem a data de nascimento numa das listas. Nunca junta duas pessoas ligadas a moradores
+ * diferentes do cadastro, nem com datas de nascimento diferentes.
+ */
+export function mesmaPessoa(a: Prioritario, b: Prioritario): boolean {
+  if (a.id === b.id) return true;
+  if (a.moradorId && b.moradorId) return a.moradorId === b.moradorId;
+  if (a.nascimento && b.nascimento && a.nascimento !== b.nascimento) return false;
+  const [pa, pb] = [partes(a.nome), partes(b.nome)];
+  if (!pa.length || !pb.length) return false;
+  if (pa.join(' ') === pb.join(' ')) return true;
+  // Nome mais curto contido no mais longo, com o mesmo primeiro e o mesmo último nome ("Ana Silva" = "Ana Maria da Silva").
+  const [curto, longo] = pa.length <= pb.length ? [pa, pb] : [pb, pa];
+  const contido = curto.length >= 2 && curto[0] === longo[0] && curto[curto.length - 1] === longo[longo.length - 1] && curto.every((x) => longo.includes(x));
+  if (!contido) return false;
+  if (a.nascimento && b.nascimento) return true; // mesma data (já conferida acima)
+  // Sem data numa das duas: só se a casa também bate (para não juntar xarás).
+  const mesmaCasa =
+    (!!a.familiaId && a.familiaId === b.familiaId) ||
+    (!!a.prontuario && a.prontuario === b.prontuario) ||
+    (!!a.casa && a.casa === b.casa && semAcento(a.rua).toLowerCase() === semAcento(b.rua).toLowerCase());
+  return mesmaCasa;
+}
+
+/** Junta dois registros da mesma pessoa: fica o editado à mão (ou o mais novo), sem perder etiquetas nem ligação. */
+export function juntarDuas(a: Prioritario, b: Prioritario): Prioritario {
+  const [base, outra] = (a.editadoEm ?? '') !== (b.editadoEm ?? '')
+    ? ((a.editadoEm ?? '') > (b.editadoEm ?? '') ? [a, b] : [b, a])
+    : (a.atualizadoEm ?? '') >= (b.atualizadoEm ?? '') ? [a, b] : [b, a];
+  const nivel = ([base.nivel, outra.nivel] as NivelPrio[]).sort((x, y) => ORDEM_NIVEL[x] - ORDEM_NIVEL[y])[0];
+  return {
+    ...outra,
+    ...base,
+    nome: partes(base.nome).length >= partes(outra.nome).length ? base.nome : outra.nome,
+    nascimento: base.nascimento || outra.nascimento,
+    prontuario: base.prontuario || outra.prontuario,
+    rua: base.rua || outra.rua,
+    casa: base.casa || outra.casa,
+    resumo: base.resumo || outra.resumo,
+    ultimaInfo: base.ultimaInfo || outra.ultimaInfo,
+    etiquetas: [...new Set([...base.etiquetas, ...outra.etiquetas])],
+    nivel,
+    obito: base.obito || outra.obito || undefined,
+    familiaId: base.familiaId ?? outra.familiaId,
+    moradorId: base.moradorId ?? outra.moradorId,
+  };
+}
+
+/** Acha, na lista, o registro da mesma pessoa (pelo id, pelo morador ligado ou pelo nome). */
+export function acharMesmaPessoa(p: Prioritario, lista: Prioritario[]): Prioritario | undefined {
+  return lista.find((x) => x.id === p.id) ?? (p.moradorId ? lista.find((x) => x.moradorId === p.moradorId) : undefined) ?? lista.find((x) => mesmaPessoa(p, x));
+}
+
+/** Tira as repetições da lista (juntando as informações). Devolve a lista limpa e quantos foram juntados. */
+export function juntarRepetidos(lista: Prioritario[]): { lista: Prioritario[]; juntados: number } {
+  const saida: Prioritario[] = [];
+  let juntados = 0;
+  for (const p of lista) {
+    const i = saida.findIndex((x) => mesmaPessoa(x, p));
+    if (i < 0) saida.push(p);
+    else {
+      saida[i] = juntarDuas(saida[i], p);
+      juntados++;
+    }
+  }
+  return { lista: juntados ? saida : lista, juntados };
+}
+
 const camposIguais = (a: Prioritario, b: Prioritario) =>
   a.nivel === b.nivel && a.rua === b.rua && a.casa === b.casa && a.prontuario === b.prontuario && a.resumo === b.resumo &&
   a.ultimaInfo === b.ultimaInfo && [...a.etiquetas].sort().join('|') === [...b.etiquetas].sort().join('|');
@@ -189,25 +262,33 @@ export interface PreviaPrioritarios {
   ficam: number;
   /** Não achados no cadastro (entram na aba, sem ligação com uma casa). */
   semCasa: Prioritario[];
+  /** A mesma pessoa veio mais de uma vez na lista nova (foi juntada). */
+  repetidosNaLista: number;
 }
 
 export function prepararPrioritarios(nova: Prioritario[], atuais: Prioritario[], familias: Familia[]): PreviaPrioritarios {
-  const porId = new Map(atuais.map((p) => [p.id, p]));
-  const previa: PreviaPrioritarios = { novos: [], atualizados: [], conflitos: [], iguais: 0, ficam: 0, semCasa: [] };
-  const vistos = new Set<string>();
-  for (const n0 of nova) {
-    if (vistos.has(n0.id)) continue;
-    vistos.add(n0.id);
-    const atual = porId.get(n0.id);
+  const previa: PreviaPrioritarios = { novos: [], atualizados: [], conflitos: [], iguais: 0, ficam: 0, semCasa: [], repetidosNaLista: 0 };
+  // Primeiro liga cada um ao cadastro (o morador ligado é o jeito mais seguro de reconhecer a pessoa).
+  const ligados = nova.map((n0) => {
     const lig = ligar(n0, familias);
-    const n: Prioritario = { ...n0, familiaId: lig.familiaId ?? atual?.familiaId, moradorId: lig.moradorId ?? atual?.moradorId };
+    return { ...n0, familiaId: lig.familiaId, moradorId: lig.moradorId } as Prioritario;
+  });
+  // A própria lista nova pode trazer a mesma pessoa duas vezes.
+  const { lista: semRepetir, juntados } = juntarRepetidos(ligados);
+  previa.repetidosNaLista = juntados;
+  const usados = new Set<string>();
+  for (const n1 of semRepetir) {
+    const atual = acharMesmaPessoa(n1, atuais.filter((x) => !usados.has(x.id)));
+    if (atual) usados.add(atual.id);
+    // Já existia: fica com o id de antes (para não virar outra pessoa).
+    const n: Prioritario = { ...n1, id: atual?.id ?? n1.id, familiaId: n1.familiaId ?? atual?.familiaId, moradorId: n1.moradorId ?? atual?.moradorId };
     if (!n.familiaId) previa.semCasa.push(n);
     if (!atual) previa.novos.push(n);
     else if (camposIguais(atual, n)) previa.iguais++;
     else if (atual.editadoEm) previa.conflitos.push({ atual, novo: { ...n, obito: atual.obito } });
-    else previa.atualizados.push({ ...n, obito: atual.obito ?? n.obito });
+    else previa.atualizados.push({ ...n, etiquetas: [...new Set([...n.etiquetas])], obito: atual.obito ?? n.obito });
   }
-  previa.ficam = atuais.filter((p) => !vistos.has(p.id)).length;
+  previa.ficam = atuais.filter((p) => !usados.has(p.id)).length;
   return previa;
 }
 

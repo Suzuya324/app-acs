@@ -85,7 +85,11 @@
       <li><strong>Técnica de enfermagem</strong> (aba Casos): lista com pós-alta, acamados, recém-nascidos e puérperas; <strong>dia da técnica</strong> com roteiro para copiar; <strong>“Técnica foi”</strong> para anotar o que ela fez.</li>
       <li><strong>Telefone, melhor horário e ponto de referência</strong> em Editar família. <strong>Internação/alta</strong> e <strong>ninguém em casa 3 vezes</strong> entram no roteiro do dia.</li>
       <li><strong>Conferir com o Fast</strong> (aba Fila): cole a lista de VDs lançadas no Fast e veja o que faltou lançar ou foi lançado duas vezes. O Início também avisa quando o tablet ou o computador fica dias sem sincronizar.</li>
-      <li><strong>Exportar minhas visitas</strong> (Ajustes): planilha das VDs e planilha das famílias visitadas e não visitadas, do mês ou de tudo. A planilha sai sem senha: mande só o necessário e apague depois.</li>
+      <li><strong>Ninguém em casa com 1 toque</strong> no roteiro de hoje e na busca; depois de cada VD aparece a <strong>próxima casa</strong> do roteiro.</li>
+      <li><strong>Receitas que vencem</strong>: no acompanhamento da pessoa, “✓ Renovou hoje”. O app avisa 30 dias antes e põe a casa no roteiro.</li>
+      <li><strong>Plano para fechar a meta</strong> (Painel): as famílias que faltam divididas pelos dias de campo, por rua.</li>
+      <li><strong>Apagar este aparelho</strong> (Ajustes): sincroniza e confere antes de apagar, para devolver o tablet.</li>
+      <li><strong>Exportar minhas visitas</strong> (Ajustes): planilha das VDs e planilha das famílias visitadas e não visitadas, do mês ou de tudo, e o arquivo único com a pergunta pronta para o Claude. A planilha sai sem senha: mande só o necessário e apague depois.</li>
       <li><strong>Números do mês</strong>: previsão da meta no Início, indicadores por grupo no Painel e relatório em PDF com casos. No fim de Ajustes, a <strong>versão do app</strong> (para saber se atualizou).</li>
       <li><strong>Não perder ninguém</strong> (Início): <strong>A confirmar</strong>, <strong>Gestantes e crianças</strong> (DPP e caderneta), <strong>Mudanças para o SBCD</strong>; e em Atenção, quem vai fazer 2, 60 ou 80 anos.</li>
       <li><strong>VD mais rápida</strong>: botões de <strong>frases prontas</strong> embaixo dos campos de texto, <strong>“↺ Igual à última VD”</strong> no topo da VD e o <strong>modo rua</strong> (botão “A+” lá em cima: letra maior para o sol).</li>

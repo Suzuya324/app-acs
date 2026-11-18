@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { campo, csvFamilias, csvVisitas, iniciais, type OpcoesExportar } from './exportar-visitas';
+import { arquivoUnico, campo, csvFamilias, csvVisitas, iniciais, perguntaParaAssistente, type OpcoesExportar } from './exportar-visitas';
 import type { Familia, Visita } from './tipos';
 
 // Tudo inventado.
@@ -55,5 +55,16 @@ describe('exportar visitas', () => {
       'Rua das Acácias;90;;0000.04.1;Habitada;Ana Teste da Silva;Ana Teste da Silva, Beto Teste Silva;Sim;1;0;05/11/2026;13',
       'Rua das Acácias;200;;0000.04.3;Habitada;Duda Ficticia Lima;Duda Ficticia Lima;Sim;1;0;06/11/2026;12',
     ]);
+  });
+
+  it('pergunta pronta e arquivo único com as duas planilhas', () => {
+    const p = perguntaParaAssistente('novembro de 2026', 200);
+    expect(p).toContain('novembro de 2026');
+    expect(p).toContain('meta de 200');
+    const t = arquivoUnico(p, csvVisitas(vs, fs, op()), csvFamilias(fs, vs, op(), '2026-11-18'));
+    expect(t.startsWith('\uFEFFSou agente')).toBe(true);
+    expect(t.match(/\uFEFF/g)).toHaveLength(1);
+    expect(t).toMatch(/===== visitas[^\n]*\nData;Dia/);
+    expect(t).toMatch(/===== familias[^\n]*\nRua;Numero/);
   });
 });

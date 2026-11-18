@@ -5,7 +5,7 @@
   import { contaParaMeta } from '../lib/desfecho';
   import { formatarData, hojeISO } from '../lib/datas';
   import { app, mostrarAviso } from '../lib/estado.svelte';
-  import { csvFamilias, csvVisitas, type OpcoesExportar } from '../lib/exportar-visitas';
+  import { arquivoUnico, csvFamilias, csvVisitas, perguntaParaAssistente, type OpcoesExportar } from '../lib/exportar-visitas';
   import { voltar } from '../lib/rotas.svelte';
 
   const hoje = hojeISO();
@@ -29,6 +29,22 @@
   async function baixarVisitas() {
     const ok = await entregarArquivo(`visitas_${sufixo}.csv`, csvVisitas($state.snapshot(app.visitas), $state.snapshot(app.familias), opcoes()), 'text/csv');
     if (ok) mostrarAviso('Planilha das VDs pronta ✓');
+  }
+  const pergunta = $derived(perguntaParaAssistente(rotulo, app.config.metaMensal));
+  async function baixarTudo() {
+    const v = csvVisitas($state.snapshot(app.visitas), $state.snapshot(app.familias), opcoes());
+    const f = csvFamilias($state.snapshot(app.familias), $state.snapshot(app.visitas), opcoes(), hoje);
+    const ok = await entregarArquivo(`visitas-e-familias_${sufixo}.txt`, arquivoUnico(pergunta, v, f), 'text/plain');
+    if (ok) mostrarAviso('Arquivo pronto ✓ É só anexar na conversa com o Claude.');
+  }
+  async function copiarPergunta() {
+    try {
+      await navigator.clipboard.writeText(pergunta);
+      app.desfazer = null;
+      mostrarAviso('Pergunta copiada ✓ Cole na conversa junto com as planilhas.');
+    } catch {
+      mostrarAviso('Não consegui copiar.');
+    }
   }
   async function baixarFamilias() {
     const ok = await entregarArquivo(`familias_${sufixo}.csv`, csvFamilias($state.snapshot(app.familias), $state.snapshot(app.visitas), opcoes(), hoje), 'text/csv');
@@ -70,6 +86,18 @@
 <label class="opcao"><input type="checkbox" bind:checked={nomes} /> Com os nomes completos (desmarcado: só as iniciais)</label>
 <label class="opcao"><input type="checkbox" bind:checked={relato} /> Com o texto de cada VD (relato)</label>
 
+<section class="cartao claude">
+  <h2>Para mandar ao Claude</h2>
+  <button class="botao largo" onclick={baixarTudo}><Icone nome="pasta" tamanho={20} /> Arquivo único (com a pergunta pronta)</button>
+  <p class="suave pequeno">Um arquivo só, com as VDs, as famílias e a pergunta. Anexe na conversa e mande “Siga as instruções do arquivo”.</p>
+  <button class="botao secundario largo" onclick={copiarPergunta}><Icone nome="copiar" tamanho={20} /> Copiar só a pergunta</button>
+  <details>
+    <summary class="pequeno">Ver a pergunta</summary>
+    <pre class="pequeno">{pergunta}</pre>
+  </details>
+</section>
+
+<h2 class="separador">Ou as planilhas separadas (Excel, Planilhas Google)</h2>
 <button class="botao largo" onclick={baixarVisitas}><Icone nome="pasta" tamanho={20} /> 1. Planilha das VDs</button>
 <p class="suave pequeno">Uma linha por VD: data, casa, prontuário, presentes, ausentes, desfecho, se conta para a meta e se já foi lançada no Fast.</p>
 
@@ -136,6 +164,24 @@
     background: var(--aviso-fundo);
     color: var(--aviso-texto);
     margin-top: 14px;
+  }
+  .claude {
+    border-left: 6px solid var(--primaria);
+  }
+  .claude h2,
+  .separador {
+    margin: 0 0 8px;
+  }
+  .separador {
+    margin-top: 14px;
+    font-size: 1.05em;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--fundo);
+    padding: 8px;
+    border-radius: 8px;
   }
   .aviso h2 {
     margin: 0 0 6px;

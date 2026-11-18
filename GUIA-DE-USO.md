@@ -153,11 +153,31 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
   O app não entra no Fast: só lê o texto colado.
+- **Ninguém em casa com 1 toque:** no **roteiro de hoje** e na **busca** (quando acha até 3 casas) tem o botão
+  **🚪 Ninguém em casa**: confira a data e toque em **Confirmar**. A casa sai do roteiro de hoje, vai para
+  "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.
+- **Próxima casa:** depois de salvar uma VD (ou "ninguém em casa" na ficha), aparece em cima **"Próxima casa do
+  roteiro de hoje"**, seguindo a rua e o número. **"VD na próxima"** já abre a VD de lá.
+- **Receitas que vencem:** quem toma remédio (ou é hipertenso/diabético) tem o bloco **Receita** no
+  acompanhamento. Toque em **"✓ Renovou hoje"** (ou anote a data na ficha da pessoa). O app também entende
+  "renovou a receita" escrito na VD. Faltando 30 dias, a VD pergunta "Receita vence em 25/11: já marcou para
+  renovar?"; faltando 15, a casa entra no roteiro; a data aparece na **Agenda**. Quantos meses a receita vale:
+  **Ajustes → Seus dados** (padrão 6).
+- **Plano para fechar a meta:** no **Painel** (Início → "Ver o plano para fechar a meta"), as famílias que
+  faltam, as mais esquecidas primeiro, divididas pelos dias de campo que sobram e juntando a mesma rua.
+  **"Copiar o plano"** copia o texto.
+- **Apagar este aparelho (devolver o tablet):** **Ajustes → Apagar tudo deste aparelho**. Com a sincronização
+  ligada, o app manda tudo para a nuvem e confere antes de apagar; se não conseguir, não apaga nada.
+- **Sem pessoas repetidas nos prioritários:** ao importar uma lista nova, o app reconhece quem já está, mesmo
+  com o nome escrito diferente (acento, "da/de", nome do meio faltando) ou sem a data de nascimento; nesses
+  casos só atualiza. Quem vier duas vezes na própria lista entra uma vez só. Repetidos que já estavam no app
+  são juntados sozinhos (sem perder etiquetas nem o que você editou). Pessoas com a mesma data de nascimento
+  diferente, ou ligadas a moradores diferentes, nunca são juntadas.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,
-  visitada ou não no período, última VD e dias sem VD. Dá para mandar ao Claude e perguntar quais casas
-  faltam. **Cuidado:** a planilha sai sem senha; mande só o necessário (dá para tirar os nomes e o relato)
+  visitada ou não no período, última VD e dias sem VD. Para o Claude, use **"Arquivo único (com a pergunta
+  pronta)"**: anexe na conversa e mande "Siga as instruções do arquivo". **Cuidado:** a planilha sai sem senha; mande só o necessário (dá para tirar os nomes e o relato)
   e apague da pasta Downloads depois.
 - **Aparelho sem sincronizar:** se o tablet ou o computador ficar 3 dias ou mais sem sincronizar, o
   Início avisa ("O Tablet não sincroniza há 5 dias"). É só abrir o app nele com internet.

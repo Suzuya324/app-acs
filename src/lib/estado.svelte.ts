@@ -24,7 +24,7 @@ import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
 import type { Comparacao } from './atualizar-cadastro';
 import { ORIGEM_TECNICA } from './tecnica';
-import { etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
+import { acharMesmaPessoa, etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, juntarRepetidos, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
 import { novoId } from './ids';
 import type { Alteracao, Caso, Config, Familia, Grupo, Morador, RascunhoVD, Revisita, Visita } from './tipos';
@@ -52,6 +52,8 @@ export const app = $state({
   /** Há uma ação que ainda pode ser desfeita (o aviso mostra o botão "Desfazer"). */
   desfazer: null as { descricao: string; ate: number } | null,
   aviso: '' as string,
+  /** Família onde acabou de salvar uma VD (a ficha dela mostra "Próxima casa do roteiro"). */
+  proximaDepoisDe: null as string | null,
   /** Texto da busca (fica guardado ao voltar para a tela). */
   busca: '',
   /** O navegador prometeu não apagar os dados sozinho? */
@@ -123,6 +125,7 @@ function carregar(d: Dados) {
   app.casos = d.casos ?? [];
   app.prioritarios = d.prioritarios ?? [];
   corrigirCoracao();
+  juntarPrioritariosRepetidos();
 }
 
 /**
@@ -130,6 +133,15 @@ function carregar(d: Dados) {
  * "AVC/infarto/coração" (ex.: bebê com cirurgia no coração). Quem não tem AVC nem infarto no resumo passa
  * para "Coração", na lista e na ficha. Roda uma vez por pessoa: depois a etiqueta já está trocada.
  */
+/** A mesma pessoa repetida na lista de prioritários (listas importadas antes): junta numa só. */
+function juntarPrioritariosRepetidos() {
+  const { lista, juntados } = juntarRepetidos(app.prioritarios);
+  if (!juntados) return;
+  app.prioritarios = lista;
+  app.historico.push(...criarAlteracoes('', [`Prioritários repetidos juntados: ${juntados}`]));
+  void gravar({ prioritarios: app.prioritarios, historico: app.historico });
+}
+
 function corrigirCoracao() {
   for (const p of app.prioritarios) {
     const novas = separarCoracao(p.etiquetas, p.resumo);
@@ -341,6 +353,7 @@ function aplicar(d: Dados) {
   app.casos = d.casos ?? app.casos;
   app.prioritarios = d.prioritarios ?? app.prioritarios;
   corrigirCoracao();
+  juntarPrioritariosRepetidos();
 }
 async function gravarTudo() {
   await gravar({ familias: app.familias, visitas: app.visitas, historico: app.historico, revisitas: app.revisitas, lixeira: app.lixeira, casos: app.casos, prioritarios: app.prioritarios, rascunho: app.rascunho });
@@ -500,6 +513,7 @@ export const contextoAcompanhamento = (): Contexto => ({
   prioritarios: app.prioritarios,
   escondidas: app.config.sugestoesEscondidas ?? [],
   remediosExtras: app.config.remediosExtras ?? '',
+  mesesReceita: app.config.mesesReceita,
   hoje: hojeISO(),
 });
 
@@ -526,7 +540,8 @@ export const ensinarRemedios = (nomes: string) =>
 export const porNaListaDePrioritarios = (p: Prioritario) =>
   comDesfazer('Pôr na lista de prioritários', async () => {
     const quando = agora();
-    const id = idPrioritario(p.nome, p.nascimento);
+    const ja = acharMesmaPessoa({ ...p, id: idPrioritario(p.nome, p.nascimento) }, app.prioritarios);
+    const id = ja?.id ?? idPrioritario(p.nome, p.nascimento);
     const novo: Prioritario = { ...p, id, doApp: undefined, editadoEm: quando, atualizadoEm: quando };
     const i = app.prioritarios.findIndex((x) => x.id === id);
     if (i >= 0) app.prioritarios[i] = { ...app.prioritarios[i], familiaId: p.familiaId, moradorId: p.moradorId, atualizadoEm: quando };
@@ -1232,6 +1247,18 @@ async function aplicarDaNuvem(novo: Dados) {
  * Sincroniza agora: busca a cópia da nuvem, junta com a deste aparelho (nada é apagado; vale a
  * alteração mais recente) e manda de volta o resultado.
  */
+/**
+ * Antes de apagar este aparelho: manda tudo para a nuvem e confere que deu certo.
+ * "desligada" = este aparelho não sincroniza (só o backup salva os dados).
+ */
+export async function sincronizarAntesDeApagar(): Promise<'ok' | 'desligada' | 'falhou'> {
+  if (!sincCfg) return 'desligada';
+  sincSujo = true; // manda de novo, mesmo que pareça em dia
+  await sincronizar();
+  await sincPromessa;
+  return !sincSujo && app.sinc.estado === 'ok' ? 'ok' : 'falhou';
+}
+
 export function sincronizar(): Promise<void> {
   if (!sincCfg || !sincGh || !sincChaves || app.fase !== 'aberto') return Promise.resolve();
   if (sincRodando) {

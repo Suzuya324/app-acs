@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  achadosPeloApp, acompanhamentoDaPessoa, diaMarcado, medidasDaPessoa, pendenciasDaPessoa, queixasRecentes, remediosDaPessoa, ruaCurta,
+  achadosPeloApp, acompanhamentoDaPessoa, diaMarcado, medidasDaPessoa, pendenciasDaPessoa, queixasRecentes, receitaDaPessoa, remediosDaPessoa, ruaCurta,
 } from './acompanhamento';
 import type { TextoDaFamilia } from './anotacoes';
 import type { Prioritario } from './prioritarios';
@@ -174,5 +174,27 @@ describe('acompanhamento da pessoa', () => {
     expect([...r.acompanhamentos.keys()].sort()).toEqual(['a', 'b']);
     expect(r.acompanhamentos.get('b')!.remedios.map((x) => x.nome)).toEqual(['Losartana']);
     expect(ruaCurta('Avenida do Teste')).toBe('Teste');
+  });
+});
+
+describe('receita que vence', () => {
+  it('pega a data da ficha ou o "renovou a receita" mais novo escrito; ignora "não renovou"', () => {
+    expect(receitaDaPessoa(mor({ receitaEm: '2026-05-10' }), [], HOJE)).toEqual({ desde: '2026-05-10', vence: '2026-11-10', fonte: 'ficha' });
+    const textos = [t('2026-06-02', 'Renovou a receita no posto.'), t('2026-09-01', 'Ainda não renovou a receita.')];
+    expect(receitaDaPessoa(mor({ receitaEm: '2026-05-10' }), textos, HOJE)).toEqual({ desde: '2026-06-02', vence: '2026-12-02', fonte: 'vd' });
+    expect(receitaDaPessoa(mor(), [], HOJE)).toBeUndefined();
+    expect(receitaDaPessoa(mor({ receitaEm: '2026-08-31' }), [], HOJE, 6)?.vence).toBe('2027-02-28'); // fim do mês
+  });
+
+  it('pergunta na VD quando falta 30 dias ou menos (só para quem toma remédio)', () => {
+    const ana = mor({ grupos: ['hipertenso'], receitaEm: '2026-05-20' });
+    const ctx = { visitas: [] as Visita[], casos: [] as Caso[], prioritarios: [] as Prioritario[], hoje: HOJE };
+    const a = acompanhamentoDaPessoa(ana, casa([ana]), ctx);
+    expect(a.receita?.vence).toBe('2026-11-20');
+    expect(a.perguntas[0]).toBe('Receita vence em 20/11: já marcou para renovar?');
+    const longe = mor({ grupos: ['hipertenso'], receitaEm: '2026-10-01' });
+    expect(acompanhamentoDaPessoa(longe, casa([longe]), ctx).perguntas.some((p) => p.startsWith('Receita'))).toBe(false);
+    const semRemedio = mor({ id: 'z', nome: 'Zeca Teste' });
+    expect(acompanhamentoDaPessoa(semRemedio, casa([semRemedio]), ctx).receita).toBeUndefined();
   });
 });
