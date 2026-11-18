@@ -38,6 +38,7 @@
       salvando = false;
     }
   }
+  const jaEstavam = $derived(previa ? previa.atualizados.length + previa.iguais + previa.conflitos.length : 0);
 </script>
 
 <button class="botao secundario pequeno voltar" onclick={() => voltar('prioritarios')}><Icone nome="voltar" /> Voltar</button>
@@ -61,10 +62,12 @@
   {#if erro}<p class="alerta" role="alert">{erro}</p>{/if}
 {:else}
   <section class="cartao destaque">
+    {#if jaEstavam}<p class="reconhecidos">✓ <strong>{jaEstavam}</strong> {jaEstavam === 1 ? 'pessoa já estava' : 'pessoas já estavam'} no app: não {jaEstavam === 1 ? 'vai ficar repetida' : 'vão ficar repetidas'}, só {jaEstavam === 1 ? 'é atualizada' : 'são atualizadas'}.</p>{/if}
     <ul class="resumo">
-      <li><strong>{previa.novos.length}</strong> {previa.novos.length === 1 ? 'novo' : 'novos'}</li>
+      <li><strong>{previa.novos.length}</strong> {previa.novos.length === 1 ? 'pessoa nova' : 'pessoas novas'}</li>
       <li><strong>{previa.atualizados.length}</strong> {previa.atualizados.length === 1 ? 'atualizado' : 'atualizados'}</li>
       {#if previa.iguais}<li><strong>{previa.iguais}</strong> sem mudança</li>{/if}
+      {#if previa.repetidosNaLista}<li><strong>{previa.repetidosNaLista}</strong> {previa.repetidosNaLista === 1 ? 'vinha repetida' : 'vinham repetidas'} na própria lista (juntadas)</li>{/if}
       {#if previa.conflitos.length}<li><strong>{previa.conflitos.length}</strong> que você editou à mão: escolha abaixo</li>{/if}
       {#if previa.ficam}<li><strong>{previa.ficam}</strong> que não estão na lista nova continuam (nada é apagado)</li>{/if}
       {#if previa.semCasa.length}<li><strong>{previa.semCasa.length}</strong> não {previa.semCasa.length === 1 ? 'achado' : 'achados'} no cadastro do app (entram na aba sem ligação com uma casa)</li>{/if}
@@ -100,6 +103,9 @@
 {/if}
 
 <style>
+  .reconhecidos {
+    margin: 0 0 6px;
+  }
   .voltar {
     margin-bottom: 12px;
   }

@@ -567,6 +567,12 @@ export const ruaCurta = (rua: string) =>
  */
 export function achadosPeloApp(familias: Familia[], c: Contexto): { achados: Prioritario[]; acompanhamentos: Map<string, Acompanhamento> } {
   const naLista = new Set(c.prioritarios.map((p) => p.moradorId).filter(Boolean));
+  // Da lista, mas sem ligação com o morador: reconhece pelo nome (+ nascimento), para não aparecer duas vezes.
+  const soli = c.prioritarios.filter((p) => !p.moradorId);
+  const nomeNaLista = (m: Morador) => {
+    const k = semAcento(m.nome).toLowerCase().replace(/\b(d[aeo]s?|e)\b/g, ' ').replace(/\s+/g, ' ').trim();
+    return soli.some((p) => semAcento(p.nome).toLowerCase().replace(/\b(d[aeo]s?|e)\b/g, ' ').replace(/\s+/g, ' ').trim() === k && (!p.nascimento || !m.nascimento || p.nascimento === m.nascimento));
+  };
   const fora = new Set(c.escondidas ?? []);
   const comTexto = new Set<string>([...c.visitas.map((v) => v.familiaId), ...c.casos.map((x) => x.familiaId)]);
   const ruasDaLista = [...new Set(c.prioritarios.map((p) => p.rua).filter(Boolean))];
@@ -581,7 +587,7 @@ export function achadosPeloApp(familias: Familia[], c: Contexto): { achados: Pri
       if (m.situacao !== 'mora') continue;
       const a = temTexto || naLista.has(m.id) ? acompanhamentoDaPessoa(m, f, { ...c, escondidas: fora }) : null;
       if (a && !a.vazio) acompanhamentos.set(m.id, a);
-      if (naLista.has(m.id)) continue;
+      if (naLista.has(m.id) || (soli.length && nomeNaLista(m))) continue;
       const grupos = m.grupos.filter((g) => SAUDE.includes(g));
       const aConfirmar = a?.achadas.some((s) => s.sugestao.tipo === 'grupo') ?? false;
       const usaRemedio = a?.remedios.some((r) => r.situacao === 'usa') ?? false;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   etiquetasParaMostrar, gruposDasEtiquetas, infoEtiqueta, lerListaPrioritarios, ligar, ordenarPrioritarios,
-  pareceObitoAConfirmar, prepararPrioritarios, textoParaCopiar, type Prioritario, separarCoracao, temAvcOuInfarto,
+  juntarRepetidos, mesmaPessoa, pareceObitoAConfirmar, prepararPrioritarios, textoParaCopiar, type Prioritario, separarCoracao, temAvcOuInfarto,
 } from './prioritarios';
 import type { Familia, Morador } from './tipos';
 
@@ -92,5 +92,50 @@ describe('etiqueta de coração', () => {
       { nome: 'Adulto Teste', nascimento: '12/04/1960', nivel: 'A', condicoes: ['AVC/INFARTO/CORACAO'], resumo: 'Infarto em 2024 (inventado).' },
     ]), 'x');
     expect(l.map((p) => p.etiquetas)).toEqual([['CORACAO'], ['AVC/INFARTO/CORACAO']]);
+  });
+});
+
+describe('sem pessoas repetidas', () => {
+  const base = (extra: Partial<Prioritario>): Prioritario => ({
+    id: 'x', nome: 'JOANA TESTE SILVA', nascimento: '1950-03-10', nivel: 'B', rua: 'Acacias', casa: '333', prontuario: '', etiquetas: [], resumo: '', ultimaInfo: '', atualizadoEm: 't1', ...extra,
+  });
+
+  it('reconhece a mesma pessoa com o nome escrito diferente ou sem data de nascimento', () => {
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nome: 'Joana  Teste da Silva' }))).toBe(true); // acento, "da", espaços
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nome: 'Joana Silva' }))).toBe(true); // sem o nome do meio, mesma data
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nascimento: '' }))).toBe(true); // sem data, mesmo nome
+    expect(mesmaPessoa(base({ id: '1', moradorId: 'm1' }), base({ id: '2', nome: 'Outro Nome', moradorId: 'm1' }))).toBe(true); // mesmo morador
+  });
+
+  it('não junta pessoas diferentes', () => {
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nascimento: '1980-01-01' }))).toBe(false); // xará, outra data
+    expect(mesmaPessoa(base({ id: '1', moradorId: 'm1' }), base({ id: '2', moradorId: 'm2' }))).toBe(false);
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nome: 'JOANA PEREIRA SILVA' }))).toBe(false);
+    // Nome curto, sem data numa delas e em outra casa: pode ser xará.
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nome: 'Joana Silva', nascimento: '', casa: '90' }))).toBe(false);
+    expect(mesmaPessoa(base({ id: '1' }), base({ id: '2', nome: 'Joana Silva', nascimento: '' }))).toBe(true); // mesma casa
+  });
+
+  it('junta os repetidos sem perder etiquetas, ligação nem o que foi editado à mão', () => {
+    const r = juntarRepetidos([
+      base({ id: '1', etiquetas: ['HAS'], nivel: 'B', editadoEm: 'e1', resumo: 'Editado à mão.' }),
+      base({ id: '2', nome: 'Joana Silva', etiquetas: ['DM'], nivel: 'A', moradorId: 'm1', atualizadoEm: 't9' }),
+      base({ id: '3', nome: 'Outra Pessoa Teste' }),
+    ]);
+    expect(r.juntados).toBe(1);
+    expect(r.lista).toHaveLength(2);
+    expect(r.lista[0]).toMatchObject({ id: '1', nome: 'JOANA TESTE SILVA', nivel: 'A', moradorId: 'm1', resumo: 'Editado à mão.' });
+    expect(r.lista[0].etiquetas.sort()).toEqual(['DM', 'HAS']);
+  });
+
+  it('importar de novo a lista com nomes escritos diferente não cria ninguém novo', () => {
+    const atuais = prepararPrioritarios(lerListaPrioritarios(LISTA, 't1'), [], familias).novos;
+    const outra = JSON.parse(LISTA).map((p: Record<string, unknown>) => ({ ...p, nome: String(p.nome).toLowerCase().replace('teste silva', 'teste da silva'), nascimento: p.nome === 'ANA FICTICIA PRADO' ? '' : p.nascimento }));
+    outra.push(outra[0]); // a mesma pessoa duas vezes na lista nova
+    const p = prepararPrioritarios(lerListaPrioritarios(JSON.stringify(outra), 't2'), atuais, familias);
+    expect(p.novos).toEqual([]);
+    expect(p.repetidosNaLista).toBe(1);
+    expect(p.iguais + p.atualizados.length).toBe(4);
+    expect(p.atualizados.every((x) => atuais.some((a) => a.id === x.id))).toBe(true); // ficam com o id de antes
   });
 });

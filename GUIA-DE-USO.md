@@ -168,6 +168,11 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   **"Copiar o plano"** copia o texto.
 - **Apagar este aparelho (devolver o tablet):** **Ajustes → Apagar tudo deste aparelho**. Com a sincronização
   ligada, o app manda tudo para a nuvem e confere antes de apagar; se não conseguir, não apaga nada.
+- **Sem pessoas repetidas nos prioritários:** ao importar uma lista nova, o app reconhece quem já está, mesmo
+  com o nome escrito diferente (acento, "da/de", nome do meio faltando) ou sem a data de nascimento; nesses
+  casos só atualiza. Quem vier duas vezes na própria lista entra uma vez só. Repetidos que já estavam no app
+  são juntados sozinhos (sem perder etiquetas nem o que você editou). Pessoas com a mesma data de nascimento
+  diferente, ou ligadas a moradores diferentes, nunca são juntadas.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,
