@@ -158,7 +158,7 @@
       <strong>~{previsao.previsto}</strong> famílias{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
     </p>
   {/if}
-  <button class="link-simples ver-mais" onclick={() => ir('painel')}>Ver gráfico e meses anteriores ›</button>
+  <button class="link-simples ver-mais" onclick={() => ir('painel')}>{painel.faltam > 0 && painel.atual ? 'Ver o plano para fechar a meta e o gráfico ›' : 'Ver gráfico e meses anteriores ›'}</button>
 </section>
 
 <button class="botao largo grande" onclick={() => ir('busca')}>

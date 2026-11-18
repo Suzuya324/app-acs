@@ -4,10 +4,11 @@
   import Icone from '../componentes/Icone.svelte';
   import { contarDiasDeCampo, periodoDe, periodoVizinho } from '../lib/calendario';
   import { formatarData, hojeISO } from '../lib/datas';
-  import { app, opcoesPainel } from '../lib/estado.svelte';
+  import { app, mostrarAviso, opcoesPainel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { indicadores, pct as porcento, previsaoDaMeta } from '../lib/indicadores';
   import { ir, voltar } from '../lib/rotas.svelte';
+  import { diasDeCampoEntre, planoDaMeta, textoDoPlano } from '../lib/plano-meta';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
@@ -20,6 +21,22 @@
   const ritmo = $derived(diasDeCampo > 0 ? Math.ceil(painel.meta / diasDeCampo) : 0);
   const previsao = $derived(previsaoDaMeta(painel, hoje, opcoes.ehDiaDeCampo!));
   const inds = $derived(indicadores(app.familias, app.visitas, painel.periodo.inicio, painel.periodo.fim));
+  const plano = $derived(
+    painel.atual && !painel.passado && painel.faltam > 0
+      ? planoDaMeta(painel.naoVisitadas, app.visitas, painel.faltam, diasDeCampoEntre(hoje, painel.periodo.fim, opcoes.ehDiaDeCampo!), hoje, app.config.ruas)
+      : [],
+  );
+  const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const diaCurto = (iso: string) => `${SEMANA[new Date(`${iso}T12:00:00`).getDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}${iso === hoje ? ' (hoje)' : ''}`;
+  async function copiarPlano() {
+    try {
+      await navigator.clipboard.writeText(`Plano para fechar a meta (faltam ${painel.faltam})\n\n${textoDoPlano(plano, diaCurto)}`);
+      app.desfazer = null;
+      mostrarAviso('Plano copiado ✓');
+    } catch {
+      mostrarAviso('Não consegui copiar.');
+    }
+  }
   const ordem: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
 
   function mudar(direcao: -1 | 1) {
@@ -66,6 +83,30 @@
   {/if}
 </section>
 
+{#if plano.length}
+  <section class="cartao plano">
+    <h2>Plano para fechar a meta</h2>
+    <p class="suave pequeno">
+      As {plano.reduce((n, d) => n + d.total, 0)} famílias há mais tempo sem VD, divididas pelos {plano.length} dias de campo que faltam, juntando as da mesma rua.
+      É só uma sugestão: o roteiro de hoje continua valendo para os casos urgentes.
+    </p>
+    {#if painel.naoVisitadas.length < painel.faltam}
+      <p class="alerta pequeno">Mesmo visitando todas as casas que faltam, ficariam faltando {painel.faltam - painel.naoVisitadas.length} para a meta.</p>
+    {/if}
+    {#each plano as d, i (d.data)}
+      <details open={i === 0}>
+        <summary><strong>{diaCurto(d.data)}</strong> · {d.total} {d.total === 1 ? 'casa' : 'casas'} <span class="suave pequeno">({d.ruas.map((r) => r.rua).join(', ')})</span></summary>
+        {#each d.ruas as r (r.rua)}
+          <p class="rua-plano"><strong>{r.rua}:</strong>
+            {#each r.familias as f, j (f.id)}{j ? ', ' : ''}<button class="link" onclick={() => ir(`familia/${f.id}`)}>{f.numero}{f.complemento ? ` ${f.complemento}` : ''}</button>{/each}
+          </p>
+        {/each}
+      </details>
+    {/each}
+    <button class="botao secundario largo" onclick={copiarPlano}>Copiar o plano</button>
+  </section>
+{/if}
+
 {#if inds.length}
   <section class="cartao">
     <h2>Indicadores do período</h2>
@@ -111,6 +152,18 @@
 {/if}
 
 <style>
+  .plano details {
+    border-top: 1px solid var(--borda);
+    padding: 8px 0;
+  }
+  .plano summary {
+    cursor: pointer;
+    min-height: 32px;
+  }
+  .rua-plano {
+    margin: 6px 0 0 8px;
+    line-height: 1.8;
+  }
   .voltar {
     margin-bottom: 12px;
   }
