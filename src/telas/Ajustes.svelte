@@ -7,6 +7,7 @@
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO } from '../lib/datas';
   import {
     apagarTudo,
+    sincronizarAntesDeApagar,
     app,
     cofre,
     dadosParaBackup,
@@ -172,6 +173,20 @@
 
   // ---- Apagar ----
   let confirmaApagar = $state('');
+  let apagando = $state(false);
+  let apagarFalhou = $state(false);
+  async function apagarAparelho(mesmoAssim: boolean) {
+    if (!mesmoAssim) {
+      apagando = true;
+      const r = await sincronizarAntesDeApagar();
+      apagando = false;
+      if (r === 'falhou') {
+        apagarFalhou = true;
+        return;
+      }
+    }
+    await apagarTudo();
+  }
 </script>
 
 <h1>Ajustes</h1>
@@ -425,10 +440,25 @@
 <!-- APAGAR -->
 <section class="cartao perigo-zona">
   <details>
-    <summary>Apagar tudo deste celular</summary>
-    <p>Apaga todos os dados e o PIN. <strong>Não tem volta</strong> (só com backup).</p>
+    <summary>Apagar tudo deste aparelho (ex.: devolver o tablet)</summary>
+    <p>Apaga deste aparelho todos os dados, o PIN e a conexão da sincronização. <strong>Não tem volta</strong> aqui.</p>
+    {#if app.sinc.estado === 'desligada'}
+      <p class="alerta">A sincronização está desligada neste aparelho: o que estiver só aqui se perde. Faça um backup antes (acima).</p>
+    {:else}
+      <p class="suave pequeno">Antes de apagar, o app manda tudo para a nuvem e confere. Os seus outros aparelhos continuam com tudo.</p>
+    {/if}
+    {#if app.rascunho}<p class="alerta">Tem uma VD pela metade: termine ou descarte antes (ela não vai para a nuvem).</p>{/if}
     <label class="campo"><span>Digite APAGAR para confirmar</span><input type="text" bind:value={confirmaApagar} autocapitalize="characters" /></label>
-    <button class="botao perigo largo" disabled={confirmaApagar.trim().toUpperCase() !== 'APAGAR'} onclick={apagarTudo}>Apagar tudo</button>
+    {#if apagarFalhou}
+      <p class="alerta">Não consegui mandar tudo para a nuvem ({app.sinc.mensagem || 'sem internet?'}). <strong>Nada foi apagado.</strong> Conecte na internet e tente de novo.</p>
+      <button class="botao secundario largo" disabled={apagando} onclick={() => apagarAparelho(false)}>Tentar de novo</button>
+      <button class="botao perigo largo" disabled={apagando || confirmaApagar.trim().toUpperCase() !== 'APAGAR'} onclick={() => apagarAparelho(true)}>Apagar mesmo assim (perde o que só está aqui)</button>
+    {:else}
+      <button class="botao perigo largo" disabled={apagando || confirmaApagar.trim().toUpperCase() !== 'APAGAR'} onclick={() => apagarAparelho(false)}>
+        {apagando ? 'Sincronizando…' : app.sinc.estado === 'desligada' ? 'Apagar tudo' : 'Sincronizar e apagar'}
+      </button>
+    {/if}
+    <p class="suave pequeno">Depois, para usar de novo neste aparelho: abra o app e conecte a sincronização (ou restaure um backup).</p>
   </details>
 </section>
 

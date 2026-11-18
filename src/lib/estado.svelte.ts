@@ -1234,6 +1234,18 @@ async function aplicarDaNuvem(novo: Dados) {
  * Sincroniza agora: busca a cópia da nuvem, junta com a deste aparelho (nada é apagado; vale a
  * alteração mais recente) e manda de volta o resultado.
  */
+/**
+ * Antes de apagar este aparelho: manda tudo para a nuvem e confere que deu certo.
+ * "desligada" = este aparelho não sincroniza (só o backup salva os dados).
+ */
+export async function sincronizarAntesDeApagar(): Promise<'ok' | 'desligada' | 'falhou'> {
+  if (!sincCfg) return 'desligada';
+  sincSujo = true; // manda de novo, mesmo que pareça em dia
+  await sincronizar();
+  await sincPromessa;
+  return !sincSujo && app.sinc.estado === 'ok' ? 'ok' : 'falhou';
+}
+
 export function sincronizar(): Promise<void> {
   if (!sincCfg || !sincGh || !sincChaves || app.fase !== 'aberto') return Promise.resolve();
   if (sincRodando) {
