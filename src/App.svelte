@@ -20,6 +20,7 @@
   import Gestantes from './telas/Gestantes.svelte';
   import MudancasSbcd from './telas/MudancasSbcd.svelte';
   import ConferirFast from './telas/ConferirFast.svelte';
+  import ExportarVisitas from './telas/ExportarVisitas.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
   import Prioritarios from './telas/Prioritarios.svelte';
@@ -85,7 +86,7 @@
         ? 'prioritarios'
       : rota.tela === 'lancar' || rota.tela === 'conferir-fast'
         ? 'fila'
-        : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro'].includes(rota.tela)
+        : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro', 'exportar-visitas'].includes(rota.tela)
         ? 'ajustes'
         : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos', 'confirmar', 'gestantes', 'mudancas'].includes(rota.tela)
           ? 'inicio'
@@ -179,6 +180,8 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'exportar-visitas'}
+    <ExportarVisitas />
   {:else if rota.tela === 'conferir-fast'}
     <ConferirFast />
   {:else if rota.tela === 'confirmar'}

@@ -153,6 +153,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
   O app não entra no Fast: só lê o texto colado.
+- **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
+  ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
+  desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,
+  visitada ou não no período, última VD e dias sem VD. Dá para mandar ao Claude e perguntar quais casas
+  faltam. **Cuidado:** a planilha sai sem senha; mande só o necessário (dá para tirar os nomes e o relato)
+  e apague da pasta Downloads depois.
 - **Aparelho sem sincronizar:** se o tablet ou o computador ficar 3 dias ou mais sem sincronizar, o
   Início avisa ("O Tablet não sincroniza há 5 dias"). É só abrir o app nele com internet.
 - **Números do mês:**
