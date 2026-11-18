@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icone from '../componentes/Icone.svelte';
   import { formatarData, hojeISO, somarDias } from '../lib/datas';
-  import { app, enderecoCurto, mostrarAviso, registrarDevolutivaTecnica, salvarAgendaTecnica } from '../lib/estado.svelte';
+  import { app, devolutivaViraVD, devolutivasSoNaFicha, enderecoCurto, mostrarAviso, registrarDevolutivaTecnica, salvarAgendaTecnica } from '../lib/estado.svelte';
   import { ir, voltar } from '../lib/rotas.svelte';
   import { listaParaTecnica, textoParaTecnica, type TipoTecnica } from '../lib/tecnica';
 
@@ -61,6 +61,29 @@
     devolvendo = null;
     mostrarAviso(junto ? 'VD com a técnica salva ✓ Conta para a meta e foi para a fila do Fast.' : 'Devolutiva anotada ✓ Entrou na ficha.', 3500);
   }
+  // Devolutivas anotadas antes "só na ficha": se o ACS foi junto, viram VD.
+  const soNaFicha = $derived(app.familias && devolutivasSoNaFicha(hoje));
+  let convertendo = $state(false);
+  async function virarVD(familiaId: string, relatoId: string) {
+    convertendo = true;
+    try {
+      await devolutivaViraVD(familiaId, relatoId);
+      mostrarAviso('Virou VD ✓ Conta para a meta e foi para a fila do Fast.', 3500);
+    } finally {
+      convertendo = false;
+    }
+  }
+  async function virarTodas() {
+    convertendo = true;
+    try {
+      const itens = soNaFicha.filter((x) => x.morador).map((x) => [x.familia.id, x.relatoId] as const);
+      for (const [fid, rid] of itens) await devolutivaViraVD(fid, rid);
+      app.desfazer = null;
+      mostrarAviso(`${itens.length} ${itens.length === 1 ? 'virou VD' : 'viraram VD'} ✓ Contam para a meta e foram para a fila do Fast.`, 4000);
+    } finally {
+      convertendo = false;
+    }
+  }
   const conta = (f: Filtro) => todos.filter(passa(f)).length;
 
   async function copiar() {
@@ -87,6 +110,22 @@
     <button class="chip" class:ativo={filtro === f} role="tab" aria-selected={filtro === f} onclick={() => (filtro = f)}>{nome} <span class="n">{conta(f)}</span></button>
   {/each}
 </div>
+
+{#if soNaFicha.length}
+  <section class="cartao so-ficha">
+    <h2>Anotadas só na ficha ({soNaFicha.length})</h2>
+    <p class="suave pequeno">Visitas da técnica anotadas sem contar para a meta. Se você foi junto, transforme em VD: conta para a meta e vai para a fila do Fast.</p>
+    <ul>
+      {#each soNaFicha as d (d.relatoId)}
+        <li>
+          <span><strong>{formatarData(d.data).slice(0, 5)}</strong> · {enderecoCurto(d.familia)}<br /><span class="pequeno">{d.texto}</span></span>
+          {#if d.morador}<button class="botao secundario pequeno" disabled={convertendo} onclick={() => virarVD(d.familia.id, d.relatoId)}>Virar VD</button>{/if}
+        </li>
+      {/each}
+    </ul>
+    {#if soNaFicha.filter((x) => x.morador).length > 1}<button class="botao largo" disabled={convertendo} onclick={virarTodas}>Fui junto em todas: virar VD ({soNaFicha.filter((x) => x.morador).length})</button>{/if}
+  </section>
+{/if}
 
 <section class="cartao dia-tecnica">
   <h2>Dia da técnica na área</h2>
@@ -204,6 +243,27 @@
   }
   .pedidos li {
     margin: 3px 0;
+    overflow-wrap: anywhere;
+  }
+  .so-ficha {
+    border-left: 6px solid var(--aviso-texto);
+    margin-bottom: 10px;
+  }
+  .so-ficha h2 {
+    margin: 0 0 6px;
+  }
+  .so-ficha ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+  }
+  .so-ficha li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--borda);
+    padding: 6px 0;
     overflow-wrap: anywhere;
   }
   .dia-tecnica {

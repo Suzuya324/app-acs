@@ -145,6 +145,8 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
     marcado), vira uma **VD compartilhada com a técnica**: conta para a sua meta e vai para a fila do Fast,
     com o relato pronto (se você já tinha VD da casa nesse dia, o app completa a mesma). Desmarcado (ela foi
     sozinha), só entra na ficha. Nos dois casos a pessoa sai da lista.
+  - **Anotadas só na ficha:** as devolutivas dos últimos 30 dias salvas sem "Fui junto" aparecem no topo da tela
+    da técnica. **"Virar VD"** (ou **"Fui junto em todas"**) transforma em VD compartilhada, com a mesma data.
 - **Telefone, melhor horário e ponto de referência:** em **Editar família**. Aparecem na família (o
   telefone dá para tocar e ligar), no roteiro do dia e no roteiro da técnica.
 - **Internação e alta:** quando você escreve "internado", "teve alta", "saiu do hospital", o app põe a

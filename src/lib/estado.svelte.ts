@@ -883,6 +883,35 @@ export const registrarDevolutivaTecnica = (
     await gravar({ familias: app.familias, historico: app.historico, config: app.config });
   });
 
+/** Devolutivas da técnica anotadas "só na ficha" nos últimos 30 dias (para virar VD, se o ACS foi junto). */
+export function devolutivasSoNaFicha(hoje: string): { familia: Familia; morador?: Morador; relatoId: string; data: string; texto: string }[] {
+  const lista: { familia: Familia; morador?: Morador; relatoId: string; data: string; texto: string }[] = [];
+  for (const f of app.familias) {
+    for (const r of f.relatosAnteriores ?? []) {
+      if (r.origem !== ORIGEM_TECNICA || !r.data || r.data > hoje || diferencaDias(r.data, hoje) > 30) continue;
+      const morador = [...f.moradores].sort((a, b) => b.nome.length - a.nome.length).find((m) => r.texto.startsWith(`${m.nome}:`));
+      lista.push({ familia: f, morador, relatoId: r.id, data: r.data, texto: r.texto });
+    }
+  }
+  return lista.sort((a, b) => b.data.localeCompare(a.data));
+}
+
+/** Transforma a devolutiva anotada só na ficha em VD com a técnica (conta para a meta e vai para a fila do Fast). */
+export const devolutivaViraVD = (familiaId: string, relatoId: string) =>
+  comDesfazer('Devolutiva vira VD', async () => {
+    const it = devolutivasSoNaFicha(hojeISO()).find((x) => x.familia.id === familiaId && x.relatoId === relatoId);
+    if (!it?.morador) return;
+    let resto = it.texto.slice(it.morador.nome.length + 1).trim();
+    const pa = resto.match(/P\.A\.\s*([\d/x]+)/i)?.[1];
+    const glicemia = resto.match(/glicemia\s*(\d+)/i)?.[1];
+    resto = resto.replace(/P\.A\.\s*[\d/x]+,?\s*/i, '').replace(/glicemia\s*\d+\.?\s*/i, '').replace(/^[\s.,;]+/, '').replace(/^visita da técnica feita\.?$/i, '').replace(/\.$/, '').trim();
+    const f = app.familias.find((x) => x.id === familiaId)!;
+    f.relatosAnteriores = (f.relatosAnteriores ?? []).filter((r) => r.id !== relatoId);
+    f.atualizadoEm = agora();
+    await registrarDevolutivaTecnica(familiaId, it.morador.id, { data: it.data, pa, glicemia, texto: resto || undefined, junto: true });
+    await gravar({ familias: app.familias });
+  });
+
 /** Monta (ou limpa) o dia da técnica na área: a data e quem ela vai ver. */
 export function salvarAgendaTecnica(agenda: { data: string; moradores: string[] } | undefined) {
   app.config.agendaTecnica = agenda && agenda.moradores.length ? agenda : undefined;
