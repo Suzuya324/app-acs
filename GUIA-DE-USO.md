@@ -117,6 +117,17 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   Se o arquivo já diz a condição de cada pessoa, deixe **"Cada linha diz"**. Confira os nomes parecidos e toque em **Marcar**. Com a data de nascimento na lista,
   o app acerta mais.
 - **Busca por grupo:** na Busca, digite "gestante", "acamado", "hipertenso", "diabético" ou "idoso".
+- **Busca que entende erro de digitação:** "acassias 30" acha "Acácias 30"; "sousa" acha "Souza"; "tiago"
+  acha "Thiago" (aparece "escrita parecida" para você conferir). Também acha pelo **complemento** ("ac 30 casa 2",
+  "ac 30 fundos"), **nome + número** ("joana 90"), **rua + nome** ("acácias joana"), **telefone** (4 dígitos ou
+  mais), **ponto de referência** ("portão azul"), **data de nascimento** ("10/03/1950") e abreviações de rua
+  ("pe exemplo" = "Padre Exemplo"). Cada resultado mostra a **última VD** da casa. Com a busca vazia,
+  aparecem as casas **visitadas por último**. Prioritários e Minhas VDs usam a mesma busca.
+- **Relato mais limpo:** nomes que vieram em MAIÚSCULAS saem como nome próprio ("Joana"); o que você anota
+  sobre cada pessoa entra com o nome dela ("Ciclano está trabalhando", "Fulana refere dor nas costas") em vez
+  de "sobre Fulana: …"; siglas, títulos e nomes no começo do texto não perdem a maiúscula ("UBS", "Dra.");
+  a compartilhada sai "com a técnica de enfermagem"; sem vírgula ou ponto dobrado. O estilo continua o seu:
+  uma frase curta com vírgulas. VDs antigas não mudam.
 - **Mapa da área** (no Início): cada casa é um quadrado colorido. Verde: contou no mês; laranja:
   ninguém em casa; azul: revisita marcada; branco: falta. Toque numa cor da legenda para destacar.
 - **Lista de prontuários** (Painel): em ordem numérica, para imprimir ou salvar em PDF (folha deitada).
@@ -157,6 +168,15 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
   O app não entra no Fast: só lê o texto colado.
+  **Se o Fast perder VDs:** as VDs que você tinha marcado como lançadas e que não estão na lista colada
+  aparecem em vermelho em **"O Fast perdeu?"**. Toque em **"Voltar para a fila"** (ou **"Voltar as N para a
+  fila"**) e lance de novo. Em **Minhas VDs**, o filtro **"Falta lançar"** mostra só as que ainda faltam.
+  **Memória do Fast (para saber qual VD sumiu):** depois de conferir, toque em **"✓ Guardar a conferência"**.
+  O app anota quais VDs estavam no Fast naquele dia. Na próxima conferência, se alguma que já esteve lá não
+  aparecer mais, ela vai para **"🚨 Sumiram do Fast"** com "estava no Fast em 15/11; sumiu em 22/11", o
+  **Início** avisa e o **Minhas VDs** mostra "SUMIU DO FAST". Só são acusadas as VDs das datas que a lista
+  colada cobre (da primeira à última data). Guarde só quando colar a lista inteira do período. Faça uma vez
+  por semana: o Início lembra quando passar de 7 dias.
 - **Ninguém em casa com 1 toque:** no **roteiro de hoje** e na **busca** (quando acha até 3 casas) tem o botão
   **🚪 Ninguém em casa**: confira a data e toque em **Confirmar**. A casa sai do roteiro de hoje, vai para
   "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.
@@ -177,6 +197,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   casos só atualiza. Quem vier duas vezes na própria lista entra uma vez só. Repetidos que já estavam no app
   são juntados sozinhos (sem perder etiquetas nem o que você editou). Pessoas com a mesma data de nascimento
   diferente, ou ligadas a moradores diferentes, nunca são juntadas.
+- **Minhas VDs (relatório com nomes):** no **Início**, botão **"Minhas VDs: relatório do dia e do mês"**.
+  Escolha **Hoje**, **Ontem**, **Um dia**, **Mês** ou **De… até…**. Mostra quantas VDs, quantas famílias, quantas
+  contam para a meta, quantas pessoas atendidas e, dia a dia, cada VD: hora em que foi registrada, casa,
+  prontuário, presentes, ausentes, desfecho, motivo, sinais, relato e se já foi lançada no Fast (e quando).
+  O campo **Procurar** acha uma casa ou pessoa ("Acácias 90", "Joana"). **Imprimir ou salvar em PDF**, **Copiar**
+  ou **Baixar** o texto. Serve de comprovante se o sistema oficial perder VDs. Tem nomes: guarde com cuidado.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,

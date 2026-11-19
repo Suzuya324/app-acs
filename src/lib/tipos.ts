@@ -215,6 +215,14 @@ export interface Visita {
   anotacoes?: Record<string, string>;
   /** Última alteração (salvar, corrigir, marcar lançada) (ISO). Usado para juntar backups. */
   atualizadoEm?: string;
+  /** Quando a VD foi registrada no app (ISO, com a hora): comprovante. */
+  criadaEm?: string;
+  /** Quando foi marcada como lançada no Fast (ISO). */
+  lancadaEm?: string;
+  /** Última conferência (aaaa-mm-dd) em que a VD apareceu na lista colada do Fast. */
+  vistaNoFastEm?: string;
+  /** Conferência (aaaa-mm-dd) em que a VD, que já tinha aparecido no Fast, não estava mais lá. */
+  sumiuDoFastEm?: string;
 }
 
 export interface Config {
@@ -275,4 +283,6 @@ export interface Config {
   alteradaEm?: string;
   /** A receita de uso contínuo vale quantos meses (padrão 6). */
   mesesReceita?: number;
+  /** Última conferência com o Fast guardada (aaaa-mm-dd). */
+  ultimaConferenciaFast?: string;
 }

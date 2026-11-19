@@ -54,6 +54,12 @@ export interface Conferencia {
   achadas: { visita: Visita; linha: LinhaFast }[];
   /** VDs do app no período que não estão na lista (faltou lançar?). */
   faltando: Visita[];
+  /** Das que faltam: as que o app tinha marcado como lançadas (o Fast perdeu? relançar). */
+  sumiram: Visita[];
+  /** Das que faltam: as que JÁ APARECERAM no Fast numa conferência guardada e agora não estão (sumiram de lá). */
+  sumiramDoFast: Visita[];
+  /** Datas cobertas pela lista colada (da primeira à última linha com data), para não acusar o que a lista não mostra. */
+  cobertura: { de: string; ate: string };
   /** Linhas da lista sem VD no app no período (lançada só no Fast, ou o app não reconheceu). */
   soNoFast: LinhaFast[];
   /** A mesma VD lançada mais de uma vez no Fast. */
@@ -63,7 +69,7 @@ export interface Conferencia {
 export function conferirComFast(linhas: LinhaFast[], familias: Familia[], visitas: Visita[], inicio: string, fim: string): Conferencia {
   const doPeriodo = visitas.filter((v) => v.data >= inicio && v.data <= fim);
   const usadas = new Map<string, LinhaFast[]>();
-  const r: Conferencia = { achadas: [], faltando: [], soNoFast: [], repetidas: [] };
+  const r: Conferencia = { achadas: [], faltando: [], sumiram: [], sumiramDoFast: [], soNoFast: [], repetidas: [], cobertura: { de: inicio, ate: fim } };
   for (const l of linhas) {
     if (l.data && (l.data < inicio || l.data > fim)) continue;
     const f = familiaDaLinha(l, familias);
@@ -84,6 +90,19 @@ export function conferirComFast(linhas: LinhaFast[], familias: Familia[], visita
   }
   for (const [id, ls] of usadas) if (ls.length > 1) r.repetidas.push({ visita: doPeriodo.find((v) => v.id === id)!, linhas: ls });
   r.faltando = doPeriodo.filter((v) => !usadas.has(v.id)).sort((a, b) => a.data.localeCompare(b.data));
+  const datas = linhas.map((l) => l.data).filter((d): d is string => !!d && d >= inicio && d <= fim).sort();
+  if (datas.length) r.cobertura = { de: datas[0], ate: datas[datas.length - 1] };
+  const coberta = (v: Visita) => v.data >= r.cobertura.de && v.data <= r.cobertura.ate;
+  r.sumiramDoFast = r.faltando.filter((v) => !!v.vistaNoFastEm && coberta(v));
+  r.sumiram = r.faltando.filter((v) => v.lancadaNoFast && coberta(v) && !r.sumiramDoFast.includes(v));
   return r;
+}
+
+/**
+ * O que guardar desta conferência: as VDs achadas foram vistas no Fast hoje; as que já tinham sido vistas antes e
+ * agora faltam (dentro das datas que a lista cobre) sumiram de lá.
+ */
+export function efeitosDaConferencia(r: Conferencia): { vistas: string[]; sumiram: string[] } {
+  return { vistas: r.achadas.map((a) => a.visita.id), sumiram: r.sumiramDoFast.filter((v) => !v.sumiuDoFastEm).map((v) => v.id) };
 }
 
