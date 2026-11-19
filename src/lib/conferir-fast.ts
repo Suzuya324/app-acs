@@ -75,8 +75,12 @@ export function conferirComFast(linhas: LinhaFast[], familias: Familia[], visita
     const f = familiaDaLinha(l, familias);
     if (!f && !l.data && !l.pront) continue; // sem data, sem prontuário e sem nome conhecido: cabeçalho ou lixo
     const daCasa = f ? doPeriodo.filter((v) => v.familiaId === f.id) : [];
-    // Com data: a VD daquele dia. Sem data: a primeira VD da casa ainda não achada (ou a já achada, se só tem ela).
-    const v = l.data ? daCasa.find((x) => x.data === l.data) : (daCasa.find((x) => !usadas.has(x.id)) ?? daCasa[0]);
+    // Sem data: a primeira VD da casa ainda não achada (ou a já achada, se só tem ela).
+    // Com data: a VD daquele dia ainda não achada (pode haver mais de uma no dia, ex.: duas de "Outros"); se todas
+    // já foram achadas, é a mesma VD lançada de novo.
+    const v = l.data
+      ? (daCasa.find((x) => x.data === l.data && !usadas.has(x.id)) ?? daCasa.find((x) => x.data === l.data))
+      : (daCasa.find((x) => !usadas.has(x.id)) ?? daCasa[0]);
     if (!v) {
       r.soNoFast.push(l);
       continue;

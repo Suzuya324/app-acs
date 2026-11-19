@@ -86,3 +86,25 @@ describe('memória do Fast: qual VD sumiu e desde quando', () => {
     expect(r.sumiram).toEqual([]);
   });
 });
+
+describe('duas VDs na mesma casa no mesmo dia', () => {
+  const casa: Familia = {
+    id: '1', rua: 'Rua das Acácias', numero: '1', complemento: '', bairro: '', colmeia: '', prontuario: '0000.04.015', situacaoCasa: 'habitada', obs: '', responsavelId: 'm1',
+    moradores: [{ id: 'm1', nome: 'Ana Teste Silva', sexo: 'F', nascimento: '', situacao: 'mora', situacaoDesde: '', grupos: [], obs: '' }],
+  };
+  const vd = (id: string): Visita => ({
+    id, familiaId: '1', data: '2026-11-12', presentes: [], conversouComFamilia: true, desfecho: 'realizada', motivo: 'Outros', compartilhadaCom: '', sinais: {}, orientacoes: '', relato: '', lancadaNoFast: true,
+  });
+
+  it('duas linhas no Fast batem com as duas VDs do app (não é "lançada duas vezes")', () => {
+    const r = conferirComFast(lerListaFast('12/11/2026 0000.04.015 ANA\n12/11/2026 0000.04.015 ANA'), [casa], [vd('a'), vd('b')], '2026-11-01', '2026-11-30');
+    expect(r.achadas.map((x) => x.visita.id)).toEqual(['a', 'b']);
+    expect(r.repetidas).toEqual([]);
+    expect(r.faltando).toEqual([]);
+  });
+
+  it('três linhas para duas VDs: uma foi lançada de novo', () => {
+    const r = conferirComFast(lerListaFast('12/11/2026 0000.04.015 ANA\n12/11/2026 0000.04.015 ANA\n12/11/2026 0000.04.015 ANA'), [casa], [vd('a'), vd('b')], '2026-11-01', '2026-11-30');
+    expect(r.repetidas.map((x) => `${x.visita.id}:${x.linhas.length}`)).toEqual(['a:2']);
+  });
+});

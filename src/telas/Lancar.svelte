@@ -7,6 +7,7 @@
   import { copiarTexto } from '../lib/copiar';
   import { formatarData, formatarDataLonga } from '../lib/datas';
   import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso, presentesDaVisita, responsavel } from '../lib/estado.svelte';
+  import { vdsRepetidas } from '../lib/relatorio-vds';
   import { voltar } from '../lib/rotas.svelte';
 
   /** Lista fixada ao abrir a tela (assim marcar como lançada não "pula" a ordem). */
@@ -20,17 +21,18 @@
   let lancadas = $state(0);
   const visita = $derived(app.visitas.find((v) => v.id === ids[i]));
   const familia = $derived(visita ? familiaPorId(visita.familiaId) : undefined);
-  let copiou = $state<{ pront: boolean; relato: boolean }>({ pront: false, relato: false });
+  let copiou = $state<{ pront: boolean; relato: boolean; data: boolean }>({ pront: false, relato: false, data: false });
+  const repetidas = $derived(vdsRepetidas(app.visitas));
 
-  async function copiar(oque: 'pront' | 'relato') {
-    const texto = oque === 'pront' ? (familia?.prontuario ?? '') : (visita?.relato ?? '');
+  async function copiar(oque: 'pront' | 'relato' | 'data') {
+    const texto = oque === 'pront' ? (familia?.prontuario ?? '') : oque === 'data' ? (visita ? formatarData(visita.data) : '') : (visita?.relato ?? '');
     const ok = await copiarTexto(texto);
     if (ok) copiou = { ...copiou, [oque]: true };
-    mostrarAviso(ok ? (oque === 'pront' ? 'Prontuário copiado' : 'Relato copiado') : 'Não consegui copiar.');
+    mostrarAviso(ok ? (oque === 'pront' ? 'Prontuário copiado' : oque === 'data' ? `Data ${texto} copiada` : 'Relato copiado') : 'Não consegui copiar.');
   }
   function proxima() {
     i++;
-    copiou = { pront: false, relato: false };
+    copiou = { pront: false, relato: false, data: false };
     window.scrollTo(0, 0);
   }
   async function lancei() {
@@ -66,8 +68,12 @@
       <strong>{familia ? enderecoCurto(familia) : '(família)'}</strong>
       <Desfecho valor={visita.desfecho} />
     </div>
+    {#if repetidas.has(visita.id)}
+      <p class="alerta pequeno">⚠️ Esta casa tem outra VD de visita periódica no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes.</p>
+    {/if}
     <p class="info">
-      <span>Data: <strong>{formatarDataLonga(visita.data, true)}</strong></span><br />
+      <span>Data: <strong>{formatarDataLonga(visita.data, true)}</strong></span>
+      <button class="botao secundario pequeno copiar-data" class:feito={copiou.data} onclick={() => copiar('data')}><Icone nome="copiar" tamanho={16} /> {copiou.data ? 'Copiada ✓' : 'Copiar data'}</button><br />
       <span>Motivo: <strong>{visita.motivo}</strong></span>
       {#if familia}<br /><span>Responsável: <strong>{responsavel(familia)}</strong></span>{/if}
       {#if presentesDaVisita(visita).length}<br /><span>Presentes: <strong>{presentesDaVisita(visita).join(', ')}</strong></span>{/if}
@@ -105,6 +111,12 @@
 {/if}
 
 <style>
+  .copiar-data {
+    margin-left: 6px;
+    min-height: 36px;
+    padding: 2px 10px;
+    vertical-align: middle;
+  }
   .voltar {
     margin-bottom: 12px;
   }

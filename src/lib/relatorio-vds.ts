@@ -1,6 +1,7 @@
 // Relatório das minhas VDs (com nomes): o que foi feito, dia a dia, para conferir e comprovar quando o sistema
 // oficial perde registros. Funções "puras"; tudo no aparelho. O relatório tem dados de pacientes: só para o ACS.
 import { contaParaMeta } from './desfecho';
+import { agruparPorRua } from './roteiro';
 import type { Desfecho, Familia, Morador, SinaisVitais, Visita } from './tipos';
 
 export interface LinhaVD {
@@ -28,6 +29,8 @@ export interface LinhaVD {
   /** Conferência em que sumiu do Fast (dd/mm/aaaa) ou vazio. */
   sumiuDoFast: string;
   origem: 'App' | 'Sistema de Visitas';
+  /** Há outra VD de visita periódica na mesma casa no mesmo dia (cuidado para não lançar duas vezes no Fast). */
+  repetida: boolean;
 }
 
 export interface ResumoVDs {
@@ -77,11 +80,31 @@ function textoSinais(s: Record<string, SinaisVitais>, moradores: Morador[]): str
   return partes.join('; ');
 }
 
+/** O motivo é "Visita periódica" (o nome pode variar um pouco em cada unidade)? */
+export const ehVisitaPeriodica = (motivo: string) => /peri[oó]dic/i.test(motivo);
+
+/**
+ * VDs de "Visita periódica" repetidas na mesma casa no mesmo dia (os códigos delas), para não lançar duas vezes
+ * no Fast. VDs com outro motivo ("Outros", "Busca ativa"…) podem ser mais de uma no dia e não entram.
+ */
+export function vdsRepetidas(visitas: Visita[]): Set<string> {
+  const porCasaDia = new Map<string, string[]>();
+  for (const v of visitas) {
+    if (!ehVisitaPeriodica(v.motivo)) continue;
+    const k = `${v.familiaId}|${v.data}`;
+    porCasaDia.set(k, [...(porCasaDia.get(k) ?? []), v.id]);
+  }
+  const repetidas = new Set<string>();
+  for (const ids of porCasaDia.values()) if (ids.length > 1) for (const id of ids) repetidas.add(id);
+  return repetidas;
+}
+
 /** As VDs do período, em ordem (dia e hora). */
 export function linhasDoRelatorio(visitas: Visita[], familias: Familia[], de: string, ate: string, nomeDesfecho: (d: Desfecho) => string): LinhaVD[] {
   const porId = new Map(familias.map((f) => [f.id, f]));
-  return visitas
-    .filter((v) => v.data >= de && v.data <= ate)
+  const doPeriodo = visitas.filter((v) => v.data >= de && v.data <= ate);
+  const repetidas = vdsRepetidas(doPeriodo);
+  return doPeriodo
     .map((v) => ({ v, reg: registradaEm(v) }))
     .sort((a, b) => a.v.data.localeCompare(b.v.data) || (a.reg || '9').localeCompare(b.reg || '9'))
     .map(({ v, reg }) => {
@@ -113,6 +136,7 @@ export function linhasDoRelatorio(visitas: Visita[], familias: Familia[], de: st
         vistaNoFast: v.vistaNoFastEm ? br(v.vistaNoFastEm) : '',
         sumiuDoFast: v.sumiuDoFastEm ? br(v.sumiuDoFastEm) : '',
         origem: sv ? 'Sistema de Visitas' : 'App',
+        repetida: repetidas.has(v.id),
       } satisfies LinhaVD;
     });
 }
@@ -184,6 +208,92 @@ export function textoDoRelatorio(linhas: LinhaVD[], rotulo: string, comRelato = 
     if (l.sinais) out.push(`   Sinais: ${l.sinais}`);
     if (comRelato && l.relato) out.push(`   Relato: ${l.relato.replace(/\s+/g, ' ')}`);
     out.push(`   Fast: ${textoFast(l)}${l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}`);
+    if (l.repetida) out.push('   ATENÇÃO: há outra VD de visita periódica nesta casa neste dia (não lançar duas vezes)');
   }
   return out.join('\n');
+}
+
+// ---------------------------------------------------------------- por família e pessoas
+
+export interface FamiliaDoRelatorio {
+  familiaId: string;
+  familia?: Familia;
+  endereco: string;
+  prontuario: string;
+  responsavel: string;
+  /** As VDs da casa no período (em ordem). */
+  vds: LinhaVD[];
+  /** Teve VD que conta para a meta no período. */
+  conta: boolean;
+}
+
+/** As casas visitadas no período (uma linha por casa), em ordem de rua e de número. */
+export function familiasDoRelatorio(linhas: LinhaVD[], ordemRuas: string[] = []): FamiliaDoRelatorio[] {
+  const porCasa = new Map<string, LinhaVD[]>();
+  for (const l of linhas) porCasa.set(l.visita.familiaId, [...(porCasa.get(l.visita.familiaId) ?? []), l]);
+  const item = (id: string, ls: LinhaVD[]): FamiliaDoRelatorio => ({
+    familiaId: id,
+    familia: ls[0].familia,
+    endereco: ls[0].endereco,
+    prontuario: ls[0].prontuario,
+    responsavel: ls[0].responsavel,
+    vds: ls,
+    conta: ls.some((l) => l.conta),
+  });
+  const comCasa = [...porCasa.entries()].filter(([, ls]) => ls[0].familia);
+  const semCasa = [...porCasa.entries()].filter(([, ls]) => !ls[0].familia);
+  const ordem = agruparPorRua(comCasa.map(([, ls]) => ls[0].familia!), ordemRuas).flatMap((g) => g.familias.map((f) => f.id));
+  return [...ordem.map((id) => item(id, porCasa.get(id)!)), ...semCasa.map(([id, ls]) => item(id, ls))];
+}
+
+/** Casas habitadas sem VD que conta no período (quem ainda falta), em ordem de rua e de número. */
+export function naoVisitadasNoPeriodo(familias: Familia[], visitas: Visita[], de: string, ate: string, ordemRuas: string[] = []): Familia[] {
+  const visitadas = new Set(visitas.filter((v) => v.data >= de && v.data <= ate && contaParaMeta(v.desfecho)).map((v) => v.familiaId));
+  const faltam = familias.filter((f) => f.situacaoCasa === 'habitada' && f.moradores.some((m) => m.situacao === 'mora') && !visitadas.has(f.id));
+  return agruparPorRua(faltam, ordemRuas).flatMap((g) => g.familias);
+}
+
+export interface PessoaDoRelatorio {
+  moradorId: string;
+  nome: string;
+  endereco: string;
+  familiaId: string;
+  /** Dias em que a pessoa estava presente na VD. */
+  datas: string[];
+}
+
+/** As pessoas que estavam presentes nas VDs do período (cada uma uma vez), na ordem em que foram vistas. */
+export function pessoasDoRelatorio(linhas: LinhaVD[]): PessoaDoRelatorio[] {
+  const porId = new Map<string, PessoaDoRelatorio>();
+  for (const l of linhas) {
+    for (const id of l.visita.presentes) {
+      const m = l.familia?.moradores.find((x) => x.id === id);
+      if (!m) continue;
+      const p = porId.get(id) ?? { moradorId: id, nome: m.nome, endereco: l.endereco, familiaId: l.visita.familiaId, datas: [] };
+      if (!p.datas.includes(l.data)) p.datas.push(l.data);
+      porId.set(id, p);
+    }
+  }
+  return [...porId.values()].sort((a, b) => a.datas[0].localeCompare(b.datas[0]) || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+
+/** Texto "por família": as casas visitadas e as que faltam. */
+export function textoPorFamilia(fams: FamiliaDoRelatorio[], faltam: Familia[], rotulo: string): string {
+  const out = [`MINHAS VDs POR FAMÍLIA – ${rotulo}`, `${fams.length} famílias visitadas · ${fams.filter((f) => f.conta).length} contam para a meta · ${faltam.length} sem VD que conta`, ''];
+  fams.forEach((f, i) => {
+    out.push(`${i + 1}. ${f.endereco}${f.prontuario ? ` · pront. ${f.prontuario}` : ''}${f.responsavel ? ` · ${f.responsavel}` : ''}${f.conta ? '' : ' (não conta)'}`);
+    out.push(`   ${f.vds.map((l) => `${ddmm(l.data)} ${l.desfecho}${l.lancada ? '' : ' (falta lançar)'}`).join(' · ')}`);
+  });
+  if (faltam.length) {
+    out.push('', `SEM VD QUE CONTA (${faltam.length}):`);
+    for (const f of faltam) out.push(`- ${f.rua}, ${f.numero}${f.complemento ? ` – ${f.complemento}` : ''}${f.prontuario ? ` · pront. ${f.prontuario}` : ''}`);
+  }
+  return out.join('\n');
+}
+
+/** Texto das pessoas atendidas. */
+export function textoPessoas(pessoas: PessoaDoRelatorio[], rotulo: string): string {
+  return [`PESSOAS ATENDIDAS – ${rotulo}`, `${pessoas.length} pessoas`, '', ...pessoas.map((p, i) => `${i + 1}. ${p.nome} · ${p.endereco} · ${p.datas.map(ddmm).join(', ')}`)].join('\n');
 }

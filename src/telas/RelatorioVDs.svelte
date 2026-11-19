@@ -5,13 +5,16 @@
   import { entregarArquivo } from '../lib/arquivo';
   import { combina } from '../lib/busca';
   import { periodoDe, periodoVizinho } from '../lib/calendario';
-  import { formatarData, hojeISO, somarDias } from '../lib/datas';
+  import { formatarData, hojeISO, inicioDaSemana, somarDias } from '../lib/datas';
   import { app, mostrarAviso } from '../lib/estado.svelte';
-  import { diaDaSemana, linhasDoRelatorio, resumoDoRelatorio, textoDoRelatorio, textoFast } from '../lib/relatorio-vds';
+  import {
+    diaDaSemana, familiasDoRelatorio, linhasDoRelatorio, naoVisitadasNoPeriodo, pessoasDoRelatorio, resumoDoRelatorio, textoDoRelatorio,
+    textoFast, textoPessoas, textoPorFamilia,
+  } from '../lib/relatorio-vds';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const hoje = hojeISO();
-  type Modo = 'hoje' | 'ontem' | 'dia' | 'mes' | 'datas';
+  type Modo = 'hoje' | 'ontem' | 'semana' | 'dia' | 'mes' | 'datas';
   let modo = $state<Modo>('hoje');
   let dia = $state(hoje);
   let referencia = $state(hoje);
@@ -25,6 +28,7 @@
   const faixa = $derived(
     modo === 'hoje' ? { de: hoje, ate: hoje }
     : modo === 'ontem' ? { de: somarDias(hoje, -1), ate: somarDias(hoje, -1) }
+    : modo === 'semana' ? { de: inicioDaSemana(hoje), ate: hoje }
     : modo === 'dia' ? { de: dia, ate: dia }
     : modo === 'mes' ? { de: mes.inicio, ate: mes.fim }
     : { de, ate },
@@ -38,10 +42,19 @@
     return todas.filter((l) => (filtroFast === 'todas' || (filtroFast === 'falta') === !l.lancada) && (!q || combina([l.endereco, l.prontuario, l.responsavel, ...l.presentes, ...l.ausentes].join(' '), q)));
   });
   const resumo = $derived(resumoDoRelatorio(linhas));
+  /** Como ver: dia a dia, por família (com quem falta) ou as pessoas atendidas. */
+  let visao = $state<'dia' | 'familia' | 'pessoas'>('dia');
+  const familias = $derived(familiasDoRelatorio(linhas, app.config.ruas));
+  const faltam = $derived(visao === 'familia' ? naoVisitadasNoPeriodo(app.familias, app.visitas, faixa.de, faixa.ate, app.config.ruas) : []);
+  const pessoas = $derived(pessoasDoRelatorio(linhas));
+  const repetidas = $derived(linhas.filter((l) => l.repetida).length);
   const porDia = $derived(resumo.dias.map((d) => ({ ...d, linhas: linhas.filter((l) => l.data === d.data) })));
   const geradoEm = new Date().toLocaleString('pt-BR');
 
-  const texto = () => textoDoRelatorio(linhas, `${rotulo}${filtroFast === 'falta' ? ' · só as que faltam lançar' : filtroFast === 'lancadas' ? ' · só as lançadas' : ''}${busca.trim() ? ` · busca: ${busca.trim()}` : ''}`, comRelato);
+  const texto = () => {
+    const r = `${rotulo}${filtroFast === 'falta' ? ' · só as que faltam lançar' : filtroFast === 'lancadas' ? ' · só as lançadas' : ''}${busca.trim() ? ` · busca: ${busca.trim()}` : ''}`;
+    return visao === 'familia' ? textoPorFamilia(familias, faltam, r) : visao === 'pessoas' ? textoPessoas(pessoas, r) : textoDoRelatorio(linhas, r, comRelato);
+  };
   async function copiar() {
     try {
       await navigator.clipboard.writeText(texto());
@@ -63,7 +76,7 @@
   <p class="suave">Tudo o que você registrou: quantas VDs, em quais casas, quem estava, como foi e se já foi lançada no Fast.</p>
 
   <div class="chips" role="tablist" aria-label="Período">
-    {#each [['hoje', 'Hoje'], ['ontem', 'Ontem'], ['dia', 'Um dia'], ['mes', 'Mês'], ['datas', 'De… até…']] as [m, nome] (m)}
+    {#each [['hoje', 'Hoje'], ['ontem', 'Ontem'], ['semana', 'Semana'], ['dia', 'Um dia'], ['mes', 'Mês'], ['datas', 'De… até…']] as [m, nome] (m)}
       <button class="chip" class:ativo={modo === m} role="tab" aria-selected={modo === m} onclick={() => (modo = m as Modo)}>{nome}</button>
     {/each}
   </div>
@@ -84,6 +97,11 @@
   <div class="chips" role="radiogroup" aria-label="Lançamento no Fast">
     {#each [['todas', 'Todas'], ['falta', 'Falta lançar'], ['lancadas', 'Lançadas']] as [k, nome] (k)}
       <button class="chip" class:ativo={filtroFast === k} role="radio" aria-checked={filtroFast === k} onclick={() => (filtroFast = k as typeof filtroFast)}>{nome}</button>
+    {/each}
+  </div>
+  <div class="chips visao" role="radiogroup" aria-label="Como ver">
+    {#each [['dia', 'Por dia'], ['familia', 'Por família'], ['pessoas', 'Pessoas']] as [k, nome] (k)}
+      <button class="chip" class:ativo={visao === k} role="radio" aria-checked={visao === k} onclick={() => (visao = k as typeof visao)}>{nome}</button>
     {/each}
   </div>
   <label class="campo"><span class="pequeno">Procurar (nome, rua e número, prontuário)</span><input type="search" bind:value={busca} placeholder="Ex.: Acácias 90 ou Joana" autocomplete="off" /></label>
@@ -112,10 +130,58 @@
     {#if resumo.sumiramDoFast}· <span class="falta">Sumiram do Fast: <strong>{resumo.sumiramDoFast}</strong></span>{/if}
   </p>
 
+  {#if repetidas}
+    <p class="pequeno falta">⚠️ {repetidas} VDs de visita periódica estão repetidas (mesma casa, mesmo dia). Confira para não lançar duas vezes no Fast.</p>
+  {/if}
+
   {#if !linhas.length}
     <p class="suave">Nenhuma VD {busca.trim() ? 'encontrada com essa busca' : 'registrada'} em {rotulo}.</p>
   {/if}
 
+  {#if visao === 'familia'}
+    <section class="dia">
+      <h3>Famílias visitadas ({familias.length})</h3>
+      <ol class="vds">
+        {#each familias as f (f.familiaId)}
+          <li class="vd" class:nao-conta={!f.conta}>
+            <div class="cab-vd">
+              <strong>{f.endereco}</strong>
+              {#if f.prontuario}<span class="pequeno">pront. {f.prontuario}</span>{/if}
+            </div>
+            {#if f.responsavel}<p class="pequeno">{f.responsavel}</p>{/if}
+            <p class="pequeno">
+              {#each f.vds as l, i (l.visita.id)}{i ? ' · ' : ''}<span class:falta={!l.lancada}>{formatarData(l.data).slice(0, 5)} {l.desfecho}{l.lancada ? '' : ' (falta lançar)'}</span>{/each}
+            </p>
+            {#if !f.conta}<p class="pequeno falta">Nenhuma VD que conta para a meta no período.</p>{/if}
+            {#if f.familia}<button class="link sem-impressao" onclick={() => ir(`familia/${f.familiaId}`)}>Abrir a família ›</button>{/if}
+          </li>
+        {/each}
+      </ol>
+    </section>
+    <section class="dia">
+      <details open={faltam.length <= 40}>
+        <summary><h3 class="sumario">Sem VD que conta no período ({faltam.length})</h3></summary>
+        <ul class="faltam">
+          {#each faltam as f (f.id)}
+            <li><button class="link" onclick={() => ir(`familia/${f.id}`)}>{f.rua}, {f.numero}{f.complemento ? ` – ${f.complemento}` : ''}</button>{f.prontuario ? ` · pront. ${f.prontuario}` : ''}</li>
+          {/each}
+        </ul>
+      </details>
+    </section>
+  {:else if visao === 'pessoas'}
+    <section class="dia">
+      <h3>Pessoas atendidas ({pessoas.length})</h3>
+      <ol class="vds">
+        {#each pessoas as p (p.moradorId)}
+          <li class="vd pessoa">
+            <strong>{p.nome}</strong>
+            <span class="pequeno">{p.endereco} · {p.datas.map((d) => formatarData(d).slice(0, 5)).join(', ')}</span>
+          </li>
+        {/each}
+      </ol>
+      {#if !pessoas.length && linhas.length}<p class="suave pequeno">Nenhuma pessoa marcada como presente nessas VDs.</p>{/if}
+    </section>
+  {:else}
   {#each porDia as d (d.data)}
     <section class="dia">
       <h3>{formatarData(d.data)} ({diaDaSemana(d.data)}) · {d.vds} {d.vds === 1 ? 'VD' : 'VDs'} · {d.familias} {d.familias === 1 ? 'família' : 'famílias'}</h3>
@@ -134,12 +200,14 @@
             <p class="pequeno fast" class:falta={!l.lancada || !!l.sumiuDoFast}>
               Fast: {textoFast(l)}{l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}
             </p>
+            {#if l.repetida}<p class="pequeno falta">⚠️ Há outra VD de visita periódica nesta casa neste dia: não lance duas vezes.</p>{/if}
             {#if l.familia}<button class="link sem-impressao" onclick={() => ir(`familia/${l.familia!.id}`)}>Abrir a família ›</button>{/if}
           </li>
         {/each}
       </ol>
     </section>
   {/each}
+  {/if}
 
   <footer>Gerado em {geradoEm} pelo Facilitador de VDs. Contém dados de pacientes: guarde com cuidado.</footer>
 </article>
@@ -268,6 +336,25 @@
   }
   .acoes {
     margin-top: 12px;
+  }
+  .visao {
+    margin-top: 0;
+  }
+  .sumario {
+    display: inline;
+  }
+  .faltam {
+    margin: 6px 0;
+    padding-left: 18px;
+    columns: 2 220px;
+  }
+  .faltam li {
+    break-inside: avoid;
+    padding: 2px 0;
+  }
+  .pessoa {
+    display: flex;
+    flex-direction: column;
   }
   .opcao {
     display: flex;
