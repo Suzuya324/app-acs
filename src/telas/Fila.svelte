@@ -24,7 +24,7 @@
       .slice(0, 15),
   );
   let copiado = $state<string | null>(null);
-  /** VDs na mesma casa no mesmo dia: avisar para não lançar duas vezes no Fast. */
+  /** Visitas periódicas repetidas na mesma casa no mesmo dia: avisar para não lançar duas vezes no Fast. */
   const repetidas = $derived(vdsRepetidas(app.visitas));
 
   async function copiar(v: Visita, oque: 'relato' | 'prontuario') {
@@ -75,7 +75,7 @@
         </div>
         <p class="suave pequeno info">Data: {formatarData(v.data)} · Motivo: {v.motivo}</p>
         {#if repetidas.has(v.id)}
-          <p class="alerta pequeno repetida">⚠️ Esta casa tem outra VD no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes no Fast.</p>
+          <p class="alerta pequeno repetida">⚠️ Esta casa tem outra VD de visita periódica no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes no Fast.</p>
         {/if}
         {#if f}
           {@const pres = presentesDaVisita(v)}

@@ -50,15 +50,20 @@ describe('Minhas VDs: por família, pessoas e repetidas', () => {
   const vs = [
     vd('a', '1', '2026-11-03', { presentes: ['1-0'] }),
     vd('b', '1', '2026-11-12', { presentes: ['1-0', '1-1'], lancadaNoFast: true }),
-    vd('c', '2', '2026-11-12', { desfecho: 'ausencia_completa' }),
-    vd('d', '2', '2026-11-12', { presentes: ['2-0'] }), // mesma casa, mesmo dia: repetida
+    vd('c', '2', '2026-11-12', { desfecho: 'ausencia_completa', motivo: 'Visita periódica' }),
+    vd('d', '2', '2026-11-12', { presentes: ['2-0'], motivo: 'Visita periódica' }), // mesma casa, mesmo dia, periódica: repetida
   ];
   const l = linhasDoRelatorio(vs, casas, '2026-11-01', '2026-11-30', nome);
 
-  it('marca as VDs repetidas (mesma casa, mesmo dia)', () => {
+  it('marca as VDs de visita periódica repetidas (mesma casa, mesmo dia)', () => {
     expect(l.filter((x) => x.repetida).map((x) => x.visita.id).sort()).toEqual(['c', 'd']);
     expect([...vdsRepetidas(vs)].sort()).toEqual(['c', 'd']);
-    expect(textoDoRelatorio(l, 'x')).toContain('ATENÇÃO: há outra VD nesta casa neste dia');
+    expect(textoDoRelatorio(l, 'x')).toContain('ATENÇÃO: há outra VD de visita periódica nesta casa neste dia');
+  });
+
+  it('VDs com outro motivo ("Outros", "Busca ativa"…) no mesmo dia não são repetidas', () => {
+    const outros = [vd('x', '2', '2026-11-12'), vd('y', '2', '2026-11-12', { motivo: 'Busca ativa' }), vd('z', '2', '2026-11-12', { motivo: 'Visita periódica' })];
+    expect([...vdsRepetidas(outros)]).toEqual([]);
   });
 
   it('por família: uma linha por casa, em ordem de número; e quem falta no período', () => {

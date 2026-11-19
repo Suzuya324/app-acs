@@ -131,7 +131,7 @@
   </p>
 
   {#if repetidas}
-    <p class="pequeno falta">⚠️ {repetidas} VDs estão repetidas (mesma casa, mesmo dia). Confira para não lançar duas vezes no Fast.</p>
+    <p class="pequeno falta">⚠️ {repetidas} VDs de visita periódica estão repetidas (mesma casa, mesmo dia). Confira para não lançar duas vezes no Fast.</p>
   {/if}
 
   {#if !linhas.length}
@@ -200,7 +200,7 @@
             <p class="pequeno fast" class:falta={!l.lancada || !!l.sumiuDoFast}>
               Fast: {textoFast(l)}{l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}
             </p>
-            {#if l.repetida}<p class="pequeno falta">⚠️ Há outra VD nesta casa neste dia: não lance duas vezes.</p>{/if}
+            {#if l.repetida}<p class="pequeno falta">⚠️ Há outra VD de visita periódica nesta casa neste dia: não lance duas vezes.</p>{/if}
             {#if l.familia}<button class="link sem-impressao" onclick={() => ir(`familia/${l.familia!.id}`)}>Abrir a família ›</button>{/if}
           </li>
         {/each}

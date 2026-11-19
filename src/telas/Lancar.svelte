@@ -69,7 +69,7 @@
       <Desfecho valor={visita.desfecho} />
     </div>
     {#if repetidas.has(visita.id)}
-      <p class="alerta pequeno">⚠️ Esta casa tem outra VD no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes.</p>
+      <p class="alerta pequeno">⚠️ Esta casa tem outra VD de visita periódica no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes.</p>
     {/if}
     <p class="info">
       <span>Data: <strong>{formatarDataLonga(visita.data, true)}</strong></span>

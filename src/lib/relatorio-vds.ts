@@ -29,7 +29,7 @@ export interface LinhaVD {
   /** Conferência em que sumiu do Fast (dd/mm/aaaa) ou vazio. */
   sumiuDoFast: string;
   origem: 'App' | 'Sistema de Visitas';
-  /** Há outra VD na mesma casa no mesmo dia (cuidado para não lançar duas vezes no Fast). */
+  /** Há outra VD de visita periódica na mesma casa no mesmo dia (cuidado para não lançar duas vezes no Fast). */
   repetida: boolean;
 }
 
@@ -80,10 +80,17 @@ function textoSinais(s: Record<string, SinaisVitais>, moradores: Morador[]): str
   return partes.join('; ');
 }
 
-/** VDs na mesma casa no mesmo dia (os códigos delas), para não lançar duas vezes no Fast. */
+/** O motivo é "Visita periódica" (o nome pode variar um pouco em cada unidade)? */
+export const ehVisitaPeriodica = (motivo: string) => /peri[oó]dic/i.test(motivo);
+
+/**
+ * VDs de "Visita periódica" repetidas na mesma casa no mesmo dia (os códigos delas), para não lançar duas vezes
+ * no Fast. VDs com outro motivo ("Outros", "Busca ativa"…) podem ser mais de uma no dia e não entram.
+ */
 export function vdsRepetidas(visitas: Visita[]): Set<string> {
   const porCasaDia = new Map<string, string[]>();
   for (const v of visitas) {
+    if (!ehVisitaPeriodica(v.motivo)) continue;
     const k = `${v.familiaId}|${v.data}`;
     porCasaDia.set(k, [...(porCasaDia.get(k) ?? []), v.id]);
   }
@@ -201,7 +208,7 @@ export function textoDoRelatorio(linhas: LinhaVD[], rotulo: string, comRelato = 
     if (l.sinais) out.push(`   Sinais: ${l.sinais}`);
     if (comRelato && l.relato) out.push(`   Relato: ${l.relato.replace(/\s+/g, ' ')}`);
     out.push(`   Fast: ${textoFast(l)}${l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}`);
-    if (l.repetida) out.push('   ATENÇÃO: há outra VD nesta casa neste dia (não lançar duas vezes)');
+    if (l.repetida) out.push('   ATENÇÃO: há outra VD de visita periódica nesta casa neste dia (não lançar duas vezes)');
   }
   return out.join('\n');
 }

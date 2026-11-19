@@ -207,8 +207,11 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   visitada, com as datas, e a lista das casas **sem VD que conta no período**, ou seja, quem falta) e
   **Pessoas** (as pessoas que você encontrou, com os dias). O que você copia, baixa ou imprime segue o jeito
   escolhido.
-- **VD repetida:** se a mesma casa tiver duas VDs no mesmo dia, a **Fila**, o **Lançar em sequência** e o
-  **Minhas VDs** avisam "⚠️ Esta casa tem outra VD no mesmo dia", para você não lançar duas vezes no Fast.
+- **VD repetida:** se a mesma casa tiver duas VDs de **Visita periódica** no mesmo dia, a **Fila**, o
+  **Lançar em sequência** e o **Minhas VDs** avisam, para você não lançar duas vezes no Fast. VDs com outro
+  motivo ("Outros", "Busca ativa"…) podem ser mais de uma no dia e não têm aviso. Na **conferência com o
+  Fast**, duas VDs da mesma casa no mesmo dia batem com as duas linhas do Fast (não aparecem como "lançada
+  duas vezes").
 - **Lançar em sequência:** agora tem também o botão **"Copiar data"**.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
