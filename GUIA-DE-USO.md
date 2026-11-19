@@ -203,6 +203,13 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   prontuário, presentes, ausentes, desfecho, motivo, sinais, relato e se já foi lançada no Fast (e quando).
   O campo **Procurar** acha uma casa ou pessoa ("Acácias 90", "Joana"). **Imprimir ou salvar em PDF**, **Copiar**
   ou **Baixar** o texto. Serve de comprovante se o sistema oficial perder VDs. Tem nomes: guarde com cuidado.
+  Também tem o período **Semana** e três jeitos de ver: **Por dia** (cada VD), **Por família** (cada casa
+  visitada, com as datas, e a lista das casas **sem VD que conta no período**, ou seja, quem falta) e
+  **Pessoas** (as pessoas que você encontrou, com os dias). O que você copia, baixa ou imprime segue o jeito
+  escolhido.
+- **VD repetida:** se a mesma casa tiver duas VDs no mesmo dia, a **Fila**, o **Lançar em sequência** e o
+  **Minhas VDs** avisam "⚠️ Esta casa tem outra VD no mesmo dia", para você não lançar duas vezes no Fast.
+- **Lançar em sequência:** agora tem também o botão **"Copiar data"**.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,

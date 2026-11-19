@@ -4,6 +4,7 @@
   import { copiarTexto } from '../lib/copiar';
   import { formatarData, formatarDataLonga } from '../lib/datas';
   import { app, enderecoCurto, familiaPorId, marcarLancada, mostrarAviso, presentesDaVisita, responsavel } from '../lib/estado.svelte';
+  import { vdsRepetidas } from '../lib/relatorio-vds';
   import { ir } from '../lib/rotas.svelte';
   import type { Visita } from '../lib/tipos';
 
@@ -23,6 +24,8 @@
       .slice(0, 15),
   );
   let copiado = $state<string | null>(null);
+  /** VDs na mesma casa no mesmo dia: avisar para não lançar duas vezes no Fast. */
+  const repetidas = $derived(vdsRepetidas(app.visitas));
 
   async function copiar(v: Visita, oque: 'relato' | 'prontuario') {
     const f = familiaPorId(v.familiaId);
@@ -71,6 +74,9 @@
           <Desfecho valor={v.desfecho} />
         </div>
         <p class="suave pequeno info">Data: {formatarData(v.data)} · Motivo: {v.motivo}</p>
+        {#if repetidas.has(v.id)}
+          <p class="alerta pequeno repetida">⚠️ Esta casa tem outra VD no mesmo dia. Confira se não é a mesma visita, para não lançar duas vezes no Fast.</p>
+        {/if}
         {#if f}
           {@const pres = presentesDaVisita(v)}
           <p class="nomes">
@@ -121,6 +127,9 @@
 {/if}
 
 <style>
+  .repetida {
+    margin: 6px 0;
+  }
   .sequencia {
     margin-bottom: 10px;
   }

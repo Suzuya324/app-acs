@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linhasDoRelatorio, registradaEm, resumoDoRelatorio, textoDoRelatorio } from './relatorio-vds';
+import { familiasDoRelatorio, linhasDoRelatorio, naoVisitadasNoPeriodo, pessoasDoRelatorio, registradaEm, resumoDoRelatorio, textoDoRelatorio, textoPessoas, textoPorFamilia, vdsRepetidas } from './relatorio-vds';
 import type { Familia, Visita } from './tipos';
 
 // Tudo inventado.
@@ -42,5 +42,39 @@ describe('relatório das minhas VDs', () => {
     expect(t).toContain('Presentes: Ana Teste Silva');
     expect(t).toContain('Fast: FALTA LANÇAR');
     expect(textoDoRelatorio(l, 'x', false)).not.toContain('Relato:');
+  });
+});
+
+describe('Minhas VDs: por família, pessoas e repetidas', () => {
+  const casas = [fam('1', '90', ['Ana Teste Silva', 'Beto Teste Silva']), fam('2', '10', ['Caio Exemplo Rocha']), fam('3', '50', ['Duda Ficticia Lima'])];
+  const vs = [
+    vd('a', '1', '2026-11-03', { presentes: ['1-0'] }),
+    vd('b', '1', '2026-11-12', { presentes: ['1-0', '1-1'], lancadaNoFast: true }),
+    vd('c', '2', '2026-11-12', { desfecho: 'ausencia_completa' }),
+    vd('d', '2', '2026-11-12', { presentes: ['2-0'] }), // mesma casa, mesmo dia: repetida
+  ];
+  const l = linhasDoRelatorio(vs, casas, '2026-11-01', '2026-11-30', nome);
+
+  it('marca as VDs repetidas (mesma casa, mesmo dia)', () => {
+    expect(l.filter((x) => x.repetida).map((x) => x.visita.id).sort()).toEqual(['c', 'd']);
+    expect([...vdsRepetidas(vs)].sort()).toEqual(['c', 'd']);
+    expect(textoDoRelatorio(l, 'x')).toContain('ATENÇÃO: há outra VD nesta casa neste dia');
+  });
+
+  it('por família: uma linha por casa, em ordem de número; e quem falta no período', () => {
+    const f = familiasDoRelatorio(l, ['Rua das Acácias']);
+    expect(f.map((x) => `${x.familiaId}:${x.vds.length}:${x.conta}`)).toEqual(['2:2:true', '1:2:true']);
+    const faltam = naoVisitadasNoPeriodo(casas, vs, '2026-11-01', '2026-11-30', ['Rua das Acácias']);
+    expect(faltam.map((x) => x.id)).toEqual(['3']);
+    const t = textoPorFamilia(f, faltam, 'novembro');
+    expect(t).toContain('2 famílias visitadas · 2 contam para a meta · 1 sem VD que conta');
+    expect(t).toContain('03/11 Visita realizada (falta lançar) · 12/11 Visita realizada');
+    expect(t).toContain('SEM VD QUE CONTA (1):\n- Rua das Acácias, 50');
+  });
+
+  it('pessoas atendidas: cada uma uma vez, com os dias', () => {
+    const p = pessoasDoRelatorio(l);
+    expect(p.map((x) => `${x.nome}:${x.datas.join(',')}`)).toEqual(['Ana Teste Silva:2026-11-03,2026-11-12', 'Beto Teste Silva:2026-11-12', 'Caio Exemplo Rocha:2026-11-12']);
+    expect(textoPessoas(p, 'novembro')).toContain('1. Ana Teste Silva · Rua das Acácias, 90 · 03/11, 12/11');
   });
 });
