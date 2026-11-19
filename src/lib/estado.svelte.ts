@@ -858,6 +858,7 @@ export const registrarDevolutivaTecnica = (
       app.visitas.push({
         id: novoId('v'),
         atualizadoEm: agora(),
+        criadaEm: agora(),
         familiaId: f.id,
         data: d.data,
         presentes: [m.id],
@@ -942,7 +943,7 @@ export function familiaPorId(id: string): Familia | undefined {
 
 function _salvarVisita(v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) {
   const id = novoId('v');
-  app.visitas.push({ ...v, id, atualizadoEm: agora() });
+  app.visitas.push({ ...v, id, atualizadoEm: agora(), criadaEm: agora() });
   app.rascunho = null;
   aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
   aplicarAtualizacoesFicha(v.familiaId, v.data, atualizacoes);
@@ -1084,6 +1085,7 @@ function _marcarLancada(id: string, lancada: boolean) {
   const v = app.visitas.find((x) => x.id === id);
   if (v) {
     v.lancadaNoFast = lancada;
+    v.lancadaEm = lancada ? agora() : undefined;
     v.atualizadoEm = agora();
   }
   return gravar({ visitas: app.visitas });

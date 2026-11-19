@@ -164,6 +164,9 @@
 <button class="botao largo grande" onclick={() => ir('busca')}>
   <Icone nome="mais" /> Nova visita
 </button>
+<button class="botao secundario largo minhas-vds" onclick={() => ir('minhas-vds')}>
+  <Icone nome="fila" /> Minhas VDs: relatório do dia e do mês
+</button>
 
 {#if !precisaImportar}
   <section class="cartao dia" aria-labelledby="t-dia">
@@ -323,6 +326,9 @@
 </button>
 
 <style>
+  .minhas-vds {
+    margin-top: 8px;
+  }
   .chamada {
     display: flex;
     flex-direction: column;

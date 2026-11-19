@@ -143,6 +143,7 @@
   <p class="suave pequeno">Contam para a meta: {app.config.nomesDesfecho.realizada} e {app.config.nomesDesfecho.ausente_realizada} (cada família uma vez no período).</p>
 </section>
 
+<button class="botao largo relatorio" onclick={() => ir('minhas-vds')}>Minhas VDs com nomes (dia a dia, imprimir/PDF)</button>
 <button class="botao largo relatorio" onclick={() => ir('relatorio')}>Relatório de produção (imprimir/PDF)</button>
 <button class="botao secundario largo prontuarios" onclick={() => ir('prontuarios')}>Lista de prontuários em ordem (PDF)</button>
 <button class="botao secundario largo prontuarios" onclick={() => ir('numeros')}>Números livres para prontuário novo</button>

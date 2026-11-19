@@ -215,6 +215,10 @@ export interface Visita {
   anotacoes?: Record<string, string>;
   /** Última alteração (salvar, corrigir, marcar lançada) (ISO). Usado para juntar backups. */
   atualizadoEm?: string;
+  /** Quando a VD foi registrada no app (ISO, com a hora): comprovante. */
+  criadaEm?: string;
+  /** Quando foi marcada como lançada no Fast (ISO). */
+  lancadaEm?: string;
 }
 
 export interface Config {

@@ -177,6 +177,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   casos só atualiza. Quem vier duas vezes na própria lista entra uma vez só. Repetidos que já estavam no app
   são juntados sozinhos (sem perder etiquetas nem o que você editou). Pessoas com a mesma data de nascimento
   diferente, ou ligadas a moradores diferentes, nunca são juntadas.
+- **Minhas VDs (relatório com nomes):** no **Início**, botão **"Minhas VDs: relatório do dia e do mês"**.
+  Escolha **Hoje**, **Ontem**, **Um dia**, **Mês** ou **De… até…**. Mostra quantas VDs, quantas famílias, quantas
+  contam para a meta, quantas pessoas atendidas e, dia a dia, cada VD: hora em que foi registrada, casa,
+  prontuário, presentes, ausentes, desfecho, motivo, sinais, relato e se já foi lançada no Fast (e quando).
+  O campo **Procurar** acha uma casa ou pessoa ("Acácias 90", "Joana"). **Imprimir ou salvar em PDF**, **Copiar**
+  ou **Baixar** o texto. Serve de comprovante se o sistema oficial perder VDs. Tem nomes: guarde com cuidado.
 - **Exportar minhas visitas:** **Ajustes** → **"Exportar minhas visitas (planilha)"**. Escolha o mês, **Tudo**
   ou as datas. **"1. Planilha das VDs"**: uma linha por VD (data, casa, prontuário, presentes, ausentes,
   desfecho, se conta para a meta, se foi lançada no Fast). **"2. Planilha das famílias"**: todas as casas,

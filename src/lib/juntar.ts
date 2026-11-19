@@ -61,7 +61,7 @@ function juntarPorId<T extends ComData>(
 
 /** Sem data nos dois lados: a VD lançada no Fast vence a pendente. */
 function escolherVisitaSemData(aqui: Visita, la: Visita): Visita {
-  if (la.lancadaNoFast && !aqui.lancadaNoFast) return { ...aqui, lancadaNoFast: true };
+  if (la.lancadaNoFast && !aqui.lancadaNoFast) return { ...aqui, lancadaNoFast: true, lancadaEm: la.lancadaEm };
   return aqui;
 }
 
