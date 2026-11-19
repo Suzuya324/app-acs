@@ -1250,6 +1250,29 @@ export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaF
 
 export const marcarLancada = (id: string, lancada: boolean) => comDesfazer('Marcar como lançada', () => _marcarLancada(id, lancada));
 
+/**
+ * Guarda a conferência com o Fast: as VDs achadas na lista ficam "vistas no Fast" hoje (e deixam de estar
+ * "sumidas"); as que já tinham sido vistas e agora faltam ficam marcadas como "sumiu do Fast" hoje.
+ */
+export const guardarConferenciaFast = (vistas: string[], sumiram: string[], hoje: string) =>
+  comDesfazer('Guardar conferência com o Fast', async () => {
+    const quando = agora();
+    for (const v of app.visitas) {
+      if (vistas.includes(v.id)) {
+        v.vistaNoFastEm = hoje;
+        v.sumiuDoFastEm = undefined;
+        v.atualizadoEm = quando;
+      } else if (sumiram.includes(v.id)) {
+        v.sumiuDoFastEm = hoje;
+        v.atualizadoEm = quando;
+      }
+    }
+    app.config.ultimaConferenciaFast = hoje;
+    app.config.alteradaEm = quando;
+    app.historico.push(...criarAlteracoes('', [`Conferência com o Fast: ${vistas.length} VDs vistas no Fast${sumiram.length ? `, ${sumiram.length} sumiram de lá` : ''}`]));
+    await gravar({ visitas: app.visitas, historico: app.historico, config: app.config });
+  });
+
 export const registrarAusencia = (familiaId: string, data: string) => comDesfazer('Ninguém em casa', () => _registrarAusencia(familiaId, data));
 
 export const salvarFamilia = (nova: Familia) => comDesfazer('Salvar família', () => _salvarFamilia(nova));

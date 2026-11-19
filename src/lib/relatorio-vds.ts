@@ -23,6 +23,10 @@ export interface LinhaVD {
   lancada: boolean;
   /** Quando foi marcada como lançada no Fast (aaaa-mm-dd hh:mm) ou vazio. */
   lancadaEm: string;
+  /** Última conferência em que apareceu na lista do Fast (dd/mm/aaaa) ou vazio. */
+  vistaNoFast: string;
+  /** Conferência em que sumiu do Fast (dd/mm/aaaa) ou vazio. */
+  sumiuDoFast: string;
   origem: 'App' | 'Sistema de Visitas';
 }
 
@@ -37,10 +41,13 @@ export interface ResumoVDs {
   porDesfecho: Record<Desfecho, number>;
   lancadas: number;
   faltaLancar: number;
+  /** VDs que já estiveram no Fast e sumiram de lá. */
+  sumiramDoFast: number;
   dias: { data: string; vds: number; familias: number }[];
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
+const br = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const horaLocal = (iso: string) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -103,6 +110,8 @@ export function linhasDoRelatorio(visitas: Visita[], familias: Familia[], de: st
         relato: (v.relato || v.observacao || '').trim(),
         lancada: v.lancadaNoFast,
         lancadaEm: v.lancadaEm ? dataHoraLocal(v.lancadaEm) : '',
+        vistaNoFast: v.vistaNoFastEm ? br(v.vistaNoFastEm) : '',
+        sumiuDoFast: v.sumiuDoFastEm ? br(v.sumiuDoFastEm) : '',
         origem: sv ? 'Sistema de Visitas' : 'App',
       } satisfies LinhaVD;
     });
@@ -133,13 +142,20 @@ export function resumoDoRelatorio(linhas: LinhaVD[]): ResumoVDs {
     porDesfecho,
     lancadas: linhas.filter((l) => l.lancada).length,
     faltaLancar: linhas.filter((l) => !l.lancada).length,
+    sumiramDoFast: linhas.filter((l) => l.sumiuDoFast).length,
     dias: [...dias.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([data, d]) => ({ data, vds: d.vds, familias: d.familias.size })),
   };
 }
 
-const br = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 export const diaDaSemana = (iso: string) => SEMANA[new Date(`${iso}T12:00:00`).getDay()];
+
+/** "lançada em 19/11/2026 14:00 · vista no Fast em 20/11/2026", "SUMIU DO FAST em 27/11/2026 (estava lá em 20/11/2026)"… */
+export function textoFast(l: LinhaVD): string {
+  if (l.sumiuDoFast) return `SUMIU DO FAST em ${l.sumiuDoFast}${l.vistaNoFast ? ` (estava lá em ${l.vistaNoFast})` : ''}${l.lancada ? '' : ' · de volta na fila'}`;
+  const base = l.lancada ? `lançada${l.lancadaEm ? ` em ${l.lancadaEm}` : ''}` : 'FALTA LANÇAR';
+  return `${base}${l.vistaNoFast ? ` · vista no Fast em ${l.vistaNoFast}` : ''}`;
+}
 
 /** O relatório em texto (para copiar, guardar ou mandar para si mesmo). */
 export function textoDoRelatorio(linhas: LinhaVD[], rotulo: string, comRelato = true): string {
@@ -148,7 +164,7 @@ export function textoDoRelatorio(linhas: LinhaVD[], rotulo: string, comRelato = 
     `MINHAS VDs – ${rotulo}`,
     `${r.total} VDs · ${r.familias} famílias · ${r.familiasQueContam} famílias que contam para a meta · ${r.pessoas} pessoas atendidas`,
     `Visita realizada: ${r.porDesfecho.realizada} · Ausente realizada: ${r.porDesfecho.ausente_realizada} · Ausência completa: ${r.porDesfecho.ausencia_completa} · Recusa: ${r.porDesfecho.recusa}`,
-    `Lançadas no Fast: ${r.lancadas} · Falta lançar: ${r.faltaLancar}`,
+    `Lançadas no Fast: ${r.lancadas} · Falta lançar: ${r.faltaLancar}${r.sumiramDoFast ? ` · SUMIRAM DO FAST: ${r.sumiramDoFast}` : ''}`,
   ];
   let dia = '';
   let n = 0;
@@ -167,7 +183,7 @@ export function textoDoRelatorio(linhas: LinhaVD[], rotulo: string, comRelato = 
     if (l.ausentes.length) out.push(`   Ausentes: ${l.ausentes.join(', ')}`);
     if (l.sinais) out.push(`   Sinais: ${l.sinais}`);
     if (comRelato && l.relato) out.push(`   Relato: ${l.relato.replace(/\s+/g, ' ')}`);
-    out.push(`   Fast: ${l.lancada ? `lançada${l.lancadaEm ? ` em ${l.lancadaEm}` : ''}` : 'FALTA LANÇAR'}${l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}`);
+    out.push(`   Fast: ${textoFast(l)}${l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}`);
   }
   return out.join('\n');
 }

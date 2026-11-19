@@ -171,6 +171,12 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   **Se o Fast perder VDs:** as VDs que você tinha marcado como lançadas e que não estão na lista colada
   aparecem em vermelho em **"O Fast perdeu?"**. Toque em **"Voltar para a fila"** (ou **"Voltar as N para a
   fila"**) e lance de novo. Em **Minhas VDs**, o filtro **"Falta lançar"** mostra só as que ainda faltam.
+  **Memória do Fast (para saber qual VD sumiu):** depois de conferir, toque em **"✓ Guardar a conferência"**.
+  O app anota quais VDs estavam no Fast naquele dia. Na próxima conferência, se alguma que já esteve lá não
+  aparecer mais, ela vai para **"🚨 Sumiram do Fast"** com "estava no Fast em 15/11; sumiu em 22/11", o
+  **Início** avisa e o **Minhas VDs** mostra "SUMIU DO FAST". Só são acusadas as VDs das datas que a lista
+  colada cobre (da primeira à última data). Guarde só quando colar a lista inteira do período. Faça uma vez
+  por semana: o Início lembra quando passar de 7 dias.
 - **Ninguém em casa com 1 toque:** no **roteiro de hoje** e na **busca** (quando acha até 3 casas) tem o botão
   **🚪 Ninguém em casa**: confira a data e toque em **Confirmar**. A casa sai do roteiro de hoje, vai para
   "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.

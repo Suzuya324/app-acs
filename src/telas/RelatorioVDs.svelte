@@ -7,7 +7,7 @@
   import { periodoDe, periodoVizinho } from '../lib/calendario';
   import { formatarData, hojeISO, somarDias } from '../lib/datas';
   import { app, mostrarAviso } from '../lib/estado.svelte';
-  import { diaDaSemana, linhasDoRelatorio, resumoDoRelatorio, textoDoRelatorio } from '../lib/relatorio-vds';
+  import { diaDaSemana, linhasDoRelatorio, resumoDoRelatorio, textoDoRelatorio, textoFast } from '../lib/relatorio-vds';
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const hoje = hojeISO();
@@ -107,7 +107,10 @@
     {app.config.nomesDesfecho.ausencia_completa}: <strong>{resumo.porDesfecho.ausencia_completa}</strong> ·
     {app.config.nomesDesfecho.recusa}: <strong>{resumo.porDesfecho.recusa}</strong>
   </p>
-  <p class="pequeno">Lançadas no Fast: <strong>{resumo.lancadas}</strong> · <span class:falta={resumo.faltaLancar > 0}>Falta lançar: <strong>{resumo.faltaLancar}</strong></span></p>
+  <p class="pequeno">
+    Lançadas no Fast: <strong>{resumo.lancadas}</strong> · <span class:falta={resumo.faltaLancar > 0}>Falta lançar: <strong>{resumo.faltaLancar}</strong></span>
+    {#if resumo.sumiramDoFast}· <span class="falta">Sumiram do Fast: <strong>{resumo.sumiramDoFast}</strong></span>{/if}
+  </p>
 
   {#if !linhas.length}
     <p class="suave">Nenhuma VD {busca.trim() ? 'encontrada com essa busca' : 'registrada'} em {rotulo}.</p>
@@ -128,8 +131,8 @@
             {#if l.ausentes.length}<p><strong>Ausentes:</strong> {l.ausentes.join(', ')}</p>{/if}
             {#if l.sinais}<p><strong>Sinais:</strong> {l.sinais}</p>{/if}
             {#if comRelato && l.relato}<p class="relato">{l.relato}</p>{/if}
-            <p class="pequeno fast" class:falta={!l.lancada}>
-              Fast: {l.lancada ? `lançada${l.lancadaEm ? ` em ${l.lancadaEm}` : ''}` : 'FALTA LANÇAR'}{l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}
+            <p class="pequeno fast" class:falta={!l.lancada || !!l.sumiuDoFast}>
+              Fast: {textoFast(l)}{l.origem !== 'App' ? ` · veio do ${l.origem}` : ''}
             </p>
             {#if l.familia}<button class="link sem-impressao" onclick={() => ir(`familia/${l.familia!.id}`)}>Abrir a família ›</button>{/if}
           </li>
