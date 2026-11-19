@@ -14,6 +14,8 @@ export const FRASES_PADRAO = [
   'Refere dor',
   'Entreguei recado da UBS.',
   'Convidado(a) para o grupo da UBS.',
+  'Está trabalhando.',
+  'Está na escola.',
 ];
 
 const chave = (t: string) => semAcento(t).replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();

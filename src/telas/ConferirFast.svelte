@@ -20,6 +20,13 @@
     r = conferirComFast(linhas, $state.snapshot(app.familias), $state.snapshot(app.visitas), periodo.inicio, periodo.fim);
   }
   const naoMarcadas = $derived(r ? r.achadas.filter((a) => !app.visitas.find((v) => v.id === a.visita.id)?.lancadaNoFast) : []);
+  // O Fast perdeu: a VD estava marcada como lançada, mas não está na lista colada. Volta para a fila para relançar.
+  const sumiram = $derived(r ? r.sumiram.filter((v) => app.visitas.find((x) => x.id === v.id)?.lancadaNoFast) : []);
+  const faltouLancar = $derived(r ? r.faltando.filter((v) => !r!.sumiram.some((x) => x.id === v.id)) : []);
+  async function voltarParaFila(ids: string[]) {
+    for (const id of ids) await marcarLancada(id, false);
+    mostrarAviso(`${ids.length} ${ids.length === 1 ? 'VD voltou' : 'VDs voltaram'} para a fila do Fast ✓ Lance de novo.`, 4000);
+  }
   async function marcarTodas() {
     const ids = naoMarcadas.map((a) => a.visita.id);
     for (const id of ids) await marcarLancada(id, true);
@@ -56,7 +63,8 @@
   <section class="cartao destaque">
     <p>Li <strong>{lidas}</strong> {lidas === 1 ? 'linha' : 'linhas'}. <strong>{r.achadas.length}</strong> {r.achadas.length === 1 ? 'VD bate' : 'VDs batem'} com o app.</p>
     <ul class="resumo">
-      <li class:ruim={r.faltando.length > 0}><strong>{r.faltando.length}</strong> no app e não no Fast (faltou lançar?)</li>
+      {#if r.sumiram.length}<li class="ruim"><strong>{r.sumiram.length}</strong> {r.sumiram.length === 1 ? 'estava marcada' : 'estavam marcadas'} como lançada{r.sumiram.length === 1 ? '' : 's'} e não {r.sumiram.length === 1 ? 'está' : 'estão'} no Fast (o Fast perdeu?)</li>{/if}
+      <li class:ruim={r.faltando.length - r.sumiram.length > 0}><strong>{r.faltando.length - r.sumiram.length}</strong> no app e ainda não lançadas</li>
       <li class:ruim={r.repetidas.length > 0}><strong>{r.repetidas.length}</strong> lançadas mais de uma vez</li>
       <li><strong>{r.soNoFast.length}</strong> no Fast e não no app (ou o app não reconheceu a casa)</li>
     </ul>
@@ -65,11 +73,30 @@
     {/if}
   </section>
 
-  {#if r.faltando.length}
-    <section class="cartao">
-      <h2>Faltou lançar? ({r.faltando.length})</h2>
+  {#if r.sumiram.length}
+    <section class="cartao perdidas">
+      <h2>⚠️ O Fast perdeu? ({r.sumiram.length})</h2>
+      <p class="pequeno">Estas VDs foram marcadas como lançadas no app, mas não estão na lista que você colou. Confira no Fast e, se sumiram, volte para a fila e lance de novo. Os dados completos estão em “Minhas VDs”.</p>
       <ul class="lista">
-        {#each r.faltando as v (v.id)}
+        {#each r.sumiram as v (v.id)}
+          {@const naFila = !app.visitas.find((x) => x.id === v.id)?.lancadaNoFast}
+          <li class="perdida">
+            <button class="item-link" onclick={() => ir(`familia/${v.familiaId}`)}><strong>{formatarData(v.data)}</strong> · {quem(v)} <span class="suave pequeno">({DESF[v.desfecho]})</span></button>
+            {#if naFila}<span class="pequeno ok-fila">✓ na fila</span>{:else}<button class="botao secundario pequeno" onclick={() => voltarParaFila([v.id])}>Voltar para a fila</button>{/if}
+          </li>
+        {/each}
+      </ul>
+      {#if sumiram.length > 1}
+        <button class="botao largo" onclick={() => voltarParaFila(sumiram.map((v) => v.id))}>Voltar as {sumiram.length} para a fila do Fast</button>
+      {/if}
+    </section>
+  {/if}
+
+  {#if faltouLancar.length}
+    <section class="cartao">
+      <h2>Faltou lançar? ({faltouLancar.length})</h2>
+      <ul class="lista">
+        {#each faltouLancar as v (v.id)}
           <li><button class="item-link" onclick={() => ir(`familia/${v.familiaId}`)}><strong>{formatarData(v.data)}</strong> · {quem(v)} <span class="suave pequeno">({DESF[v.desfecho]}{v.lancadaNoFast ? ', marcada como lançada no app' : ''})</span></button></li>
         {/each}
       </ul>
@@ -113,6 +140,22 @@
   }
   .ruim {
     color: var(--perigo);
+  }
+  .perdidas {
+    border-left: 6px solid var(--perigo);
+  }
+  .perdida {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--borda);
+    padding: 4px 0;
+  }
+  .ok-fila {
+    color: var(--realizada);
+    font-weight: 700;
+    white-space: nowrap;
   }
   .lista {
     list-style: none;

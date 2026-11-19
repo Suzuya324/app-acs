@@ -54,6 +54,8 @@ export interface Conferencia {
   achadas: { visita: Visita; linha: LinhaFast }[];
   /** VDs do app no período que não estão na lista (faltou lançar?). */
   faltando: Visita[];
+  /** Das que faltam: as que o app tinha marcado como lançadas (o Fast perdeu? relançar). */
+  sumiram: Visita[];
   /** Linhas da lista sem VD no app no período (lançada só no Fast, ou o app não reconheceu). */
   soNoFast: LinhaFast[];
   /** A mesma VD lançada mais de uma vez no Fast. */
@@ -63,7 +65,7 @@ export interface Conferencia {
 export function conferirComFast(linhas: LinhaFast[], familias: Familia[], visitas: Visita[], inicio: string, fim: string): Conferencia {
   const doPeriodo = visitas.filter((v) => v.data >= inicio && v.data <= fim);
   const usadas = new Map<string, LinhaFast[]>();
-  const r: Conferencia = { achadas: [], faltando: [], soNoFast: [], repetidas: [] };
+  const r: Conferencia = { achadas: [], faltando: [], sumiram: [], soNoFast: [], repetidas: [] };
   for (const l of linhas) {
     if (l.data && (l.data < inicio || l.data > fim)) continue;
     const f = familiaDaLinha(l, familias);
@@ -84,6 +86,7 @@ export function conferirComFast(linhas: LinhaFast[], familias: Familia[], visita
   }
   for (const [id, ls] of usadas) if (ls.length > 1) r.repetidas.push({ visita: doPeriodo.find((v) => v.id === id)!, linhas: ls });
   r.faltando = doPeriodo.filter((v) => !usadas.has(v.id)).sort((a, b) => a.data.localeCompare(b.data));
+  r.sumiram = r.faltando.filter((v) => v.lancadaNoFast);
   return r;
 }
 

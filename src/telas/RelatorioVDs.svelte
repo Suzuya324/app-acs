@@ -3,7 +3,7 @@
   // Para conferir e comprovar o trabalho. Fica só com o ACS (tem dados de pacientes).
   import Icone from '../componentes/Icone.svelte';
   import { entregarArquivo } from '../lib/arquivo';
-  import { normalizar } from '../lib/busca';
+  import { combina } from '../lib/busca';
   import { periodoDe, periodoVizinho } from '../lib/calendario';
   import { formatarData, hojeISO, somarDias } from '../lib/datas';
   import { app, mostrarAviso } from '../lib/estado.svelte';
@@ -20,6 +20,7 @@
   let ate = $state(hoje);
   let comRelato = $state(true);
   let busca = $state('');
+  let filtroFast = $state<'todas' | 'falta' | 'lancadas'>('todas');
 
   const faixa = $derived(
     modo === 'hoje' ? { de: hoje, ate: hoje }
@@ -33,18 +34,14 @@
   );
   const todas = $derived(linhasDoRelatorio(app.visitas, app.familias, faixa.de, faixa.ate, (d) => app.config.nomesDesfecho[d]));
   const linhas = $derived.by(() => {
-    const palavras = normalizar(busca.trim()).split(/\s+/).filter(Boolean);
-    if (!palavras.length) return todas;
-    return todas.filter((l) => {
-      const alvo = normalizar([l.endereco, l.prontuario, l.responsavel, ...l.presentes, ...l.ausentes].join(' ')).replace(/[,–-]/g, ' ');
-      return palavras.every((p) => alvo.includes(p));
-    });
+    const q = busca.trim();
+    return todas.filter((l) => (filtroFast === 'todas' || (filtroFast === 'falta') === !l.lancada) && (!q || combina([l.endereco, l.prontuario, l.responsavel, ...l.presentes, ...l.ausentes].join(' '), q)));
   });
   const resumo = $derived(resumoDoRelatorio(linhas));
   const porDia = $derived(resumo.dias.map((d) => ({ ...d, linhas: linhas.filter((l) => l.data === d.data) })));
   const geradoEm = new Date().toLocaleString('pt-BR');
 
-  const texto = () => textoDoRelatorio(linhas, `${rotulo}${busca.trim() ? ` · busca: ${busca.trim()}` : ''}`, comRelato);
+  const texto = () => textoDoRelatorio(linhas, `${rotulo}${filtroFast === 'falta' ? ' · só as que faltam lançar' : filtroFast === 'lancadas' ? ' · só as lançadas' : ''}${busca.trim() ? ` · busca: ${busca.trim()}` : ''}`, comRelato);
   async function copiar() {
     try {
       await navigator.clipboard.writeText(texto());
@@ -84,6 +81,11 @@
       <label class="campo"><span class="pequeno">Até</span><input type="date" bind:value={ate} min={de} max={hoje} /></label>
     </div>
   {/if}
+  <div class="chips" role="radiogroup" aria-label="Lançamento no Fast">
+    {#each [['todas', 'Todas'], ['falta', 'Falta lançar'], ['lancadas', 'Lançadas']] as [k, nome] (k)}
+      <button class="chip" class:ativo={filtroFast === k} role="radio" aria-checked={filtroFast === k} onclick={() => (filtroFast = k as typeof filtroFast)}>{nome}</button>
+    {/each}
+  </div>
   <label class="campo"><span class="pequeno">Procurar (nome, rua e número, prontuário)</span><input type="search" bind:value={busca} placeholder="Ex.: Acácias 90 ou Joana" autocomplete="off" /></label>
 </div>
 
@@ -144,6 +146,7 @@
   <button class="botao largo" onclick={() => window.print()}><Icone nome="pasta" tamanho={20} /> Imprimir ou salvar em PDF</button>
   <button class="botao secundario largo" onclick={copiar}><Icone nome="copiar" tamanho={20} /> Copiar o relatório (texto)</button>
   <button class="botao secundario largo" onclick={baixar}>Baixar o relatório (arquivo de texto)</button>
+  <button class="botao secundario largo" onclick={() => ir('conferir-fast')}>Conferir com o Fast (achar VDs que sumiram)</button>
   <button class="botao secundario largo" onclick={() => ir('exportar-visitas')}>Planilha (Excel) e arquivo para o Claude</button>
   <p class="suave pequeno">
     No celular: Imprimir → “Salvar como PDF”. O relatório tem nomes e dados de saúde: guarde num lugar seguro e não mande

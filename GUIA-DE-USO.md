@@ -117,6 +117,17 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   Se o arquivo já diz a condição de cada pessoa, deixe **"Cada linha diz"**. Confira os nomes parecidos e toque em **Marcar**. Com a data de nascimento na lista,
   o app acerta mais.
 - **Busca por grupo:** na Busca, digite "gestante", "acamado", "hipertenso", "diabético" ou "idoso".
+- **Busca que entende erro de digitação:** "acassias 30" acha "Acácias 30"; "sousa" acha "Souza"; "tiago"
+  acha "Thiago" (aparece "escrita parecida" para você conferir). Também acha pelo **complemento** ("ac 30 casa 2",
+  "ac 30 fundos"), **nome + número** ("joana 90"), **rua + nome** ("acácias joana"), **telefone** (4 dígitos ou
+  mais), **ponto de referência** ("portão azul"), **data de nascimento** ("10/03/1950") e abreviações de rua
+  ("pe exemplo" = "Padre Exemplo"). Cada resultado mostra a **última VD** da casa. Com a busca vazia,
+  aparecem as casas **visitadas por último**. Prioritários e Minhas VDs usam a mesma busca.
+- **Relato mais limpo:** nomes que vieram em MAIÚSCULAS saem como nome próprio ("Joana"); o que você anota
+  sobre cada pessoa entra com o nome dela ("Ciclano está trabalhando", "Fulana refere dor nas costas") em vez
+  de "sobre Fulana: …"; siglas, títulos e nomes no começo do texto não perdem a maiúscula ("UBS", "Dra.");
+  a compartilhada sai "com a técnica de enfermagem"; sem vírgula ou ponto dobrado. O estilo continua o seu:
+  uma frase curta com vírgulas. VDs antigas não mudam.
 - **Mapa da área** (no Início): cada casa é um quadrado colorido. Verde: contou no mês; laranja:
   ninguém em casa; azul: revisita marcada; branco: falta. Toque numa cor da legenda para destacar.
 - **Lista de prontuários** (Painel): em ordem numérica, para imprimir ou salvar em PDF (folha deitada).
@@ -157,6 +168,9 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   lançadas no mês, selecione tudo, copie e cole no app → **Conferir**. Aparece o que **faltou lançar**, o
   que foi **lançado duas vezes** e o que está **só no Fast**. **"Marcar como lançadas"** acerta a fila.
   O app não entra no Fast: só lê o texto colado.
+  **Se o Fast perder VDs:** as VDs que você tinha marcado como lançadas e que não estão na lista colada
+  aparecem em vermelho em **"O Fast perdeu?"**. Toque em **"Voltar para a fila"** (ou **"Voltar as N para a
+  fila"**) e lance de novo. Em **Minhas VDs**, o filtro **"Falta lançar"** mostra só as que ainda faltam.
 - **Ninguém em casa com 1 toque:** no **roteiro de hoje** e na **busca** (quando acha até 3 casas) tem o botão
   **🚪 Ninguém em casa**: confira a data e toque em **Confirmar**. A casa sai do roteiro de hoje, vai para
   "Revisitar" e para a fila do Fast. Errou? Toque em **Desfazer** no aviso.

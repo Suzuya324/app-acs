@@ -23,7 +23,7 @@
   <details>
     <summary>2. Fazer uma visita (VD)</summary>
     <ol>
-      <li><strong>Buscar</strong> → digite a rua e o número (“ac 90”), um nome ou o prontuário.</li>
+      <li><strong>Buscar</strong> → digite a rua e o número (“ac 90”, “ac 30 casa 2”), um nome (pode errar uma letra), o prontuário, o telefone, a data de nascimento ou o ponto de referência.</li>
       <li>Na família, toque em <strong>Nova VD</strong>. Confira a <strong>data</strong> no topo.</li>
       <li>Toque em <strong>quem estava presente</strong>. O app escolhe o desfecho sozinho (dá para trocar).</li>
       <li>Se quiser, marque orientações, sinais vitais e escreva uma observação (pode ditar pelo microfone do teclado).</li>
@@ -84,7 +84,7 @@
       <li><strong>Casos</strong> (aba da prancheta): o app acha casos no que você escreve na VD (“precisa da assistente social”, “caiu”, “pedir VD da enfermeira”) e oferece abrir o caso já com a categoria, a eMulti e o ponto para a reunião. Na aba, <strong>Copiar a pauta</strong> monta a lista da reunião de equipe. Caso aberto sobe a prioridade da casa (urgente = nível A).</li>
       <li><strong>Técnica de enfermagem</strong> (aba Casos): lista com pós-alta, acamados, recém-nascidos e puérperas; <strong>dia da técnica</strong> com roteiro para copiar; <strong>“Técnica foi”</strong>: com “Fui junto”, vira VD compartilhada que conta para a sua meta e vai para a fila do Fast.</li>
       <li><strong>Telefone, melhor horário e ponto de referência</strong> em Editar família. <strong>Internação/alta</strong> e <strong>ninguém em casa 3 vezes</strong> entram no roteiro do dia.</li>
-      <li><strong>Conferir com o Fast</strong> (aba Fila): cole a lista de VDs lançadas no Fast e veja o que faltou lançar ou foi lançado duas vezes. O Início também avisa quando o tablet ou o computador fica dias sem sincronizar.</li>
+      <li><strong>Conferir com o Fast</strong> (aba Fila): cole a lista de VDs lançadas no Fast e veja o que faltou lançar, o que foi lançado duas vezes e o que o Fast <strong>perdeu</strong> (com botão para voltar para a fila e lançar de novo). O Início também avisa quando o tablet ou o computador fica dias sem sincronizar.</li>
       <li><strong>Ninguém em casa com 1 toque</strong> no roteiro de hoje e na busca; depois de cada VD aparece a <strong>próxima casa</strong> do roteiro.</li>
       <li><strong>Receitas que vencem</strong>: no acompanhamento da pessoa, “✓ Renovou hoje”. O app avisa 30 dias antes e põe a casa no roteiro.</li>
       <li><strong>Plano para fechar a meta</strong> (Painel): as famílias que faltam divididas pelos dias de campo, por rua.</li>

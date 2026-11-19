@@ -35,6 +35,10 @@ describe('conferir com o Fast', () => {
     expect(r.achadas.map((x) => x.visita.id)).toEqual(['a', 'b']);
     expect(r.repetidas.map((x) => `${x.visita.id}:${x.linhas.length}`)).toEqual(['b:2']);
     expect(r.faltando.map((v) => v.id)).toEqual(['c']);
+    expect(r.sumiram).toEqual([]);
+    // Marcada como lançada no app, mas não está na lista do Fast: o Fast perdeu.
+    const lancadaC = visitas.map((v) => (v.id === 'c' ? { ...v, lancadaNoFast: true } : v));
+    expect(conferirComFast(lerListaFast(texto), fs, lancadaC, '2026-11-01', '2026-11-30').sumiram.map((v) => v.id)).toEqual(['c']);
     expect(r.soNoFast.map((l) => l.texto)).toEqual(['06/11/2026 DUDA DESCONHECIDA SOUZA']);
     expect(conferirComFast(lerListaFast('Data Prontuário Nome Situação'), fs, visitas, '2026-11-01', '2026-11-30').soNoFast).toEqual([]);
   });

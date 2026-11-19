@@ -5,7 +5,7 @@
   import { buscar, grupoDaBusca } from '../lib/busca';
   import { contaParaMeta } from '../lib/desfecho';
   import { dentroDoPeriodo, periodoDe } from '../lib/calendario';
-  import { hojeISO } from '../lib/datas';
+  import { formatarData, hojeISO } from '../lib/datas';
   import { app, enderecoCurto, responsavel } from '../lib/estado.svelte';
   import { NOMES_GRUPO, NOMES_SITUACAO_CASA, NOMES_SITUACAO_MORADOR } from '../lib/rotulos';
   import { ir } from '../lib/rotas.svelte';
@@ -24,6 +24,25 @@
   const visitadasNoMes = $derived(
     new Set(app.visitas.filter((v) => dentroDoPeriodo(v.data, periodo) && contaParaMeta(v.desfecho)).map((v) => v.familiaId)),
   );
+  /** Última VD de cada casa (para saber na hora se já foi e quando). */
+  const ultimaVD = $derived.by(() => {
+    const m = new Map<string, { data: string; desfecho: string }>();
+    for (const v of app.visitas) {
+      const u = m.get(v.familiaId);
+      if (!u || v.data > u.data) m.set(v.familiaId, { data: v.data, desfecho: app.config.nomesDesfecho[v.desfecho] });
+    }
+    return m;
+  });
+  /** As casas das últimas VDs (com a busca vazia), para abrir de novo rápido. */
+  const recentes = $derived.by(() => {
+    const vistas: string[] = [];
+    for (const v of [...app.visitas].sort((a, b) => b.data.localeCompare(a.data) || (b.criadaEm ?? '').localeCompare(a.criadaEm ?? ''))) {
+      if (!vistas.includes(v.familiaId)) vistas.push(v.familiaId);
+      if (vistas.length >= 6) break;
+    }
+    return vistas.map((id) => app.familias.find((f) => f.id === id)).filter((f) => !!f);
+  });
+  const MOTIVO: Record<string, string> = { telefone: 'pelo telefone', referencia: 'pelo ponto de referência', nascimento: 'pela data de nascimento', prontuario: 'pelo prontuário' };
 </script>
 
 <h1>Buscar família</h1>
@@ -45,7 +64,24 @@
 <button class="botao secundario largo nova" onclick={() => ir('nova-familia')}><Icone nome="mais" /> Nova família</button>
 
 {#if !app.busca.trim()}
-  <p class="suave">Digite um <strong>nome</strong>, a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ipe 120”) o <strong>prontuário</strong> ou um <strong>grupo</strong> (ex.: “gestante”, “acamado”, “hipertenso”, “diabético”, “idoso”).</p>
+  <p class="suave">
+    Digite um <strong>nome</strong> (pode errar uma letra), a <strong>rua + número</strong> (pode abreviar, ex.: “ac 90”, “ac 30 casa 2”),
+    o <strong>prontuário</strong>, o <strong>telefone</strong>, a <strong>data de nascimento</strong> (“10/03/1950”), o <strong>ponto de referência</strong>
+    ou um <strong>grupo</strong> (“gestante”, “acamado”, “hipertenso”).
+  </p>
+  {#if recentes.length}
+    <h2>Visitadas por último</h2>
+    <ul class="lista recentes">
+      {#each recentes as f (f.id)}
+        <li>
+          <button class="item-link" onclick={() => ir(`familia/${f.id}`)}>
+            <strong>{enderecoCurto(f)}</strong>
+            <span class="suave pequeno"> · {responsavel(f)}{ultimaVD.get(f.id) ? ` · ${formatarData(ultimaVD.get(f.id)!.data).slice(0, 5)}` : ''}</span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {/if}
   <h2>Ruas da área</h2>
   {#if app.familias.length === 0}
     <p class="alerta">Ainda não há famílias cadastradas. O importador da sua área (planilha CSV) chega na Etapa 3.</p>
@@ -65,7 +101,8 @@
     <p class="cartao grupo-achado"><strong>{NOMES_GRUPO[grupo]}:</strong> {noGrupo} {noGrupo === 1 ? 'pessoa' : 'pessoas'} em {resultados.filter((r) => r.motivo === 'grupo').length} famílias</p>
   {/if}
   <p class="suave pequeno" aria-live="polite">
-    {resultados.length === 0 ? 'Nada encontrado.' : resultados.length === 1 ? '1 família encontrada' : `${resultados.length} famílias encontradas`}
+    {resultados.length === 0 ? 'Nada encontrado. Confira a rua e o número, ou digite só o começo do nome.' : resultados.length === 1 ? '1 família encontrada' : `${resultados.length} famílias encontradas`}
+    {#if resultados.length && resultados.every((r) => r.parecido)} · escrita parecida: confira se é a casa certa{/if}
   </p>
   <ul class="lista">
     {#each resultados.slice(0, 80) as r (r.familia.id)}
@@ -78,7 +115,7 @@
             {#if visitadasNoMes.has(f.id)}<span class="visitada" title="Já visitada no mês"><Icone nome="ok" tamanho={18} /> no mês</span>{/if}
           </span>
           <span class="pequeno">
-            {#if r.motivo === 'nome' || r.motivo === 'grupo'}
+            {#if r.motivo === 'nome' || r.motivo === 'grupo' || r.motivo === 'nascimento'}
               {r.moradores.map((m) => (m.situacao === 'mora' ? m.nome : `${m.nome} (${NOMES_SITUACAO_MORADOR[m.situacao].toLowerCase()})`)).join(', ')}
             {:else}
               {responsavel(f)}
@@ -87,6 +124,11 @@
           <span class="suave pequeno">
             Pront.: {f.prontuario || '—'} · {f.moradores.filter((m) => m.situacao === 'mora').length} morador(es)
             {#if f.situacaoCasa !== 'habitada'} · casa {NOMES_SITUACAO_CASA[f.situacaoCasa].toLowerCase()}{/if}
+          </span>
+          <span class="pequeno ultima">
+            {#if ultimaVD.get(f.id)}Última VD: <strong>{formatarData(ultimaVD.get(f.id)!.data)}</strong> ({ultimaVD.get(f.id)!.desfecho}){:else}<span class="suave">Sem VD no app</span>{/if}
+            {#if MOTIVO[r.motivo]}<span class="motivo"> · achada {MOTIVO[r.motivo]}{r.motivo === 'telefone' && f.telefone ? ` (${f.telefone})` : r.motivo === 'referencia' && f.referencia ? ` (${f.referencia})` : ''}</span>{/if}
+            {#if r.parecido}<span class="parecido"> · escrita parecida</span>{/if}
           </span>
         </button>
         {#if resultados.length <= 3 && f.situacaoCasa === 'habitada'}
@@ -104,6 +146,19 @@
 {/if}
 
 <style>
+  .ultima {
+    color: var(--texto);
+  }
+  .motivo {
+    color: var(--texto-suave);
+  }
+  .parecido {
+    color: var(--aviso-texto);
+    font-weight: 700;
+  }
+  .recentes {
+    margin-bottom: 12px;
+  }
   .acoes-rapidas {
     display: flex;
     flex-wrap: wrap;
