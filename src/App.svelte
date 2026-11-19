@@ -187,7 +187,7 @@
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
   {:else if rota.tela === 'minhas-vds'}
-    <RelatorioVDs />
+    {#key rota.id}<RelatorioVDs diaInicial={rota.id} />{/key}
   {:else if rota.tela === 'exportar-visitas'}
     <ExportarVisitas />
   {:else if rota.tela === 'conferir-fast'}

@@ -89,6 +89,7 @@
       <li><strong>Receitas que vencem</strong>: no acompanhamento da pessoa, “✓ Renovou hoje”. O app avisa 30 dias antes e põe a casa no roteiro.</li>
       <li><strong>Plano para fechar a meta</strong> (Painel): as famílias que faltam divididas pelos dias de campo, por rua.</li>
       <li><strong>Apagar este aparelho</strong> (Ajustes): sincroniza e confere antes de apagar, para devolver o tablet.</li>
+      <li><strong>Painel</strong>: toque numa coluna do gráfico “Famílias visitadas por dia” (ou em “Ver quem” na tabela) para ver quem você visitou naquele dia e abrir o relatório completo.</li>
       <li><strong>Minhas VDs</strong> (Início): relatório com nomes do dia, da semana, do mês ou de um período, com hora, casa, presentes, desfecho, relato e se foi lançada no Fast. Veja <strong>por dia</strong>, <strong>por família</strong> (com quem ainda falta) ou as <strong>pessoas</strong> atendidas. Imprimir/PDF, copiar ou baixar. Visita periódica repetida (mesma casa, mesmo dia) aparece com aviso.</li>
       <li><strong>Exportar minhas visitas</strong> (Ajustes): planilha das VDs e planilha das famílias visitadas e não visitadas, do mês ou de tudo, e o arquivo único com a pergunta pronta para o Claude. A planilha sai sem senha: mande só o necessário e apague depois.</li>
       <li><strong>Números do mês</strong>: previsão da meta no Início, indicadores por grupo no Painel e relatório em PDF com casos. No fim de Ajustes, a <strong>versão do app</strong> (para saber se atualizou).</li>

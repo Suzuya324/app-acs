@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   // Relatório das minhas VDs, COM nomes: quantas, quais casas, quem estava, como foi e se foi lançada no Fast.
   // Para conferir e comprovar o trabalho. Fica só com o ACS (tem dados de pacientes).
   import Icone from '../componentes/Icone.svelte';
@@ -13,10 +14,13 @@
   } from '../lib/relatorio-vds';
   import { ir, voltar } from '../lib/rotas.svelte';
 
+  /** Abrir já num dia (ex.: tocando no dia do gráfico do Painel). */
+  let { diaInicial = '' }: { diaInicial?: string } = $props();
   const hoje = hojeISO();
   type Modo = 'hoje' | 'ontem' | 'semana' | 'dia' | 'mes' | 'datas';
-  let modo = $state<Modo>('hoje');
-  let dia = $state(hoje);
+  const valido = untrack(() => /^\d{4}-\d{2}-\d{2}$/.test(diaInicial) && diaInicial !== hoje);
+  let modo = $state<Modo>(valido ? 'dia' : 'hoje');
+  let dia = $state(valido ? untrack(() => diaInicial) : hoje);
   let referencia = $state(hoje);
   const mes = $derived(periodoDe(referencia, app.config.diaInicioPeriodo));
   let de = $state(periodoDe(hoje, app.config.diaInicioPeriodo).inicio);
