@@ -207,6 +207,11 @@ Nada é apagado: vale sempre a alteração mais recente. A tela inicial mostra
   visitada, com as datas, e a lista das casas **sem VD que conta no período**, ou seja, quem falta) e
   **Pessoas** (as pessoas que você encontrou, com os dias). O que você copia, baixa ou imprime segue o jeito
   escolhido.
+- **Quem você visitou em cada dia (Painel):** no gráfico **"Famílias visitadas por dia"**, toque numa coluna:
+  aparece embaixo a lista do dia (cada casa, quem estava presente, o desfecho e se foi lançada no Fast). Em
+  **"Ver em tabela"**, cada dia tem o botão **"Ver quem"**. **"Relatório completo do dia"** abre o Minhas VDs
+  naquele dia, com os relatos e o PDF. Tudo fica guardado no app: dá para ver qualquer dia, de qualquer mês
+  (setas do Painel), sempre que quiser.
 - **VD repetida:** se a mesma casa tiver duas VDs de **Visita periódica** no mesmo dia, a **Fila**, o
   **Lançar em sequência** e o **Minhas VDs** avisam, para você não lançar duas vezes no Fast. VDs com outro
   motivo ("Outros", "Busca ativa"…) podem ser mais de uma no dia e não têm aviso. Na **conferência com o

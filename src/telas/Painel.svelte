@@ -9,6 +9,7 @@
   import { indicadores, pct as porcento, previsaoDaMeta } from '../lib/indicadores';
   import { ir, voltar } from '../lib/rotas.svelte';
   import { diasDeCampoEntre, planoDaMeta, textoDoPlano } from '../lib/plano-meta';
+  import { linhasDoRelatorio } from '../lib/relatorio-vds';
   import type { Desfecho as TDesfecho } from '../lib/tipos';
 
   const hoje = hojeISO();
@@ -127,10 +128,30 @@
   </section>
 {/if}
 
+{#snippet doDia(data: string)}
+  {@const ls = linhasDoRelatorio(app.visitas, app.familias, data, data, (d) => app.config.nomesDesfecho[d])}
+  {@const pessoas = [...new Set(ls.flatMap((l) => l.presentes))]}
+  <div class="do-dia">
+    <h3>Quem você visitou em {formatarData(data)}</h3>
+    <p class="pequeno suave">{ls.length} {ls.length === 1 ? 'VD' : 'VDs'}{pessoas.length ? ` · ${pessoas.length} ${pessoas.length === 1 ? 'pessoa atendida' : 'pessoas atendidas'}` : ''}</p>
+    {#if !ls.length}<p class="suave pequeno">Nenhuma VD registrada neste dia.</p>{/if}
+    <ol class="vds-dia">
+      {#each ls as l (l.visita.id)}
+        <li>
+          {#if l.familia}<button class="link" onclick={() => ir(`familia/${l.familia!.id}`)}>{l.hora ? `${l.hora} · ` : ''}{l.endereco}</button>{:else}<strong>{l.endereco}</strong>{/if}
+          <span class="pequeno">{l.desfecho}{l.conta ? '' : ' (não conta)'} · <span class:falta={!l.lancada}>{l.lancada ? 'lançada' : 'falta lançar'}</span></span>
+          {#if l.presentes.length}<span class="pequeno">Presentes: <strong>{l.presentes.join(', ')}</strong></span>{:else if l.responsavel}<span class="pequeno suave">Responsável: {l.responsavel}</span>{/if}
+        </li>
+      {/each}
+    </ol>
+    {#if ls.length}<button class="botao secundario largo" onclick={() => ir(`minhas-vds/${data}`)}>Relatório completo do dia (relatos, imprimir/PDF)</button>{/if}
+  </div>
+{/snippet}
+
 <section class="cartao">
   <h2>Famílias visitadas por dia</h2>
   <p class="suave pequeno">Cada família conta uma vez, no dia da primeira visita que conta para a meta.</p>
-  <GraficoDias dias={painel.porDia} {ritmo} />
+  <GraficoDias dias={painel.porDia} {ritmo} detalhe={doDia} />
 </section>
 
 <section class="cartao">
@@ -153,6 +174,34 @@
 {/if}
 
 <style>
+  .do-dia {
+    border: 2px solid var(--primaria);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .do-dia h3 {
+    margin: 0 0 2px;
+  }
+  .vds-dia {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+  .vds-dia li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--borda);
+    overflow-wrap: anywhere;
+  }
+  .vds-dia .link {
+    text-align: left;
+    padding: 0;
+  }
+  .falta {
+    color: var(--perigo);
+    font-weight: 700;
+  }
   .plano details {
     border-top: 1px solid var(--borda);
     padding: 8px 0;
