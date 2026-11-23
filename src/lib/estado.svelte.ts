@@ -858,6 +858,7 @@ export const registrarDevolutivaTecnica = (
       app.visitas.push({
         id: novoId('v'),
         atualizadoEm: agora(),
+        criadaEm: agora(),
         familiaId: f.id,
         data: d.data,
         presentes: [m.id],
@@ -942,7 +943,7 @@ export function familiaPorId(id: string): Familia | undefined {
 
 function _salvarVisita(v: Omit<Visita, 'id'>, atualizacoes: AtualizacaoFicha[] = []) {
   const id = novoId('v');
-  app.visitas.push({ ...v, id, atualizadoEm: agora() });
+  app.visitas.push({ ...v, id, atualizadoEm: agora(), criadaEm: agora() });
   app.rascunho = null;
   aplicarRevisitas(id, v.familiaId, v.data, v.revisitasFeitas ?? [], []);
   aplicarAtualizacoesFicha(v.familiaId, v.data, atualizacoes);
@@ -1084,6 +1085,7 @@ function _marcarLancada(id: string, lancada: boolean) {
   const v = app.visitas.find((x) => x.id === id);
   if (v) {
     v.lancadaNoFast = lancada;
+    v.lancadaEm = lancada ? agora() : undefined;
     v.atualizadoEm = agora();
   }
   return gravar({ visitas: app.visitas });
@@ -1247,6 +1249,29 @@ export const corrigirVisita = (id: string, nova: Omit<Visita, 'id'>, voltarParaF
   comDesfazer('Corrigir VD', () => _corrigirVisita(id, nova, voltarParaFila, atualizacoes));
 
 export const marcarLancada = (id: string, lancada: boolean) => comDesfazer('Marcar como lançada', () => _marcarLancada(id, lancada));
+
+/**
+ * Guarda a conferência com o Fast: as VDs achadas na lista ficam "vistas no Fast" hoje (e deixam de estar
+ * "sumidas"); as que já tinham sido vistas e agora faltam ficam marcadas como "sumiu do Fast" hoje.
+ */
+export const guardarConferenciaFast = (vistas: string[], sumiram: string[], hoje: string) =>
+  comDesfazer('Guardar conferência com o Fast', async () => {
+    const quando = agora();
+    for (const v of app.visitas) {
+      if (vistas.includes(v.id)) {
+        v.vistaNoFastEm = hoje;
+        v.sumiuDoFastEm = undefined;
+        v.atualizadoEm = quando;
+      } else if (sumiram.includes(v.id)) {
+        v.sumiuDoFastEm = hoje;
+        v.atualizadoEm = quando;
+      }
+    }
+    app.config.ultimaConferenciaFast = hoje;
+    app.config.alteradaEm = quando;
+    app.historico.push(...criarAlteracoes('', [`Conferência com o Fast: ${vistas.length} VDs vistas no Fast${sumiram.length ? `, ${sumiram.length} sumiram de lá` : ''}`]));
+    await gravar({ visitas: app.visitas, historico: app.historico, config: app.config });
+  });
 
 export const registrarAusencia = (familiaId: string, data: string) => comDesfazer('Ninguém em casa', () => _registrarAusencia(familiaId, data));
 

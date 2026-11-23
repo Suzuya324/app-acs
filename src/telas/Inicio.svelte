@@ -70,9 +70,21 @@
     const d = diferencaDias(data, hoje);
     return d === 1 ? 'última visita há 1 dia' : `última visita há ${d} dias`;
   }
+  /** VDs que já estiveram no Fast e sumiram de lá (e ainda não voltaram para a fila). */
+  const sumidasDoFast = $derived(app.visitas.filter((v) => v.sumiuDoFastEm && v.lancadaNoFast).length);
+  /** Lembrar de conferir com o Fast: tem VD lançada e a última conferência foi há mais de 7 dias (ou nunca). */
+  const lembrarConferir = $derived(
+    app.visitas.some((v) => v.lancadaNoFast) && (!app.config.ultimaConferenciaFast || diferencaDias(app.config.ultimaConferenciaFast, hoje) > 7),
+  );
 </script>
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
+
+{#if sumidasDoFast}
+  <button class="alerta lembrete sinc-erro" onclick={() => ir('conferir-fast')}>🚨 {sumidasDoFast} {sumidasDoFast === 1 ? 'VD sumiu' : 'VDs sumiram'} do Fast (já {sumidasDoFast === 1 ? 'esteve' : 'estiveram'} lá). Toque para ver e voltar para a fila.</button>
+{:else if lembrarConferir}
+  <button class="alerta lembrete pequeno conferir-fast" onclick={() => ir('conferir-fast')}>🔎 {app.config.ultimaConferenciaFast ? `Faz ${diferencaDias(app.config.ultimaConferenciaFast, hoje)} dias que você não confere com o Fast.` : 'Confira com o Fast para o app vigiar as VDs que somem.'} Toque para colar a lista.</button>
+{/if}
 
 {#each atrasados as a (a.nome)}
   <p class="alerta lembrete pequeno">📱 O <strong>{a.nome}</strong> não sincroniza há {a.dias} dias. Abra o app nele (com internet) para ele pegar as novidades.</p>
@@ -163,6 +175,9 @@
 
 <button class="botao largo grande" onclick={() => ir('busca')}>
   <Icone nome="mais" /> Nova visita
+</button>
+<button class="botao secundario largo minhas-vds" onclick={() => ir('minhas-vds')}>
+  <Icone nome="fila" /> Minhas VDs: relatório do dia e do mês
 </button>
 
 {#if !precisaImportar}
@@ -323,6 +338,9 @@
 </button>
 
 <style>
+  .minhas-vds {
+    margin-top: 8px;
+  }
   .chamada {
     display: flex;
     flex-direction: column;

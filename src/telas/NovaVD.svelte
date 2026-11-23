@@ -213,19 +213,9 @@
     const r = Object.fromEntries(Object.entries(anotacoes).map(([k, v]) => [k, v.trim()]).filter(([k, v]) => v && ativos.some((m) => m.id === k)));
     return Object.keys(r).length ? r : undefined;
   }
-  /** Observação + anotações de cada pessoa: é o que entra no relato. */
-  const observacaoDoRelato = $derived(
-    [
-      observacao.trim(),
-      ...ativos
-        .filter((m) => anotacoes[m.id]?.trim())
-        .map((m) => {
-          const t = anotacoes[m.id].trim().replace(/[.;\s]+$/, '');
-          return `sobre ${app.config.relatoNomeCompleto ? m.nome : m.nome.split(' ')[0]}: ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
-        }),
-    ]
-      .filter(Boolean)
-      .join('; '),
+  /** Anotações de cada pessoa que entram no relato ("Ana refere tontura"). */
+  const anotacoesDoRelato = $derived(
+    Object.fromEntries(ativos.filter((m) => anotacoes[m.id]?.trim()).map((m) => [m.id, anotacoes[m.id].trim()])) as Record<string, string>,
   );
   /** VD anterior desta família (até 30 dias antes da data desta VD), para dar continuidade ao relato. */
   const anterior = $derived.by(() => {
@@ -279,7 +269,8 @@
       compartilhadaCom: compartilhada ? compartilhadaCom : '',
       feitos: feitosTexto,
       motivo: motivo === app.config.motivoPadrao ? '' : motivo,
-      observacao: observacaoDoRelato,
+      observacao: observacao,
+      anotacoes: anotacoesDoRelato,
       anterior,
       nomeCompleto: app.config.relatoNomeCompleto,
       contador,

@@ -155,6 +155,11 @@ em ordem numérica em PDF paisagem, ditado por voz etc.).
 ## Fora do escopo
 - Qualquer integração, login automático, raspagem (scraping) ou envio de dados para o Fast, e-SUS ou
   qualquer outro sistema (a sincronização criptografada entre os aparelhos do próprio ACS não conta).
+  - **Exceção (decisão do usuário):** o Claude pode **olhar** o Fast para conferir as VDs, **sem alterar
+    nada** (não lançar, não salvar, não excluir, não preencher formulários), só no navegador do próprio ACS,
+    com o login feito por ele e com ele acompanhando (ex.: extensão Claude no Chrome). Nunca pedir, receber
+    ou guardar a senha do Fast. O app continua sem se conectar ao Fast. Lembrar o ACS de conferir se a
+    unidade permite.
 - Compartilhar dados entre ACS. Cada um tem só a própria área, no próprio celular.
 - Reaproveitar código do Fast ou do e-SUS Território (as fichas públicas do e-SUS podem servir de
   referência para campos).

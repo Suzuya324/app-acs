@@ -3,7 +3,7 @@
   import Acompanhamento from '../componentes/Acompanhamento.svelte';
   import Etiqueta from '../componentes/Etiqueta.svelte';
   import Icone from '../componentes/Icone.svelte';
-  import { normalizar } from '../lib/busca';
+  import { combina, normalizar } from '../lib/busca';
   import { formatarData, hojeISO } from '../lib/datas';
   import { achadosPeloApp } from '../lib/acompanhamento';
   import { app, contextoAcompanhamento, familiaPorId, mostrarAviso, porNaListaDePrioritarios } from '../lib/estado.svelte';
@@ -63,7 +63,7 @@
         (nivel === 'todos' || p.nivel === nivel) &&
         (rua === 'todas' || p.rua === rua) &&
         (!cont || cont.tem(p)) &&
-        (!q || normalizar(`${p.nome} ${p.rua} ${p.casa} ${p.prontuario}`).includes(q) || normalizar(p.prontuario).replace(/\D/g, '').includes(q.replace(/\D/g, '') || '§')),
+        (!q || normalizar(`${p.nome} ${p.rua} ${p.casa} ${p.prontuario}`).includes(q) || combina(`${p.nome} ${p.rua} ${p.casa} ${p.prontuario} ${p.etiquetas.join(' ')}`, busca) || normalizar(p.prontuario).replace(/\D/g, '').includes(q.replace(/\D/g, '') || '§')),
     );
   });
 
@@ -115,7 +115,7 @@
 
   <div class="caixa-busca">
     <Icone nome="busca" />
-    <input type="search" bind:value={busca} placeholder="Nome, casa ou prontuário" aria-label="Buscar prioritário" autocomplete="off" />
+    <input type="search" bind:value={busca} placeholder="Nome, casa, prontuário ou condição" aria-label="Buscar prioritário" autocomplete="off" />
   </div>
 
   <div class="filtros">

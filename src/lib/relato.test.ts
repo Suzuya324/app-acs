@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  comQuem,
   concordancia,
   gerarRelato,
   indiceModelo,
   juntarNomes,
+  nomeProprio,
   nomesCurtos,
   VISITAS_POR_MODELO,
   type EntradaRelato,
@@ -73,7 +75,7 @@ describe('gerador de relato (estilo curto)', () => {
 
   it('inclui visita compartilhada', () => {
     expect(gerarRelato({ ...base, compartilhadaCom: 'técnica de enfermagem Rosa' })).toContain(
-      'VD compartilhada com técnica de enfermagem Rosa.',
+      'VD compartilhada com a técnica de enfermagem Rosa.',
     );
   });
 
@@ -160,5 +162,42 @@ describe('relato com contexto', () => {
     expect(gerarRelato({ ...base, desfecho: 'ausencia_completa', anterior: { data: '2026-10-28', desfecho: 'ausencia_completa' } })).toBe(
       'Realizada tentativa de VD, ninguém em casa, nova tentativa (anterior em 28/10).',
     );
+  });
+});
+
+describe('relato: nomes, textos escritos e compartilhada', () => {
+  it('nome todo em maiúsculas vira nome próprio', () => {
+    expect(nomeProprio('JOANA TESTE DA SILVA')).toBe('Joana Teste da Silva');
+    expect(nomeProprio('joana teste')).toBe('Joana Teste');
+    expect(nomeProprio('Joana McTeste')).toBe('Joana McTeste');
+    const joana = pessoa('9', 'JOANA TESTE DA SILVA');
+    expect(gerarRelato({ ...base, presentes: [joana] })).toBe('Realizada VD, presente Joana.');
+  });
+
+  it('observação: minúscula no começo, menos nome da casa, sigla ou título', () => {
+    expect(gerarRelato({ ...base, observacao: 'Refere dor nas costas.' })).toContain('presentes Fulana e Ciclano, refere dor nas costas.');
+    expect(gerarRelato({ ...base, observacao: 'Fulana refere dor.' })).toContain(', Fulana refere dor.');
+    expect(gerarRelato({ ...base, observacao: 'UBS sem médico esta semana' })).toContain(', UBS sem médico esta semana.');
+    expect(gerarRelato({ ...base, observacao: 'Dra. Paula pediu exames' })).toContain(', Dra. Paula pediu exames.');
+  });
+
+  it('anotações de cada pessoa entram com o nome ("Ciclano refere tontura", "Fulana: consulta dia 20")', () => {
+    const t = gerarRelato({ ...base, anotacoes: { '2': 'Refere tontura.', '1': 'consulta de cardio dia 20' }, orientacoes: 'consultas' });
+    expect(t).toBe('Realizada VD, presentes Fulana e Ciclano, Fulana: consulta de cardio dia 20, Ciclano refere tontura, orientados sobre consultas.');
+    expect(gerarRelato({ ...base, anotacoes: { '1': 'Fulana começou insulina' } })).toContain(', Fulana começou insulina.');
+    expect(gerarRelato({ ...base, anotacoes: { '2': 'Está trabalhando' } })).toContain(', Ciclano está trabalhando.');
+    expect(gerarRelato({ ...base, anotacoes: { '2': 'Não estava em casa' } })).toContain(', Ciclano não estava em casa.');
+  });
+
+  it('compartilhada: artigo e minúscula na função; nome próprio fica igual', () => {
+    expect(comQuem('Técnica de enfermagem')).toBe('a técnica de enfermagem');
+    expect(comQuem('Enfermeiro')).toBe('o enfermeiro');
+    expect(comQuem('Assistente social')).toBe('assistente social');
+    expect(comQuem('Maria (técnica)')).toBe('Maria (técnica)');
+    expect(comQuem('ACS da micro 2')).toBe('ACS da micro 2');
+  });
+
+  it('sem pontuação dobrada', () => {
+    expect(gerarRelato({ ...base, observacao: ' , refere dor.. ', orientacoes: 'vacinas.' })).toBe('Realizada VD, presentes Fulana e Ciclano, refere dor, orientados sobre vacinas.');
   });
 });

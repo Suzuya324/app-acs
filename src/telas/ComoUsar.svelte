@@ -23,7 +23,7 @@
   <details>
     <summary>2. Fazer uma visita (VD)</summary>
     <ol>
-      <li><strong>Buscar</strong> → digite a rua e o número (“ac 90”), um nome ou o prontuário.</li>
+      <li><strong>Buscar</strong> → digite a rua e o número (“ac 90”, “ac 30 casa 2”), um nome (pode errar uma letra), o prontuário, o telefone, a data de nascimento ou o ponto de referência.</li>
       <li>Na família, toque em <strong>Nova VD</strong>. Confira a <strong>data</strong> no topo.</li>
       <li>Toque em <strong>quem estava presente</strong>. O app escolhe o desfecho sozinho (dá para trocar).</li>
       <li>Se quiser, marque orientações, sinais vitais e escreva uma observação (pode ditar pelo microfone do teclado).</li>
@@ -84,11 +84,13 @@
       <li><strong>Casos</strong> (aba da prancheta): o app acha casos no que você escreve na VD (“precisa da assistente social”, “caiu”, “pedir VD da enfermeira”) e oferece abrir o caso já com a categoria, a eMulti e o ponto para a reunião. Na aba, <strong>Copiar a pauta</strong> monta a lista da reunião de equipe. Caso aberto sobe a prioridade da casa (urgente = nível A).</li>
       <li><strong>Técnica de enfermagem</strong> (aba Casos): lista com pós-alta, acamados, recém-nascidos e puérperas; <strong>dia da técnica</strong> com roteiro para copiar; <strong>“Técnica foi”</strong>: com “Fui junto”, vira VD compartilhada que conta para a sua meta e vai para a fila do Fast.</li>
       <li><strong>Telefone, melhor horário e ponto de referência</strong> em Editar família. <strong>Internação/alta</strong> e <strong>ninguém em casa 3 vezes</strong> entram no roteiro do dia.</li>
-      <li><strong>Conferir com o Fast</strong> (aba Fila): cole a lista de VDs lançadas no Fast e veja o que faltou lançar ou foi lançado duas vezes. O Início também avisa quando o tablet ou o computador fica dias sem sincronizar.</li>
+      <li><strong>Conferir com o Fast</strong> (aba Fila): cole a lista de VDs lançadas no Fast e veja o que faltou lançar, o que foi lançado duas vezes e o que o Fast <strong>perdeu</strong> (com botão para voltar para a fila e lançar de novo). Toque em <strong>“Guardar a conferência”</strong> toda semana: o app passa a avisar <strong>qual VD sumiu do Fast e desde quando</strong>. O Início também avisa quando o tablet ou o computador fica dias sem sincronizar.</li>
       <li><strong>Ninguém em casa com 1 toque</strong> no roteiro de hoje e na busca; depois de cada VD aparece a <strong>próxima casa</strong> do roteiro.</li>
       <li><strong>Receitas que vencem</strong>: no acompanhamento da pessoa, “✓ Renovou hoje”. O app avisa 30 dias antes e põe a casa no roteiro.</li>
       <li><strong>Plano para fechar a meta</strong> (Painel): as famílias que faltam divididas pelos dias de campo, por rua.</li>
       <li><strong>Apagar este aparelho</strong> (Ajustes): sincroniza e confere antes de apagar, para devolver o tablet.</li>
+      <li><strong>Painel</strong>: toque numa coluna do gráfico “Famílias visitadas por dia” (ou em “Ver quem” na tabela) para ver quem você visitou naquele dia e abrir o relatório completo.</li>
+      <li><strong>Minhas VDs</strong> (Início): relatório com nomes do dia, da semana, do mês ou de um período, com hora, casa, presentes, desfecho, relato e se foi lançada no Fast. Veja <strong>por dia</strong>, <strong>por família</strong> (com quem ainda falta) ou as <strong>pessoas</strong> atendidas. Imprimir/PDF, copiar ou baixar. Visita periódica repetida (mesma casa, mesmo dia) aparece com aviso.</li>
       <li><strong>Exportar minhas visitas</strong> (Ajustes): planilha das VDs e planilha das famílias visitadas e não visitadas, do mês ou de tudo, e o arquivo único com a pergunta pronta para o Claude. A planilha sai sem senha: mande só o necessário e apague depois.</li>
       <li><strong>Números do mês</strong>: previsão da meta no Início, indicadores por grupo no Painel e relatório em PDF com casos. No fim de Ajustes, a <strong>versão do app</strong> (para saber se atualizou).</li>
       <li><strong>Não perder ninguém</strong> (Início): <strong>A confirmar</strong>, <strong>Gestantes e crianças</strong> (DPP e caderneta), <strong>Mudanças para o SBCD</strong>; e em Atenção, quem vai fazer 2, 60 ou 80 anos.</li>

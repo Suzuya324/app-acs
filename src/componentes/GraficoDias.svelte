@@ -2,10 +2,12 @@
   // Gráfico de colunas: famílias que contaram para a meta em cada dia do período.
   // Uma série só (o título diz o que é), barras finas com ponta arredondada,
   // linha de referência do "ritmo para a meta", toque na coluna para ver os números e tabela.
+  import type { Snippet } from 'svelte';
   import { formatarData, formatarDataLonga } from '../lib/datas';
 
   type Dia = { data: string; contam: number; naoContam: number; diaDeCampo: boolean };
-  let { dias, ritmo = 0 }: { dias: Dia[]; ritmo?: number } = $props();
+  /** `detalhe`: o que mostrar embaixo do gráfico quando um dia é escolhido (ex.: quem foi visitado). */
+  let { dias, ritmo = 0, detalhe }: { dias: Dia[]; ritmo?: number; detalhe?: Snippet<[string]> } = $props();
 
   const W = 360;
   const H = 170;
@@ -37,6 +39,12 @@
   }
 
   let escolhido = $state<number | null>(null);
+  let caixaDetalhe = $state<HTMLElement | null>(null);
+  /** Escolhe o dia pela tabela e rola até a lista de quem foi visitado. */
+  function verDia(data: string) {
+    escolhido = dias.findIndex((d) => d.data === data);
+    requestAnimationFrame(() => caixaDetalhe?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
   const info = $derived(escolhido === null ? null : dias[escolhido]);
   const comVisita = $derived(dias.filter((d) => d.contam || d.naoContam));
 </script>
@@ -44,11 +52,11 @@
 <div class="grafico">
   <p class="leitura" aria-live="polite">
     {#if info}
-      <strong>{formatarDataLonga(info.data, true)}</strong>: {info.contam} família{info.contam === 1 ? '' : 's'} que contam
+      <strong>{formatarDataLonga(info.data, true)}</strong>: {info.contam} família{info.contam === 1 ? ' que conta' : 's que contam'}
       {#if info.naoContam} · {info.naoContam} outra{info.naoContam === 1 ? '' : 's'} visita{info.naoContam === 1 ? '' : 's'}{/if}
       {#if !info.diaDeCampo} · sem campo{/if}
     {:else}
-      <span class="suave">Toque numa coluna para ver o dia.</span>
+      <span class="suave">Toque numa coluna para ver o dia{detalhe ? ' e quem você visitou' : ''}.</span>
     {/if}
   </p>
 
@@ -109,16 +117,23 @@
     {/each}
   </svg>
 
+  {#if info && detalhe}
+    <div class="detalhe" bind:this={caixaDetalhe}>{@render detalhe(info.data)}</div>
+  {/if}
+
   <details class="tabela">
     <summary>Ver em tabela</summary>
     {#if comVisita.length === 0}
       <p class="suave">Nenhuma visita neste período.</p>
     {:else}
       <table>
-        <thead><tr><th>Dia</th><th>Famílias que contam</th><th>Outras visitas</th></tr></thead>
+        <thead><tr><th>Dia</th><th>Famílias que contam</th><th>Outras visitas</th>{#if detalhe}<th></th>{/if}</tr></thead>
         <tbody>
           {#each comVisita as d (d.data)}
-            <tr><td>{formatarData(d.data)}</td><td>{d.contam}</td><td>{d.naoContam}</td></tr>
+            <tr>
+              <td>{formatarData(d.data)}</td><td>{d.contam}</td><td>{d.naoContam}</td>
+              {#if detalhe}<td><button class="ver" onclick={() => verDia(d.data)}>Ver quem</button></td>{/if}
+            </tr>
           {/each}
         </tbody>
       </table>
@@ -127,6 +142,21 @@
 </div>
 
 <style>
+  .detalhe {
+    margin: 8px 0 12px;
+    scroll-margin-top: 80px;
+  }
+  .ver {
+    background: none;
+    border: 2px solid var(--primaria);
+    border-radius: 8px;
+    color: var(--primaria);
+    font-weight: 700;
+    min-height: 36px;
+    padding: 2px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
   .grafico svg {
     width: 100%;
     height: auto;

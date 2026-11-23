@@ -21,6 +21,7 @@
   import MudancasSbcd from './telas/MudancasSbcd.svelte';
   import ConferirFast from './telas/ConferirFast.svelte';
   import ExportarVisitas from './telas/ExportarVisitas.svelte';
+  import RelatorioVDs from './telas/RelatorioVDs.svelte';
   import ProximaCasa from './componentes/ProximaCasa.svelte';
   import ImportarSV from './telas/ImportarSV.svelte';
   import Casos from './telas/Casos.svelte';
@@ -89,7 +90,7 @@
         ? 'fila'
         : ['importar', 'lixeira', 'como-usar', 'importar-grupos', 'importar-sv', 'atualizar-cadastro', 'exportar-visitas'].includes(rota.tela)
         ? 'ajustes'
-        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos', 'confirmar', 'gestantes', 'grupos', 'mudancas'].includes(rota.tela)
+        : ['pendencias', 'painel', 'roteiro', 'relatorio', 'minhas-vds', 'atencao', 'mapa', 'prontuarios', 'numeros', 'dia', 'agenda', 'sumidos', 'confirmar', 'gestantes', 'grupos', 'mudancas'].includes(rota.tela)
           ? 'inicio'
           : rota.tela,
   );
@@ -185,6 +186,8 @@
     <ImportarSV />
   {:else if rota.tela === 'importar-grupos'}
     <ImportarGrupos />
+  {:else if rota.tela === 'minhas-vds'}
+    {#key rota.id}<RelatorioVDs diaInicial={rota.id} />{/key}
   {:else if rota.tela === 'exportar-visitas'}
     <ExportarVisitas />
   {:else if rota.tela === 'conferir-fast'}
