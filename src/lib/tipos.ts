@@ -31,6 +31,16 @@ export type SituacaoCasa =
   | 'demolida'
   | 'construcao';
 
+/** O que o ACS marcou do pré-natal de uma gestante. */
+export interface PreNatal {
+  /** Quantas consultas de pré-natal já fez (o mínimo é 6). */
+  consultas: number;
+  exames?: boolean;
+  testeRapido?: boolean;
+  dtpa?: boolean;
+  odonto?: boolean;
+}
+
 export interface Morador {
   id: string;
   nome: string;
@@ -46,6 +56,8 @@ export interface Morador {
   codSbcd?: string;
   /** Gestante: data provável do parto (aaaa-mm-dd). */
   dpp?: string;
+  /** Gestante: o que já foi feito no pré-natal. */
+  prenatal?: PreNatal;
   /** Criança: última vez que o ACS conferiu a caderneta de vacinas (aaaa-mm-dd). */
   cadernetaEm?: string;
   /** Última receita dos remédios de uso contínuo (aaaa-mm-dd), para lembrar de renovar. */

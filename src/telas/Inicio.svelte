@@ -244,8 +244,8 @@
   </button>
 {/if}
 
-<button class="item-link pendencias" onclick={() => ir('gestantes')}>
-  <span><strong>Gestantes e crianças</strong><br /><span class="suave pequeno">DPP, perto de ganhar, caderneta de vacinas</span></span>
+<button class="item-link pendencias" onclick={() => ir('grupos')}>
+  <span><strong>Grupos</strong><br /><span class="suave pequeno">pré-natal, crianças, idosos, hipertensos, diabéticos e acamados por faixa etária</span></span>
   {#if alertasGC}<span class="num-pend">{alertasGC}</span>{/if}
 </button>
 
