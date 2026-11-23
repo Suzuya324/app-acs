@@ -40,6 +40,8 @@
   }
   const mudarPreNatal = (familiaId: string, m: Morador, mudar: Partial<PreNatal>) =>
     salvar(familiaId, m, { prenatal: { ...PRENATAL_VAZIO, ...(m.prenatal ?? {}), ...mudar } }, 'Pré-natal atualizado ✓');
+  const naoEstaGravida = (familiaId: string, m: Morador) =>
+    salvar(familiaId, m, { grupos: m.grupos.filter((g) => g !== 'gestante'), dpp: undefined }, 'Tirada do pré-natal ✓');
   const virouPuerpera = (familiaId: string, m: Morador) =>
     salvar(familiaId, m, { grupos: [...new Set([...m.grupos.filter((g) => g !== 'gestante'), 'puerpera' as const])] }, 'Marcada como puérpera ✓');
 
@@ -80,11 +82,17 @@
         {/if}
         <p class="pequeno suave">{g.ultimaVd ? `Última VD: ${formatarData(g.ultimaVd)} (há ${g.diasSemVd} dias)` : 'Sem VD registrada'}</p>
         {#if g.alerta}<p class="aviso">⚠ {g.alerta}</p>{/if}
+        <div class="acoes-gestante">
+          <span class="pequeno"><strong>Ainda está grávida?</strong></span>
+          <button class="botao pequeno" disabled={ocupado} onclick={() => virouPuerpera(g.familia.id, g.morador)}>Já ganhou: marcar puérpera</button>
+          <button class="botao secundario pequeno" disabled={ocupado} onclick={() => naoEstaGravida(g.familia.id, g.morador)}>Não está grávida: tirar daqui</button>
+        </div>
         <label class="campo dpp">
           <span class="pequeno">Anotar a DPP</span>
           <input type="date" value={g.morador.dpp ?? ''} onchange={(e) => salvar(g.familia.id, g.morador, { dpp: (e.currentTarget as HTMLInputElement).value || undefined }, 'DPP anotada ✓')} />
         </label>
 
+        {#if !(g.dpp && g.dpp <= hoje)}
         <div class="checklist">
           <strong class="pequeno">Pré-natal</strong>
           <div class="consultas">
@@ -98,9 +106,6 @@
           <label class="marca"><input type="checkbox" checked={!!g.prenatal.odonto} disabled={ocupado} onchange={(e) => mudarPreNatal(g.familia.id, g.morador, { odonto: (e.currentTarget as HTMLInputElement).checked })} /> Consulta odontológica</label>
           {#if g.falta.length}<p class="pequeno falta">Falta: {g.falta.join(' · ')}</p>{:else}<p class="pequeno ok">Pré-natal em dia ✓</p>{/if}
         </div>
-
-        {#if g.dpp && g.dpp <= hoje}
-          <button class="botao pequeno" disabled={ocupado} onclick={() => virouPuerpera(g.familia.id, g.morador)}>Já ganhou: marcar puérpera</button>
         {/if}
       </li>
     {/each}
@@ -236,6 +241,12 @@
   }
   .dpp {
     margin: 6px 0;
+  }
+  .acoes-gestante {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0;
   }
   .checklist {
     margin: 10px 0;
