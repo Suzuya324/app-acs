@@ -275,6 +275,8 @@ export interface Config {
   agendaTecnica?: { data: string; moradores: string[] };
   /** Última sincronização de cada aparelho (nome → ISO), para avisar quando um ficou para trás. */
   aparelhos?: Record<string, string>;
+  /** Aparelhos tirados da lista ("não uso mais"): nome → quando (ISO). Se sincronizar depois, volta. */
+  aparelhosRemovidos?: Record<string, string>;
   /** Até quando (ISO) as mudanças do cadastro já foram passadas para o SBCD. */
   sbcdAtualizadoAte?: string;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */

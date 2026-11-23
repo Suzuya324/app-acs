@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import TecladoPin from '../componentes/TecladoPin.svelte';
-  import { apagarTudo, desbloquear, esperaRestante } from '../lib/estado.svelte';
+  import { textoDoBloqueio } from '../lib/bloqueios';
+  import { app, apagarTudo, desbloquear, esperaRestante } from '../lib/estado.svelte';
 
   let pin = $state('');
   let abrindo = $state(false);
@@ -50,6 +51,16 @@
   <div class="cadeado" aria-hidden="true">🔒</div>
   <h1>Facilitador de VDs</h1>
   {#if !esqueci}
+    {#if app.ultimoBloqueio}
+      <p class="motivo pequeno" role="status">
+        {textoDoBloqueio(app.ultimoBloqueio, app.config)}
+        {#if app.ultimoBloqueio.motivo === 'parado' || app.ultimoBloqueio.motivo === 'fora'}
+          <br /><span class="suave">Dá para mudar o tempo em Ajustes → Bloqueio automático.</span>
+        {:else if app.ultimoBloqueio.motivo === 'fechado'}
+          <br /><span class="suave">Nada se perde: a VD pela metade fica guardada.</span>
+        {/if}
+      </p>
+    {/if}
     <p class="suave">Digite seu PIN</p>
     <TecladoPin bind:valor={pin} onconfirmar={entrar} desabilitado={abrindo || espera > 0} />
     <p class="estado" aria-live="assertive">
@@ -77,6 +88,14 @@
 </section>
 
 <style>
+  .motivo {
+    background: var(--aviso-fundo);
+    color: var(--aviso-texto);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 4px 0 10px;
+    text-align: center;
+  }
   .tela-pin {
     text-align: center;
     padding-top: 16px;

@@ -120,7 +120,7 @@
       <Icone nome={escuro ? 'sol' : 'lua'} />
     </button>
     {#if app.fase === 'aberto'}
-      <button class="botao-topo" onclick={trancar} aria-label="Trancar o app agora">
+      <button class="botao-topo" onclick={() => trancar('cadeado')} aria-label="Trancar o app agora">
         <Icone nome="cadeado" />
       </button>
     {/if}

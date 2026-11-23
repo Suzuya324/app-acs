@@ -324,6 +324,24 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 
 ---
 
+## 6b. O app trancou ou "saiu sozinho"? Aparelho que você não usa mais?
+
+- **Por que trancou:** a tela do PIN agora diz o motivo: "5 min sem tocar na tela", "ficou fora do app
+  (ou com a tela apagada)", "trancado pelo cadeado", "app atualizado" ou "o app foi fechado (pelo celular ou
+  por você) e abriu de novo". Em **Ajustes → Bloqueio automático → "Por que o app trancou"** estão as últimas
+  vezes.
+- **Digitar e ditar por voz contam como uso:** o app não tranca mais no meio do relato ditado.
+- **Tempo do bloqueio:** em **Ajustes → Bloqueio automático** dá para escolher até 30 min parado e até 15 min
+  fora do app. Mais tempo é mais prático na rua, mas deixa o app aberto por mais tempo se o celular ficar largado.
+- **"O app foi fechado" toda hora:** é o Android fechando o app para economizar bateria. No celular, abra
+  **Configurações → Apps → Chrome → Bateria → Sem restrições** (os nomes mudam um pouco em cada celular).
+- **Aviso de aparelho que você não usa:** cada aparelho conectado à sincronização entra numa lista com o nome
+  que você deu. Se o celular foi trocado ou conectado de novo com outro nome, o nome antigo ficava lá e o Início
+  avisava "não sincroniza". Agora o aviso tem o botão **"Não uso mais esse aparelho"**, e em **Ajustes →
+  Sincronizar aparelhos** aparece a lista com a última vez de cada um e o botão **"Não uso mais"**. Tirar da lista
+  vale em todos os aparelhos; se ele sincronizar de novo, volta sozinho. Aparelho parado há mais de 30 dias não
+  gera mais aviso no Início (só aparece na lista).
+
 ## 7. Rotina de segurança
 
 - **Backup:** com a sincronização ligada, um backup por mês basta (garantia extra). Sem ela, toda

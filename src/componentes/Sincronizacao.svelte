@@ -2,7 +2,8 @@
   // Quadro "Sincronizar aparelhos" (em Ajustes): liga, mostra como está e desliga a sincronização.
   import { entregarArquivo } from '../lib/arquivo';
   import { decodificar } from '../lib/importar-csv';
-  import { app, arquivoDeConexao, conectarSinc, desligarSinc, mostrarAviso, sincronizar, trocarChaveSinc } from '../lib/estado.svelte';
+  import { diferencaDias, hojeISO } from '../lib/datas';
+  import { app, arquivoDeConexao, conectarSinc, desligarSinc, mostrarAviso, sincronizar, tirarAparelho, trocarChaveSinc } from '../lib/estado.svelte';
   import { lerArquivoConexao, limparRepo } from '../lib/sinc';
 
   const SUGESTOES_APARELHO = ['Celular', 'Tablet', 'Computador'];
@@ -16,6 +17,19 @@
   let textoConexao = $state('');
   let conectando = $state(false);
   let erro = $state('');
+
+  /** Os aparelhos que já sincronizaram (o mais recente primeiro). */
+  const aparelhos = $derived(
+    Object.entries(app.config.aparelhos ?? {})
+      .map(([nome, em]) => ({ nome, em, dias: diferencaDias(em.slice(0, 10), hojeISO()) }))
+      .sort((a, b) => b.em.localeCompare(a.em)),
+  );
+  const dataHora = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  async function naoUsoMais(nome: string) {
+    if (!confirm(`Tirar o aparelho “${nome}” da lista? Use quando você não usa mais esse aparelho (celular trocado, app apagado…). Se ele sincronizar de novo, volta sozinho.`)) return;
+    await tirarAparelho(nome);
+    mostrarAviso(`“${nome}” tirado da lista ✓`);
+  }
 
   const quando = $derived(
     app.sinc.ultima ? new Date(app.sinc.ultima).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '',
@@ -133,6 +147,25 @@
       {/if}
     </p>
     <p class="suave pequeno">Este aparelho: <strong>{app.sinc.aparelho}</strong> · nuvem: {app.sinc.repo}</p>
+    {#if aparelhos.length}
+      <div class="aparelhos">
+        <p class="pequeno"><strong>Aparelhos que sincronizam</strong></p>
+        <ul>
+          {#each aparelhos as a (a.nome)}
+            <li class:parado={a.nome !== app.sinc.aparelho && a.dias >= 3}>
+              <span>
+                📱 <strong>{a.nome}</strong>{a.nome === app.sinc.aparelho ? ' (este aparelho)' : ''}<br />
+                <span class="suave pequeno">última vez: {dataHora(a.em)}{a.dias >= 1 ? ` (há ${a.dias} ${a.dias === 1 ? 'dia' : 'dias'})` : ''}</span>
+              </span>
+              {#if a.nome !== app.sinc.aparelho}
+                <button class="botao secundario pequeno" onclick={() => naoUsoMais(a.nome)}>Não uso mais</button>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+        <p class="suave pequeno">Algum aparelho que você não usa mais (celular trocado, app apagado e conectado com outro nome)? Toque em “Não uso mais” e o aviso some em todos os aparelhos.</p>
+      </div>
+    {/if}
     <p class="suave pequeno">
       Sincroniza sozinho ao abrir o app, alguns segundos depois de cada alteração, a cada minuto com o app aberto e antes de trancar.
       Nada é apagado: vale sempre a alteração mais recente.
@@ -236,6 +269,28 @@
 </section>
 
 <style>
+  .aparelhos {
+    border-top: 1px solid var(--borda);
+    margin-top: 8px;
+    padding-top: 6px;
+  }
+  .aparelhos ul {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0;
+  }
+  .aparelhos li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--borda);
+    overflow-wrap: anywhere;
+  }
+  .aparelhos li.parado strong {
+    color: var(--aviso-texto);
+  }
   .status {
     font-weight: 700;
     margin-bottom: 4px;

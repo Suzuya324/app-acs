@@ -2,7 +2,7 @@
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO, somarDias } from '../lib/datas';
-  import { app, contextoAcompanhamento, descartarRascunho, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas } from '../lib/estado.svelte';
+  import { app, contextoAcompanhamento, descartarRascunho, mostrarAviso, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas, tirarAparelho } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
   import { casasParaRevisitar } from '../lib/nivel';
   import { agenda, lembretes, roteiroDoDia, sumidos } from '../lib/dia';
@@ -53,14 +53,22 @@
   });
   const alertasGC = $derived(gestantes(app.familias, app.visitas, hoje).filter((g) => g.alerta).length + criancas(app.familias, hoje).filter((c) => c.conferir).length);
   const nMudancas = $derived(mudancasParaSbcd(app.historico, app.familias, app.config.sbcdAtualizadoAte ?? `${somarDias(hoje, -30)}T00:00:00.000Z`).length);
-  /** Outro aparelho (tablet, computador) sem sincronizar há 3 dias ou mais. */
+  /**
+   * Outro aparelho (tablet, computador) sem sincronizar de 3 a 30 dias. Mais que isso, provavelmente não é mais
+   * usado: não avisa (aparece na lista de Ajustes, onde dá para tirar).
+   */
   const atrasados = $derived(
     app.sinc.estado === 'desligada'
       ? []
       : Object.entries(app.config.aparelhos ?? {})
-          .filter(([nome, quando]) => nome !== app.sinc.aparelho && diferencaDias(quando.slice(0, 10), hoje) >= 3)
-          .map(([nome, quando]) => ({ nome, dias: diferencaDias(quando.slice(0, 10), hoje) })),
+          .map(([nome, quando]) => ({ nome, dias: diferencaDias(quando.slice(0, 10), hoje) }))
+          .filter((a) => a.nome !== app.sinc.aparelho && a.dias >= 3 && a.dias <= 30),
   );
+  async function naoUsoMais(nome: string) {
+    if (!confirm(`Tirar o aparelho “${nome}” da lista? Use quando você não usa mais esse aparelho. Se ele sincronizar de novo, volta sozinho.`)) return;
+    await tirarAparelho(nome);
+    mostrarAviso(`“${nome}” tirado da lista ✓`);
+  }
   const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   const quandoCurto = (iso: string) => (iso === hoje ? 'hoje' : iso > hoje ? 'amanhã' : `${DIAS_SEMANA[new Date(`${iso}T12:00:00`).getDay()]} ${formatarData(iso).slice(0, 5)}`);
   const ordemDesfechos: TDesfecho[] = ['realizada', 'ausente_realizada', 'ausencia_completa', 'recusa'];
@@ -87,7 +95,10 @@
 {/if}
 
 {#each atrasados as a (a.nome)}
-  <p class="alerta lembrete pequeno">📱 O <strong>{a.nome}</strong> não sincroniza há {a.dias} dias. Abra o app nele (com internet) para ele pegar as novidades.</p>
+  <div class="alerta lembrete pequeno aparelho-parado">
+    <p>📱 O aparelho <strong>“{a.nome}”</strong> não abre o app há {a.dias} dias, então não pega as novidades. Se ainda usa, abra o app nele com internet.</p>
+    <button class="botao secundario pequeno" onclick={() => naoUsoMais(a.nome)}>Não uso mais esse aparelho</button>
+  </div>
 {/each}
 
 {#if app.sinc.estado === 'erro'}
@@ -338,6 +349,9 @@
 </button>
 
 <style>
+  .aparelho-parado p {
+    margin: 0 0 6px;
+  }
   .minhas-vds {
     margin-top: 8px;
   }

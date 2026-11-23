@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { lerBloqueios, quandoFoi, textoDoBloqueio } from '../lib/bloqueios';
   import { entregarArquivo } from '../lib/arquivo';
   import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
   import { FERIADOS_LOCAIS_SUGERIDOS, feriadosNacionais } from '../lib/calendario';
@@ -189,6 +190,7 @@
     }
     await apagarTudo();
   }
+  const bloqueios = lerBloqueios();
 </script>
 
 <h1>Ajustes</h1>
@@ -380,16 +382,35 @@
   <label class="campo">
     <span>Trancar depois de ficar parado no app por</span>
     <select bind:value={app.config.minutosParado} onchange={salvarConfig}>
-      {#each [1, 2, 3, 5, 10] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+      {#each [1, 2, 3, 5, 10, 15, 20, 30] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
     </select>
   </label>
   <label class="campo">
     <span>Trancar ao sair do app (outro app ou tela apagada) por mais de</span>
     <select bind:value={app.config.minutosFora} onchange={salvarConfig}>
       <option value={0}>na hora (mais seguro)</option>
-      {#each [1, 2, 5] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+      {#each [1, 2, 3, 5, 10, 15] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
     </select>
   </label>
+  <p class="suave pequeno">
+    Digitar e ditar por voz contam como uso (o app não tranca no meio do relato). Tempo maior é mais prático na rua,
+    mas deixa o app aberto por mais tempo se o celular ficar largado.
+  </p>
+  <details class="bloqueios">
+    <summary>Por que o app trancou (últimas vezes)</summary>
+    {#if bloqueios.length}
+      <ul class="pequeno">
+        {#each bloqueios as b, i (i)}<li><strong>{quandoFoi(b.em)}</strong> · {textoDoBloqueio(b, app.config)}</li>{/each}
+      </ul>
+    {:else}
+      <p class="suave pequeno">Nenhum bloqueio guardado ainda.</p>
+    {/if}
+    <p class="suave pequeno">
+      Se aparecer muito “o app foi fechado”, é o Android fechando o app para economizar bateria. Para evitar: no
+      celular, abra <strong>Configurações → Apps → Chrome → Bateria</strong> e escolha <strong>Sem restrições</strong>
+      (os nomes podem mudar um pouco conforme o celular).
+    </p>
+  </details>
 </section>
 
 <section class="cartao">
