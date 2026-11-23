@@ -136,6 +136,7 @@
     <button class="botao largo grande" onclick={() => ir(`vd/${familia.id}`)}>
       <Icone nome="mais" /> {app.rascunho?.familiaId === familia.id && !app.rascunho.visitaId ? 'Continuar visita' : 'Registrar visita'}
     </button>
+    <button class="botao secundario largo sem-novidade" onclick={() => ir(`vd-rapida/${familia.id}`)}>⚡ VD sem novidade (rápida)</button>
     {#if !confirmandoAusencia}
       <button class="botao secundario largo ausencia" onclick={() => (confirmandoAusencia = true)}>Ninguém em casa</button>
     {:else}
@@ -364,6 +365,9 @@
   .revisita.atrasada strong,
   .revisita.atrasada .pequeno {
     color: var(--perigo);
+  }
+  .sem-novidade {
+    margin-top: 10px;
   }
   .ausencia {
     margin-bottom: 14px;

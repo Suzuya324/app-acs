@@ -47,6 +47,7 @@
   import Lancar from './telas/Lancar.svelte';
   import Lixeira from './telas/Lixeira.svelte';
   import NovaVD from './telas/NovaVD.svelte';
+  import VdRapida from './telas/VdRapida.svelte';
 
   const prefereEscuro = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   let escuro = $state(prefereEscuro);
@@ -146,6 +147,8 @@
     {#key rota.id}<Familia id={rota.id} />{/key}
   {:else if rota.tela === 'vd'}
     {#key `${rota.id}/${rota.sub}`}<NovaVD familiaId={rota.id} visitaId={rota.sub} />{/key}
+  {:else if rota.tela === 'vd-rapida'}
+    {#key rota.id}<VdRapida familiaId={rota.id} />{/key}
   {:else if rota.tela === 'fila'}
     <Fila />
   {:else if rota.tela === 'lancar'}
