@@ -24,6 +24,7 @@ import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
 import type { Contexto } from './acompanhamento';
 import type { Comparacao } from './atualizar-cadastro';
+import { ORIGEM_APA } from './equipe';
 import { ORIGEM_TECNICA } from './tecnica';
 import { acharMesmaPessoa, etiquetaDoGrupo, gruposDasEtiquetas, idPrioritario, infoEtiqueta, juntarRepetidos, ligar, separarCoracao, type Prioritario, type PreviaPrioritarios } from './prioritarios';
 import { abrirSinc, ChavesSinc, cifrarSinc, criarArquivoConexao, ErroGitHub, GitHub, lerArquivoConexao, limparRepo, mesmoConteudo, type ConfigSinc } from './sinc';
@@ -515,7 +516,7 @@ export const contextoAcompanhamento = (): Contexto => ({
   escondidas: app.config.sugestoesEscondidas ?? [],
   remediosExtras: app.config.remediosExtras ?? '',
   mesesReceita: app.config.mesesReceita,
-  diasDescanso: app.config.diasDescanso,
+  diasDescanso: app.config.diasDescanso, diasDescansoGrave: app.config.diasDescansoGrave,
   hoje: hojeISO(),
 });
 
@@ -806,22 +807,38 @@ export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) 
 export const registrarDevolutivaTecnica = (
   familiaId: string,
   moradorId: string,
-  d: { data: string; pa?: string; glicemia?: string; texto?: string; junto?: boolean },
+  d: { data: string; pa?: string; glicemia?: string; texto?: string; junto?: boolean; /** Quem foi, se não for a técnica: "Enfermeira" ou "Médica". */ quem?: string },
 ) =>
-  comDesfazer(d.junto ? 'VD com a técnica' : 'Devolutiva da técnica', async () => {
+  comDesfazer(d.junto ? `VD com ${d.quem ? `a ${d.quem.toLowerCase()}` : 'a técnica'}` : `Devolutiva ${d.quem ? `da ${d.quem.toLowerCase()}` : 'da técnica'}`, async () => {
+    const rotulo = d.quem ?? ORIGEM_TECNICA;
+    const com = d.quem ? `a ${d.quem.toLowerCase()}` : 'a técnica';
     const f = app.familias.find((x) => x.id === familiaId);
     const m = f?.moradores.find((x) => x.id === moradorId);
     if (!f || !m) return;
     const sinais: SinaisVitais = {};
     if (d.pa?.trim()) sinais.pa = d.pa.trim();
     if (d.glicemia?.trim()) sinais.glicemia = d.glicemia.trim();
-    const ag = app.config.agendaTecnica;
-    if (ag?.moradores.includes(moradorId)) {
-      app.config.agendaTecnica = { ...ag, moradores: ag.moradores.filter((x) => x !== moradorId) };
-      app.config.alteradaEm = agora();
+    if (!d.quem) {
+      const ag = app.config.agendaTecnica;
+      if (ag?.moradores.includes(moradorId)) {
+        app.config.agendaTecnica = { ...ag, moradores: ag.moradores.filter((x) => x !== moradorId) };
+        app.config.alteradaEm = agora();
+      }
+    } else {
+      // Tira a pessoa do dia da enfermeira / da médica.
+      const chave = d.quem === 'Médica' ? 'medica' : 'enfermeira';
+      const ag = app.config.agendaEquipe?.[chave];
+      if (ag?.itens.includes(moradorId)) {
+        const resto = ag.itens.filter((x) => x !== moradorId);
+        const todas = { ...(app.config.agendaEquipe ?? {}) };
+        if (resto.length) todas[chave] = { ...ag, itens: resto };
+        else delete todas[chave];
+        app.config.agendaEquipe = Object.keys(todas).length ? todas : undefined;
+        app.config.alteradaEm = agora();
+      }
     }
     if (d.junto) {
-      const nota = d.texto?.trim() ? `Técnica de enfermagem: ${d.texto.trim()}` : 'Visita com a técnica de enfermagem.';
+      const nota = d.texto?.trim() ? `${rotulo}: ${d.texto.trim()}` : `Visita com ${d.quem ? com : 'a técnica de enfermagem'}.`;
       const ja = app.visitas.find((v) => v.familiaId === f.id && v.data === d.data);
       if (ja) {
         // Já tinha VD da casa nesse dia: completa (sem criar outra na fila do Fast).
@@ -829,7 +846,7 @@ export const registrarDevolutivaTecnica = (
         const depois: Visita = {
           ...antes,
           presentes: antes.presentes.includes(m.id) ? antes.presentes : [...antes.presentes, m.id],
-          compartilhadaCom: antes.compartilhadaCom || ORIGEM_TECNICA,
+          compartilhadaCom: antes.compartilhadaCom || rotulo,
           sinais: { ...antes.sinais, [m.id]: { ...(antes.sinais[m.id] ?? {}), ...sinais } },
           anotacoes: { ...(antes.anotacoes ?? {}), [m.id]: [antes.anotacoes?.[m.id], nota].filter(Boolean).join(' ') },
           lancadaNoFast: false,
@@ -837,7 +854,7 @@ export const registrarDevolutivaTecnica = (
         };
         const i = app.visitas.indexOf(ja);
         app.visitas[i] = depois;
-        app.historico.push(...criarAlteracoes(f.id, [`VD de ${d.data.split('-').reverse().join('/')} completada com a técnica (${m.nome.split(' ')[0]})`], m.id));
+        app.historico.push(...criarAlteracoes(f.id, [`VD de ${d.data.split('-').reverse().join('/')} completada com ${com} (${m.nome.split(' ')[0]})`], m.id));
         await gravar({ visitas: app.visitas, historico: app.historico, config: app.config });
         return;
       }
@@ -850,11 +867,11 @@ export const registrarDevolutivaTecnica = (
         conversouComFamilia: false,
         sinais: Object.keys(sinais).length ? { [m.id]: sinais } : {},
         orientacoes: '',
-        compartilhadaCom: ORIGEM_TECNICA,
+        compartilhadaCom: rotulo,
         observacao: d.texto?.trim() || undefined,
         contador: app.visitas.length,
       });
-      app.historico.push(...criarAlteracoes(f.id, [`VD com a técnica (${d.data.split('-').reverse().join('/')}): ${m.nome.split(' ')[0]}`], m.id));
+      app.historico.push(...criarAlteracoes(f.id, [`VD com ${com} (${d.data.split('-').reverse().join('/')}): ${m.nome.split(' ')[0]}`], m.id));
       // Grava direto (sem mexer numa VD pela metade que esteja guardada).
       app.visitas.push({
         id: novoId('v'),
@@ -866,7 +883,7 @@ export const registrarDevolutivaTecnica = (
         conversouComFamilia: false,
         desfecho,
         motivo: app.config.motivoPadrao,
-        compartilhadaCom: ORIGEM_TECNICA,
+        compartilhadaCom: rotulo,
         sinais: Object.keys(sinais).length ? { [m.id]: sinais } : {},
         orientacoes: '',
         relato,
@@ -878,10 +895,10 @@ export const registrarDevolutivaTecnica = (
       return;
     }
     const partes = [d.pa?.trim() && `P.A. ${d.pa.trim()}`, d.glicemia?.trim() && `glicemia ${d.glicemia.trim()}`].filter(Boolean).join(', ');
-    const texto = `${m.nome}: ${[partes, d.texto?.trim()].filter(Boolean).join('. ') || 'visita da técnica feita'}.`.replace(/\.\./g, '.');
-    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: ORIGEM_TECNICA, texto, data: d.data, origem: ORIGEM_TECNICA }];
+    const texto = `${m.nome}: ${[partes, d.texto?.trim()].filter(Boolean).join('. ') || `visita da ${d.quem ? d.quem.toLowerCase() : 'técnica'} feita`}.`.replace(/\.\./g, '.');
+    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: rotulo, texto, data: d.data, origem: rotulo }];
     f.atualizadoEm = agora();
-    app.historico.push(...criarAlteracoes(f.id, [`Devolutiva da técnica (${d.data.split('-').reverse().join('/')}): ${texto}`], m.id));
+    app.historico.push(...criarAlteracoes(f.id, [`Devolutiva da ${d.quem ? d.quem.toLowerCase() : 'técnica'} (${d.data.split('-').reverse().join('/')}): ${texto}`], m.id));
     await gravar({ familias: app.familias, historico: app.historico, config: app.config });
   });
 
@@ -913,6 +930,74 @@ export const devolutivaViraVD = (familiaId: string, relatoId: string) =>
     await registrarDevolutivaTecnica(familiaId, it.morador.id, { data: it.data, pa, glicemia, texto: resto || undefined, junto: true });
     await gravar({ familias: app.familias });
   });
+
+/** "Pular hoje": a casa some do roteiro de hoje e volta amanhã (não conta como visita). `pular = false` desfaz. */
+export const pularCasaHoje = (familiaId: string, hoje: string, pular = true) =>
+  comDesfazer(pular ? 'Pular hoje' : 'Voltar ao roteiro', async () => {
+    const f = app.familias.find((x) => x.id === familiaId);
+    if (!f) return;
+    const sem = (f.puladas ?? []).filter((d) => d !== hoje);
+    // Guarda só as últimas datas (o aviso "pulada várias vezes" olha os últimos 14 dias).
+    f.puladas = (pular ? [...sem, hoje] : sem).sort().slice(-10);
+    if (!f.puladas.length) delete f.puladas;
+    f.atualizadoEm = agora();
+    await gravar({ familias: app.familias });
+  });
+
+/** Guarda a ordem de caminhada de uma rua: `ids` na ordem em que o ACS anda (as casas que não estiverem na lista não mudam). */
+export const salvarOrdemDaRua = (rua: string, ids: string[]) =>
+  comDesfazer('Ordem da rua', async () => {
+    const quando = agora();
+    ids.forEach((id, i) => {
+      const f = app.familias.find((x) => x.id === id && x.rua === rua);
+      if (!f || f.ordemNaRua === i + 1) return;
+      f.ordemNaRua = i + 1;
+      f.atualizadoEm = quando;
+    });
+    await gravar({ familias: app.familias });
+  });
+
+/** Volta a ordem da rua para a pelo número da casa. */
+export const limparOrdemDaRua = (rua: string) =>
+  comDesfazer('Ordem da rua', async () => {
+    const quando = agora();
+    for (const f of app.familias) {
+      if (f.rua !== rua || f.ordemNaRua === undefined) continue;
+      delete f.ordemNaRua;
+      f.atualizadoEm = quando;
+    }
+    await gravar({ familias: app.familias });
+  });
+
+/** O APA foi na casa: fica anotado na ficha, e a casa sai da lista dele até aparecer algo novo. Não conta como VD. */
+export const registrarVisitaApa = (familiaId: string, data: string, texto: string) =>
+  comDesfazer('APA foi', async () => {
+    const f = app.familias.find((x) => x.id === familiaId);
+    if (!f) return;
+    const nota = `APA foi na casa${texto.trim() ? `: ${texto.trim()}` : ''}.`.replace(/\.\./g, '.');
+    f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: novoId('r'), titulo: ORIGEM_APA, texto: nota, data, origem: ORIGEM_APA }];
+    f.atualizadoEm = agora();
+    app.historico.push(...criarAlteracoes(f.id, [`APA foi (${data.split('-').reverse().join('/')})${texto.trim() ? `: ${texto.trim()}` : ''}`]));
+    const ag = app.config.agendaEquipe?.apa;
+    if (ag?.itens.includes(f.id)) {
+      const resto = ag.itens.filter((x) => x !== f.id);
+      const todas = { ...(app.config.agendaEquipe ?? {}) };
+      if (resto.length) todas.apa = { ...ag, itens: resto };
+      else delete todas.apa;
+      app.config.agendaEquipe = Object.keys(todas).length ? todas : undefined;
+      app.config.alteradaEm = agora();
+    }
+    await gravar({ familias: app.familias, historico: app.historico, config: app.config });
+  });
+
+/** Monta (ou limpa) o dia da enfermeira, da médica ou do APA na área: a data e o que eles vão ver. */
+export function salvarAgendaEquipe(quem: 'enfermeira' | 'medica' | 'apa', agenda: { data: string; itens: string[] } | undefined) {
+  const todas = { ...(app.config.agendaEquipe ?? {}) };
+  if (agenda && agenda.itens.length) todas[quem] = agenda;
+  else delete todas[quem];
+  app.config.agendaEquipe = Object.keys(todas).length ? todas : undefined;
+  return salvarConfig();
+}
 
 /** Monta (ou limpa) o dia da técnica na área: a data e quem ela vai ver. */
 export function salvarAgendaTecnica(agenda: { data: string; moradores: string[] } | undefined) {

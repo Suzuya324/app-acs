@@ -128,6 +128,12 @@ export function ausentesSeguidos(familias: Familia[], visitas: Visita[], n = 3):
 
 /** Depois de uma VD (ou de uma tentativa), a casa só volta ao roteiro depois de tantos dias. */
 export const DIAS_DESCANSO = 5;
+/** Casos graves (urgente, alta do hospital, acamado, oxigênio) descansam menos. */
+export const DIAS_DESCANSO_GRAVE = 2;
+/** Tantas tentativas seguidas de "ninguém em casa": a casa sai do roteiro até confirmar se ainda mora ali. */
+export const AUSENCIAS_PARA_PAUSAR = 3;
+/** "Pulada" várias vezes nos últimos X dias vira aviso. */
+export const DIAS_PULADAS = 14;
 
 export interface Descansando {
   familia: Familia;
@@ -135,19 +141,102 @@ export interface Descansando {
   ultima: string;
   /** Primeiro dia em que a casa pode voltar ao roteiro. */
   voltaEm: string;
+  /** Caso grave: descansa menos. */
+  grave?: boolean;
 }
 
-/** Casas que tiveram VD (ou tentativa: ninguém em casa, recusa) há menos de `dias` dias: não entram no roteiro. */
-export function casasDescansando(familias: Familia[], visitas: Visita[], hoje: string, dias = DIAS_DESCANSO): Descansando[] {
+/** Casas com caso urgente aberto, alta recente do hospital, acamado ou em uso de oxigênio: voltam mais cedo. */
+export function casasGraves(familias: Familia[], ctx: Contexto & { casos: Caso[] }): Set<string> {
+  const ids = new Set<string>();
+  for (const c of ctx.casos) if (!c.resolvidoEm && c.categoria === 'urgente') ids.add(c.familiaId);
+  for (const f of familias) {
+    if (f.situacaoCasa !== 'habitada' || ids.has(f.id)) continue;
+    for (const m of f.moradores) {
+      if (m.situacao !== 'mora') continue;
+      if (m.grupos.includes('acamado') || m.grupos.includes('oxigenio')) {
+        ids.add(f.id);
+        break;
+      }
+      const h = acompanhamentoDaPessoa(m, f, ctx).hospital;
+      if (h && (h.tipo === 'internado' || diferencaDias(h.data, ctx.hoje) <= 15)) {
+        ids.add(f.id);
+        break;
+      }
+    }
+  }
+  return ids;
+}
+
+/** A casa foi "pulada" hoje (o ACS tocou em "Pular hoje"). */
+export const puladaHoje = (f: Familia, hoje: string) => !!f.puladas?.includes(hoje);
+/** Quantas vezes foi pulada nos últimos dias (incluindo hoje). */
+export const vezesPulada = (f: Familia, hoje: string) => (f.puladas ?? []).filter((d) => d <= hoje && diferencaDias(d, hoje) < DIAS_PULADAS).length;
+
+/**
+ * Casas que tiveram VD (ou tentativa: ninguém em casa, recusa) há menos de `dias` dias: não entram no roteiro.
+ * Casas "graves" (ver `casasGraves`) descansam só `diasGrave` dias.
+ */
+export function casasDescansando(
+  familias: Familia[],
+  visitas: Visita[],
+  hoje: string,
+  dias = DIAS_DESCANSO,
+  graves: Set<string> = new Set(),
+  diasGrave = DIAS_DESCANSO_GRAVE,
+): Descansando[] {
   const ultimaPorCasa = new Map<string, string>();
   for (const v of visitas) if (v.data <= hoje && v.data > (ultimaPorCasa.get(v.familiaId) ?? '')) ultimaPorCasa.set(v.familiaId, v.data);
   const lista: Descansando[] = [];
   for (const f of familias) {
     const fora = f.ultimaVdFora && f.ultimaVdFora <= hoje ? f.ultimaVdFora : '';
     const ultima = [ultimaPorCasa.get(f.id) ?? '', fora].sort().pop() ?? '';
-    if (ultima && diferencaDias(ultima, hoje) < dias) lista.push({ familia: f, ultima, voltaEm: somarDias(ultima, dias) });
+    const grave = graves.has(f.id);
+    const limite = grave ? Math.min(dias, diasGrave) : dias;
+    if (ultima && diferencaDias(ultima, hoje) < limite) lista.push({ familia: f, ultima, voltaEm: somarDias(ultima, limite), ...(grave ? { grave } : {}) });
   }
   return lista.sort((a, b) => b.ultima.localeCompare(a.ultima));
+}
+
+/** Em que parte do dia foi a tentativa (pela hora em que o ACS registrou, se foi no próprio dia). */
+export function periodoDaTentativa(v: Visita): 'manha' | 'tarde' | 'noite' | null {
+  if (!v.criadaEm) return null;
+  const d = new Date(v.criadaEm);
+  if (Number.isNaN(d.getTime())) return null;
+  const dia = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (dia !== v.data) return null;
+  const h = d.getHours();
+  return h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite';
+}
+export const NOMES_PERIODO = { manha: 'de manhã', tarde: 'à tarde', noite: 'à noite' } as const;
+/** O período para tentar de novo (o outro): manhã → tarde; tarde ou noite → manhã. */
+export const OUTRO_PERIODO = { manha: 'à tarde', tarde: 'de manhã', noite: 'de manhã' } as const;
+
+/** Casas cujas últimas tentativas foram todas "ninguém em casa" (a mais recente primeiro). Passa de `AUSENCIAS_PARA_PAUSAR` = pausada. */
+export function ausenciasSeguidas(f: Familia, visitas: Visita[], hoje: string): Visita[] {
+  const vs = visitas.filter((v) => v.familiaId === f.id && v.data <= hoje).sort((a, b) => b.data.localeCompare(a.data) || (b.criadaEm ?? '').localeCompare(a.criadaEm ?? ''));
+  const seguidas: Visita[] = [];
+  for (const v of vs) {
+    if (v.desfecho !== 'ausencia_completa') break;
+    if (!seguidas.some((x) => x.data === v.data)) seguidas.push(v);
+  }
+  return seguidas;
+}
+
+export interface Pausada {
+  familia: Familia;
+  /** Datas das tentativas seguidas (a mais recente primeiro). */
+  tentativas: string[];
+}
+
+/** Casas com 3 ou mais "ninguém em casa" seguidos: ficam fora do roteiro até o ACS confirmar se a família ainda mora ali. */
+export function casasPausadas(familias: Familia[], visitas: Visita[], hoje: string): Pausada[] {
+  const lista: Pausada[] = [];
+  for (const f of familias) {
+    if (f.situacaoCasa !== 'habitada') continue;
+    const s = ausenciasSeguidas(f, visitas, hoje);
+    if (s.length >= AUSENCIAS_PARA_PAUSAR) lista.push({ familia: f, tentativas: s.map((v) => v.data) });
+  }
+  return lista.sort((a, b) => b.tentativas[0].localeCompare(a.tentativas[0]));
 }
 
 export interface MotivoDia {
@@ -159,6 +248,8 @@ export interface CasaDoDia {
   familia: Familia;
   motivos: MotivoDia[];
   peso: number;
+  /** Quantas vezes foi pulada nos últimos dias (0 = nenhuma). */
+  puladas: number;
 }
 
 /**
@@ -176,8 +267,13 @@ export function roteiroDoDia(
   const { hoje, visitas, casos, prioritarios } = ctx;
   // Já foi hoje (visitou ou tentou: ninguém em casa, recusa) ou foi há poucos dias: sai do roteiro de hoje.
   const visitadaHoje = new Set(visitas.filter((v) => v.data === hoje).map((v) => v.familiaId));
-  for (const d of casasDescansando(familias, visitas, hoje, ctx.diasDescanso ?? DIAS_DESCANSO)) visitadaHoje.add(d.familia.id);
+  const graves = casasGraves(familias, ctx);
+  for (const d of casasDescansando(familias, visitas, hoje, ctx.diasDescanso ?? DIAS_DESCANSO, graves, ctx.diasDescansoGrave ?? DIAS_DESCANSO_GRAVE)) visitadaHoje.add(d.familia.id);
+  // "Pular hoje": some só hoje, volta amanhã.
+  for (const f of familias) if (puladaHoje(f, hoje)) visitadaHoje.add(f.id);
   const motivos = new Map<string, MotivoDia[]>();
+  /** Com 3 ou mais "ninguém em casa" seguidos: só entram de volta se houver um motivo forte (peso 50 ou mais). */
+  const pausadas = new Set<string>();
   const add = (id: string, texto: string, peso: number) => {
     if (visitadaHoje.has(id)) return;
     const l = motivos.get(id) ?? [];
@@ -231,9 +327,20 @@ export function roteiroDoDia(
       else if (h.tipo === 'internado') add(f.id, `${quem}: internação (${dataCurta(h.data)}) – saber se já voltou`, 45);
     }
   }
-  // Ninguém em casa 3 vezes seguidas: tentar outro horário.
-  for (const a of ausentesSeguidos(familias, visitas)) {
-    add(a.familia.id, `Ninguém em casa ${a.tentativas.length} vezes (${a.dias}): tentar outro horário${a.familia.melhorHorario ? ` – melhor: ${a.familia.melhorHorario}` : ''}`, 35);
+  // Ninguém em casa: voltar em outro horário. Depois de 3 vezes seguidas a casa sai do roteiro (confirmar se ainda mora).
+  for (const f of familias) {
+    if (f.situacaoCasa !== 'habitada') continue;
+    const seguidas = ausenciasSeguidas(f, visitas, hoje);
+    if (!seguidas.length) continue;
+    const ultima = seguidas[0];
+    const periodo = periodoDaTentativa(ultima);
+    const quando = `${dataCurta(ultima.data)}${periodo ? ` (${NOMES_PERIODO[periodo]})` : ''}`;
+    const melhor = f.melhorHorario ? ` – melhor horário: ${f.melhorHorario}` : '';
+    if (seguidas.length >= AUSENCIAS_PARA_PAUSAR) {
+      pausadas.add(f.id);
+      continue;
+    }
+    add(f.id, `Ninguém em casa em ${quando}: tentar ${periodo ? OUTRO_PERIODO[periodo] : 'em outro horário'}${melhor}`, 45);
   }
   const porId = new Map(familias.map((f) => [f.id, f]));
   const casas: CasaDoDia[] = [];
@@ -241,7 +348,8 @@ export function roteiroDoDia(
     const f = porId.get(id);
     if (!f) continue;
     l.sort((a, b) => b.peso - a.peso);
-    casas.push({ familia: f, motivos: l, peso: l[0].peso });
+    if (pausadas.has(id) && l[0].peso < 50) continue;
+    casas.push({ familia: f, motivos: l, peso: l[0].peso, puladas: vezesPulada(f, hoje) });
   }
   return casas;
 }

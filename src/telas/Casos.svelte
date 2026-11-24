@@ -122,6 +122,7 @@
 {/if}
 
 <button class="botao secundario largo tecnica" onclick={() => ir('tecnica')}>Lista para a técnica de enfermagem (P.A., glicemia, curativo)</button>
+<button class="botao secundario largo tecnica" onclick={() => ir('equipe/enfermeira')}>Listas para a enfermeira, a Dra. e o APA</button>
 
 {#if achados.length}
   <section class="cartao achados">

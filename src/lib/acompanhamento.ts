@@ -456,6 +456,8 @@ export interface Contexto {
   mesesReceita?: number;
   /** Quantos dias uma casa descansa depois de uma VD ou tentativa, antes de voltar ao roteiro (padrão 5). */
   diasDescanso?: number;
+  /** Descanso menor para casos graves (padrão 2). */
+  diasDescansoGrave?: number;
   hoje: string;
 }
 
