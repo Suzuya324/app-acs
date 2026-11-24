@@ -87,7 +87,7 @@ describe('próxima casa do roteiro', () => {
     fam('f3', 'Rua dos Ipês', '7', [mor('c', 'Caio Teste')]),
     fam('f4', 'Rua das Acácias', '20', [mor('d', 'Duda Teste')]),
   ];
-  const casa = (f: Familia): CasaDoDia => ({ familia: f, motivos: [{ texto: 'x', peso: 50 }], peso: 50 });
+  const casa = (f: Familia): CasaDoDia => ({ familia: f, motivos: [{ texto: 'x', peso: 50 }], peso: 50, puladas: 0 });
   const ruas = ['Rua das Acácias', 'Rua dos Ipês'];
 
   it('segue a rua e o número, mesmo quando a casa atual já saiu do roteiro; no fim volta ao começo', () => {

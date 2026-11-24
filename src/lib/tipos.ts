@@ -96,6 +96,10 @@ export interface Familia {
   melhorHorario?: string;
   /** Ponto de referência para achar a casa (ex.: "portão azul, depois da ponte"). */
   referencia?: string;
+  /** Dias (aaaa-mm-dd) em que o ACS tocou em "Pular hoje": a casa some do roteiro naquele dia e volta no seguinte. */
+  puladas?: string[];
+  /** Posição da casa na rua, na ordem em que o ACS anda (1, 2, 3…). Vazio = ordem pelo número da casa. */
+  ordemNaRua?: number;
 }
 
 export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';
@@ -299,4 +303,8 @@ export interface Config {
   ultimaConferenciaFast?: string;
   /** Depois de uma VD (ou tentativa), a casa só volta ao roteiro do dia depois de quantos dias (padrão 5). */
   diasDescanso?: number;
+  /** Descanso menor para casos graves (caso urgente, alta do hospital, acamado ou oxigênio): padrão 2 dias. */
+  diasDescansoGrave?: number;
+  /** Dia em que a enfermeira, a médica ou o APA vêm à área e o que vão ver (ids dos itens da lista: morador ou casa). */
+  agendaEquipe?: Partial<Record<'enfermeira' | 'medica' | 'apa', { data: string; itens: string[] }>>;
 }
