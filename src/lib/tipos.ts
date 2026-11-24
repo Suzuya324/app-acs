@@ -297,4 +297,6 @@ export interface Config {
   mesesReceita?: number;
   /** Última conferência com o Fast guardada (aaaa-mm-dd). */
   ultimaConferenciaFast?: string;
+  /** Depois de uma VD (ou tentativa), a casa só volta ao roteiro do dia depois de quantos dias (padrão 5). */
+  diasDescanso?: number;
 }
