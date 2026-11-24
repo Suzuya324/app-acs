@@ -454,6 +454,8 @@ export interface Contexto {
   remediosExtras?: string;
   /** Meses que a receita vale (padrão 6). */
   mesesReceita?: number;
+  /** Quantos dias uma casa descansa depois de uma VD ou tentativa, antes de voltar ao roteiro (padrão 5). */
+  diasDescanso?: number;
   hoje: string;
 }
 

@@ -515,6 +515,7 @@ export const contextoAcompanhamento = (): Contexto => ({
   escondidas: app.config.sugestoesEscondidas ?? [],
   remediosExtras: app.config.remediosExtras ?? '',
   mesesReceita: app.config.mesesReceita,
+  diasDescanso: app.config.diasDescanso,
   hoje: hojeISO(),
 });
 

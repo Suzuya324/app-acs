@@ -126,6 +126,30 @@ export function ausentesSeguidos(familias: Familia[], visitas: Visita[], n = 3):
 
 // ---------------------------------------------------------------- roteiro do dia
 
+/** Depois de uma VD (ou de uma tentativa), a casa só volta ao roteiro depois de tantos dias. */
+export const DIAS_DESCANSO = 5;
+
+export interface Descansando {
+  familia: Familia;
+  /** Data da última VD ou tentativa (no app ou feita fora dele). */
+  ultima: string;
+  /** Primeiro dia em que a casa pode voltar ao roteiro. */
+  voltaEm: string;
+}
+
+/** Casas que tiveram VD (ou tentativa: ninguém em casa, recusa) há menos de `dias` dias: não entram no roteiro. */
+export function casasDescansando(familias: Familia[], visitas: Visita[], hoje: string, dias = DIAS_DESCANSO): Descansando[] {
+  const ultimaPorCasa = new Map<string, string>();
+  for (const v of visitas) if (v.data <= hoje && v.data > (ultimaPorCasa.get(v.familiaId) ?? '')) ultimaPorCasa.set(v.familiaId, v.data);
+  const lista: Descansando[] = [];
+  for (const f of familias) {
+    const fora = f.ultimaVdFora && f.ultimaVdFora <= hoje ? f.ultimaVdFora : '';
+    const ultima = [ultimaPorCasa.get(f.id) ?? '', fora].sort().pop() ?? '';
+    if (ultima && diferencaDias(ultima, hoje) < dias) lista.push({ familia: f, ultima, voltaEm: somarDias(ultima, dias) });
+  }
+  return lista.sort((a, b) => b.ultima.localeCompare(a.ultima));
+}
+
 export interface MotivoDia {
   texto: string;
   peso: number;
@@ -137,7 +161,10 @@ export interface CasaDoDia {
   peso: number;
 }
 
-/** Por que cada casa entra no roteiro de hoje (e quanto pesa). Casas já visitadas hoje ficam de fora. */
+/**
+ * Por que cada casa entra no roteiro de hoje (e quanto pesa). Ficam de fora as casas visitadas ou tentadas
+ * hoje e as que ainda estão "descansando" (VD há menos de 5 dias, ou o número de dias dos Ajustes).
+ */
 export function roteiroDoDia(
   familias: Familia[],
   revisitas: Revisita[],
@@ -147,8 +174,9 @@ export function roteiroDoDia(
   compromissos?: Compromisso[],
 ): CasaDoDia[] {
   const { hoje, visitas, casos, prioritarios } = ctx;
-  // Já foi hoje (visitou ou tentou: ninguém em casa, recusa): sai do roteiro de hoje.
+  // Já foi hoje (visitou ou tentou: ninguém em casa, recusa) ou foi há poucos dias: sai do roteiro de hoje.
   const visitadaHoje = new Set(visitas.filter((v) => v.data === hoje).map((v) => v.familiaId));
+  for (const d of casasDescansando(familias, visitas, hoje, ctx.diasDescanso ?? DIAS_DESCANSO)) visitadaHoje.add(d.familia.id);
   const motivos = new Map<string, MotivoDia[]>();
   const add = (id: string, texto: string, peso: number) => {
     if (visitadaHoje.has(id)) return;

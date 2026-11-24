@@ -2,8 +2,8 @@
   import AusenciaRapida from '../componentes/AusenciaRapida.svelte';
   import Icone from '../componentes/Icone.svelte';
   import { formatarData, hojeISO } from '../lib/datas';
-  import { emOrdemDeRua, maisImportantes, roteiroDoDia } from '../lib/dia';
-  import { app, contextoAcompanhamento, opcoesPainel, responsavel } from '../lib/estado.svelte';
+  import { casasDescansando, DIAS_DESCANSO, emOrdemDeRua, maisImportantes, roteiroDoDia } from '../lib/dia';
+  import { app, contextoAcompanhamento, enderecoCurto, opcoesPainel, responsavel } from '../lib/estado.svelte';
   import { calcularPainel } from '../lib/meta';
   import { ir, voltar } from '../lib/rotas.svelte';
 
@@ -20,6 +20,9 @@
   let ruaEscolhida = $state<string | null>(null);
   const mostrar = $derived(ruaEscolhida ? ruas.filter((r) => r.rua === ruaEscolhida) : ruas);
   const importantes = $derived(casas.filter((c) => c.peso >= 50).length);
+  const diasDescanso = $derived(app.config.diasDescanso ?? DIAS_DESCANSO);
+  /** Casas que tiveram VD (ou tentativa) há poucos dias: ficam de fora até a data de volta. */
+  const descansando = $derived(casasDescansando(app.familias.filter((f) => f.situacaoCasa === 'habitada'), app.visitas, hoje, diasDescanso));
 </script>
 
 <button class="botao secundario pequeno voltar" onclick={() => voltar('')}><Icone nome="voltar" /> Voltar</button>
@@ -27,7 +30,7 @@
 <h1>Roteiro de hoje</h1>
 <p class="suave">
   {formatarData(hoje)} · <strong>{casas.length}</strong> {casas.length === 1 ? 'casa' : 'casas'}{importantes ? `, ${importantes} mais importantes (em vermelho)` : ''}.
-  Quem já teve VD ou “ninguém em casa” hoje sai da lista. Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado e quem está sumido. Em ordem de rua.
+  Quem teve VD ou “ninguém em casa” há menos de {diasDescanso} dias fica de fora (a casa descansa). Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado e quem está sumido. Em ordem de rua.
 </p>
 
 <div class="chips" role="radiogroup" aria-label="Quantas casas">
@@ -49,6 +52,20 @@
       <button class="chip" class:ativo={ruaEscolhida === r.rua} role="tab" aria-selected={ruaEscolhida === r.rua} onclick={() => (ruaEscolhida = r.rua)}>{r.rua} <span class="n">{r.casas.length}</span></button>
     {/each}
   </div>
+{/if}
+
+{#if descansando.length}
+  <details class="descanso">
+    <summary>{descansando.length} {descansando.length === 1 ? 'casa descansando' : 'casas descansando'} (VD há menos de {diasDescanso} dias)</summary>
+    <ul class="lista">
+      {#each descansando as d (d.familia.id)}
+        <li class="pequeno">
+          <button class="link" onclick={() => ir(`familia/${d.familia.id}`)}>{enderecoCurto(d.familia)}</button>
+          <span class="suave"> · última VD {formatarData(d.ultima)} · volta em {formatarData(d.voltaEm)}</span>
+        </li>
+      {/each}
+    </ul>
+  </details>
 {/if}
 
 {#if !casas.length}
@@ -79,6 +96,30 @@
 {/each}
 
 <style>
+  .descanso {
+    margin: 8px 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--cartao);
+    border: 1px solid var(--borda);
+  }
+  .descanso summary {
+    cursor: pointer;
+    font-weight: 700;
+    min-height: 36px;
+  }
+  .descanso li {
+    margin: 6px 0;
+  }
+  .link {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--primaria);
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+  }
   .acoes-rapidas {
     display: flex;
     flex-wrap: wrap;
