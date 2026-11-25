@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contexto } from './acompanhamento';
-import { casasDescansando, casasGraves, casasPausadas, periodoDaTentativa, puladaHoje, roteiroDoDia, vezesPulada } from './dia';
+import { casasDescansando, casasGraves, casasPausadas, maisImportantes, periodoDaTentativa, puladaHoje, roteiroDoDia, vezesPulada } from './dia';
 import { listaParaApa, listaParaEnfermeira, listaParaMedica, textoParaEquipe } from './equipe';
 import { agruparPorRua, ordenarParaAndar } from './roteiro';
 import type { Caso, Familia, Morador, Revisita, Visita } from './tipos';
@@ -212,5 +212,52 @@ describe('texto para mandar', () => {
     const itens = listaParaEnfermeira([f], [], [], [], HOJE);
     const t = textoParaEquipe('enfermeira', itens, HOJE, (x) => `Rua ${x.numero}`);
     expect(t).toBe('Para a enfermeira (11/11): 1 item\n\nRua 9 (pront. 04.001)\n- Ana Teste: Acamado: VD de enfermagem (nenhuma VD de enfermagem registrada)');
+  });
+});
+
+describe('casas que nunca tiveram VD', () => {
+  // 12 casas com revisita vencida (peso 60) + 4 casas nunca visitadas (peso 30, nível C).
+  const comRevisita = Array.from({ length: 12 }, (_, i) => fam(`r${i}`, String(100 + i), [mor(`m${i}`, `Pessoa ${i}`)], { ultimaVdFora: '2026-10-20' }));
+  const nunca = Array.from({ length: 4 }, (_, i) => fam(`n${i}`, String(200 + i), [mor(`x${i}`, `Nova ${i}`)]));
+  const revisitas: Revisita[] = comRevisita.map((f) => ({ id: `rv${f.id}`, familiaId: f.id, motivo: 'Levar o pedido', ate: '2026-11-01', criadaEm: '' }));
+
+  it('a casa sem nenhuma VD entra no roteiro e é marcada como nunca visitada', () => {
+    const casas = roteiroDoDia(nunca, [], ctx([]));
+    expect(casas.length).toBe(4);
+    expect(casas.every((c) => c.nunca)).toBe(true);
+    expect(casas[0].motivos[0].texto).toBe('Nunca visitada');
+  });
+
+  it('com VD fora do app ela não é "nunca"', () => {
+    const casas = roteiroDoDia([{ ...nunca[0], ultimaVdFora: '2026-01-10' }], [], ctx([]));
+    expect(casas[0].nunca).toBeFalsy();
+  });
+
+  it('a lista curta reserva 1 vaga em 3 para as nunca visitadas', () => {
+    const todas = roteiroDoDia([...comRevisita, ...nunca], revisitas, ctx([]));
+    expect(todas.length).toBe(16);
+    const dez = maisImportantes(todas, 10);
+    expect(dez.length).toBe(10);
+    expect(dez.filter((c) => c.nunca).length).toBe(3);
+    // As mais importantes continuam lá: só saem as últimas do topo.
+    expect(dez.filter((c) => !c.nunca).length).toBe(7);
+  });
+
+  it('sem nunca visitadas, a lista curta fica igual', () => {
+    const todas = roteiroDoDia(comRevisita, revisitas, ctx([]));
+    expect(maisImportantes(todas, 10).length).toBe(10);
+    expect(maisImportantes(todas, 10).some((c) => c.nunca)).toBe(false);
+  });
+
+  it('com poucas nunca visitadas, usa só as que existem', () => {
+    const todas = roteiroDoDia([...comRevisita, nunca[0]], revisitas, ctx([]));
+    const quinze = maisImportantes(todas, 12);
+    expect(quinze.length).toBe(12);
+    expect(quinze.filter((c) => c.nunca).length).toBe(1);
+  });
+
+  it('pedindo "todas", não corta nada', () => {
+    const todas = roteiroDoDia([...comRevisita, ...nunca], revisitas, ctx([]));
+    expect(maisImportantes(todas, 0).length).toBe(16);
   });
 });

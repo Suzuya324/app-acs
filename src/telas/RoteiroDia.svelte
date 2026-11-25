@@ -16,6 +16,7 @@
   /** Quantas casas para hoje (as mais importantes primeiro; 0 = todas). */
   let quantas = $state(15);
   const casas = $derived(maisImportantes(todas, quantas));
+  const nuncaMostradas = $derived(casas.filter((c) => c.nunca).length);
   const ruas = $derived(emOrdemDeRua(casas, app.config.ruas));
   let ruaEscolhida = $state<string | null>(null);
   const mostrar = $derived(ruaEscolhida ? ruas.filter((r) => r.rua === ruaEscolhida) : ruas);
@@ -45,7 +46,7 @@
 <h1>Roteiro de hoje</h1>
 <p class="suave">
   {formatarData(hoje)} · <strong>{casas.length}</strong> {casas.length === 1 ? 'casa' : 'casas'}{importantes ? `, ${importantes} mais importantes (em vermelho)` : ''}.
-  Quem teve VD ou “ninguém em casa” há menos de {diasDescanso} dias fica de fora (a casa descansa). Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado e quem está sumido. Em ordem de rua.
+  Quem teve VD ou “ninguém em casa” há menos de {diasDescanso} dias fica de fora (a casa descansa). Junta: caso urgente, nível A/B vencido, revisita, consulta que passou ou é amanhã, caso parado, quem está sumido e as casas que nunca tiveram VD (na lista curta, 1 vaga em cada 3 é delas, mesmo no nível C). Em ordem de rua.
 </p>
 
 <div class="chips" role="radiogroup" aria-label="Quantas casas">
@@ -53,7 +54,7 @@
     <button class="chip" class:ativo={quantas === n} role="radio" aria-checked={quantas === n} onclick={() => (quantas = n)}>{n ? `${n} casas` : `Todas (${todas.length})`}</button>
   {/each}
 </div>
-{#if quantas && todas.length > quantas}<p class="suave pequeno">Mostrando as {quantas} mais importantes de {todas.length}. As outras ficam para os próximos dias.</p>{/if}
+{#if quantas && todas.length > quantas}<p class="suave pequeno">Mostrando as {quantas} mais importantes de {todas.length}{nuncaMostradas ? `, com ${nuncaMostradas} ${nuncaMostradas === 1 ? 'casa que nunca teve VD' : 'casas que nunca tiveram VD'}` : ''}. As outras ficam para os próximos dias.</p>{/if}
 
 <label class="opcao">
   <input type="checkbox" bind:checked={comMeta} />
