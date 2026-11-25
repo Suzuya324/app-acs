@@ -250,6 +250,8 @@ export interface CasaDoDia {
   peso: number;
   /** Quantas vezes foi pulada nos últimos dias (0 = nenhuma). */
   puladas: number;
+  /** Nunca teve VD (nem no app, nem fora dele): ganha vaga garantida no roteiro, mesmo no nível C. */
+  nunca?: boolean;
 }
 
 /**
@@ -274,6 +276,8 @@ export function roteiroDoDia(
   const motivos = new Map<string, MotivoDia[]>();
   /** Com 3 ou mais "ninguém em casa" seguidos: só entram de volta se houver um motivo forte (peso 50 ou mais). */
   const pausadas = new Set<string>();
+  /** Casas sem nenhuma VD registrada. */
+  const nunca = new Set<string>();
   const add = (id: string, texto: string, peso: number) => {
     if (visitadaHoje.has(id)) return;
     const l = motivos.get(id) ?? [];
@@ -294,7 +298,8 @@ export function roteiroDoDia(
     }
     // Sumido há 90 dias ou mais.
     const u = ultimaVisita(f, visitas, hoje);
-    if (!u || diferencaDias(u, hoje) >= 90) add(f.id, u ? `Sem VD há ${diferencaDias(u, hoje)} dias` : 'Nunca visitada no app', 30);
+    if (!u || diferencaDias(u, hoje) >= 90) add(f.id, u ? `Sem VD há ${diferencaDias(u, hoje)} dias` : 'Nunca visitada', 30);
+    if (!u) nunca.add(f.id);
     if (metaFaltando.has(f.id)) add(f.id, 'Falta para a meta do mês', 10);
   }
   for (const c of casosAbertos) {
@@ -349,15 +354,32 @@ export function roteiroDoDia(
     if (!f) continue;
     l.sort((a, b) => b.peso - a.peso);
     if (pausadas.has(id) && l[0].peso < 50) continue;
-    casas.push({ familia: f, motivos: l, peso: l[0].peso, puladas: vezesPulada(f, hoje) });
+    casas.push({ familia: f, motivos: l, peso: l[0].peso, puladas: vezesPulada(f, hoje), nunca: nunca.has(id) });
   }
   return casas;
 }
 
-/** As N casas mais importantes do roteiro (o resto fica para os próximos dias). 0 = todas. */
+/** Parte das vagas do roteiro reservada às casas que nunca tiveram VD (1 a cada 3). */
+export const COTA_NUNCA = 3;
+
+/**
+ * As N casas mais importantes do roteiro (o resto fica para os próximos dias). 0 = todas.
+ * Reserva cerca de 1/3 das vagas para casas que NUNCA tiveram VD, mesmo sendo nível C: sem isso elas
+ * ficavam sempre atrás dos casos A/B e nunca apareciam. Se não houver tantas, as vagas voltam para as outras.
+ */
 export function maisImportantes(casas: CasaDoDia[], n: number): CasaDoDia[] {
   const ordem = [...casas].sort((a, b) => b.peso - a.peso || b.motivos.length - a.motivos.length);
-  return n > 0 ? ordem.slice(0, n) : ordem;
+  if (n <= 0 || n >= ordem.length) return ordem;
+  const topo = ordem.slice(0, n);
+  const cota = Math.max(1, Math.round(n / COTA_NUNCA));
+  const faltam = cota - topo.filter((c) => c.nunca).length;
+  if (faltam <= 0) return topo;
+  const entram = ordem.slice(n).filter((c) => c.nunca).slice(0, faltam);
+  if (!entram.length) return topo;
+  // Saem as menos importantes do topo que não são "nunca visitadas".
+  const saem = new Set(topo.filter((c) => !c.nunca).slice(-entram.length).map((c) => c.familia.id));
+  const escolhidas = new Set([...topo.filter((c) => !saem.has(c.familia.id)), ...entram].map((c) => c.familia.id));
+  return ordem.filter((c) => escolhidas.has(c.familia.id));
 }
 
 /** O roteiro em ordem de rua (e de número), para andar menos. */
