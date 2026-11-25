@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { casoDoAchado, casosAchados, casosDaPauta, diasParado, motivoDaFrase, ordenarCasos, textoDaPauta, textoDoCaso, textoParado } from './casos-auto';
+import { agruparCasos, buscarCasos, secaoDoCaso, casoDoAchado, casosAchados, casosDaPauta, diasParado, motivoDaFrase, ordenarCasos, textoDaPauta, textoDoCaso, textoParado } from './casos-auto';
 import { nivelDaFamilia } from './nivel';
 import type { Caso, Familia, Morador, Visita } from './tipos';
 
@@ -146,5 +146,50 @@ describe('copiar caso', () => {
       '[Importante] Ana Teste, 76 anos', 'Rua das Acácias, 12 (pront. 00.0001)', 'eMulti: Psicologia', '05/11: Ferida no pé (inventado).',
       'Última resposta (06/11): Enfermagem vai passar (inventado).',
     ]);
+  });
+});
+
+describe('organização da aba Casos', () => {
+  const HOJE = '2026-11-25';
+  const c = (id: string, categoria: Caso['categoria'], titulo: string, criadoEm: string, extra: Partial<Caso> = {}): Caso => ({
+    id, familiaId: `f${id}`, categoria, titulo, texto: 'texto do caso', criadoEm, atualizadoEm: '', ...extra,
+  });
+  const urgente = c('1', 'urgente', 'Fulana Teste, 80 anos', '2026-11-20');
+  const parado = c('2', 'importante', 'Beltrano Teste, 70 anos', '2026-10-01');
+  const normal = c('3', 'social', 'Ciclana Teste, 40 anos', '2026-11-22');
+  const urgenteParado = c('4', 'urgente', 'Dona Teste, 90 anos', '2026-09-01');
+
+  it('separa em urgentes, parados e acompanhando, nessa ordem, e esconde seção vazia', () => {
+    const g = agruparCasos([normal, parado, urgente, urgenteParado], HOJE);
+    expect(g.map((x) => x.secao)).toEqual(['urgentes', 'parados', 'acompanhando']);
+    // Dentro da seção, vale a ordem em que os casos chegaram (a tela já manda ordenados).
+    expect(g[0].casos.map((x) => x.id)).toEqual(['1', '4']);
+    expect(g[1].casos.map((x) => x.id)).toEqual(['2']);
+    expect(agruparCasos([normal], HOJE).map((x) => x.secao)).toEqual(['acompanhando']);
+    expect(agruparCasos([], HOJE)).toEqual([]);
+  });
+
+  it('o urgente parado fica em Urgentes, não em Parados', () => {
+    expect(secaoDoCaso(urgenteParado, HOJE)).toBe('urgentes');
+    expect(secaoDoCaso(parado, HOJE)).toBe('parados');
+    expect(secaoDoCaso(normal, HOJE)).toBe('acompanhando');
+  });
+
+  it('busca por nome sem diferenciar acento nem maiúscula', () => {
+    expect(buscarCasos([urgente, parado, normal], 'ciclana').map((x) => x.id)).toEqual(['3']);
+    expect(buscarCasos([urgente, parado, normal], 'BELTRÁNO').length).toBe(1);
+    expect(buscarCasos([urgente, parado, normal], 'beltrana').length).toBe(0);
+    expect(buscarCasos([urgente, parado, normal], 'beltrano').map((x) => x.id)).toEqual(['2']);
+  });
+
+  it('busca por rua e prontuário usando o texto extra, com todas as palavras', () => {
+    const extra = (x: Caso) => (x.id === '1' ? 'Morro 80 (pront. 3513.04.001)' : 'Alpheu 12 (sem prontuário)');
+    expect(buscarCasos([urgente, parado], 'morro 80', extra).map((x) => x.id)).toEqual(['1']);
+    expect(buscarCasos([urgente, parado], '3513.04.001', extra).map((x) => x.id)).toEqual(['1']);
+    expect(buscarCasos([urgente, parado], 'morro alpheu', extra).length).toBe(0);
+  });
+
+  it('busca vazia devolve tudo', () => {
+    expect(buscarCasos([urgente, parado], '   ').length).toBe(2);
   });
 });
