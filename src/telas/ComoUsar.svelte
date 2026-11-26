@@ -121,6 +121,7 @@
   <details>
     <summary>9. Celular, tablet e computador (sincronizar) e backup</summary>
     <ul>
+      <li><strong>Versão básica</strong> (Ajustes → Versão do app): só meta, buscar, roteiro de hoje, VD e fila do Fast. Trocar não apaga nada.</li>
       <li><strong>O app trancou?</strong> A tela do PIN diz o motivo (tempo parado, saiu do app, cadeado, atualização ou o celular fechou o app). Digitar e ditar contam como uso. O tempo muda em Ajustes → Bloqueio automático.</li>
       <li><strong>Aparelho que você não usa mais</strong> (celular trocado): toque em “Não uso mais” no aviso do Início ou em Ajustes → Sincronizar aparelhos.</li>
       <li><strong>Sincronizar:</strong> em Ajustes → <strong>Sincronizar aparelhos</strong>, conecte cada aparelho uma vez (o passo a passo está lá). Depois, tudo fica igual sozinho, sem backup manual. Vai para a nuvem só uma cópia trancada com a sua senha de sincronização.</li>

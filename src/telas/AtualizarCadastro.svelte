@@ -18,7 +18,8 @@
   function conferir(texto: string) {
     erro = '';
     try {
-      const r = compararComSbcd(lerArquivoSbcd(texto), $state.snapshot(app.familias), hojeISO(), novoId);
+      // Com os dados de exemplo (inventados), compara com a área vazia: o exemplo sai e entra a área real.
+      const r = compararComSbcd(lerArquivoSbcd(texto), app.config.usandoExemplo ? [] : $state.snapshot(app.familias), hojeISO(), novoId);
       cmp = r;
       marcadas = new Set(r.marcadasDeInicio);
       colado = '';

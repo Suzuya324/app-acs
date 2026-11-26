@@ -43,7 +43,12 @@
   }
   // O dia na rua (Bloco 2): roteiro, lembretes da agenda e quem está sumido.
   const compromissos = $derived(agenda(app.familias, app.revisitas, contextoAcompanhamento()));
-  const roteiro = $derived(roteiroDoDia(app.familias, app.revisitas, { ...contextoAcompanhamento(), casos: app.casos }, new Set(), compromissos));
+  /** Versão básica: só o essencial na tela. */
+  const basica = $derived(!!app.config.versaoBasica);
+  // Na versão básica, o roteiro já inclui as casas que faltam visitar no mês.
+  const roteiro = $derived(
+    roteiroDoDia(app.familias, app.revisitas, { ...contextoAcompanhamento(), casos: app.casos }, basica ? new Set(painel.naoVisitadas.map((f) => f.id)) : new Set(), compromissos),
+  );
   const avisos = $derived(lembretes(compromissos, hoje));
   const nSumidos = $derived(sumidos(app.familias, app.visitas, hoje, 60).length);
   // Não perder ninguém (Bloco 4).
@@ -88,9 +93,9 @@
 
 <p class="saudacao">Olá, <strong>{app.config.nomeAcs}</strong><br /><span class="suave">{formatarDataLonga(hoje)}</span></p>
 
-{#if sumidasDoFast}
+{#if !basica && sumidasDoFast}
   <button class="alerta lembrete sinc-erro" onclick={() => ir('conferir-fast')}>🚨 {sumidasDoFast} {sumidasDoFast === 1 ? 'VD sumiu' : 'VDs sumiram'} do Fast (já {sumidasDoFast === 1 ? 'esteve' : 'estiveram'} lá). Toque para ver e voltar para a fila.</button>
-{:else if lembrarConferir}
+{:else if !basica && lembrarConferir}
   <button class="alerta lembrete pequeno conferir-fast" onclick={() => ir('conferir-fast')}>🔎 {app.config.ultimaConferenciaFast ? `Faz ${diferencaDias(app.config.ultimaConferenciaFast, hoje)} dias que você não confere com o Fast.` : 'Confira com o Fast para o app vigiar as VDs que somem.'} Toque para colar a lista.</button>
 {/if}
 
@@ -146,8 +151,11 @@
 {#if precisaImportar}
   <div class="cartao chamada">
     <strong>{app.config.usandoExemplo ? 'Você está usando dados de exemplo.' : 'Sua área ainda está vazia.'}</strong>
-    <span>Importe a lista da sua área (planilha CSV) para começar de verdade.</span>
-    <button class="botao pequeno" onclick={() => ir('importar')}>Importar minha área</button>
+    <span>Carregue a sua área para começar de verdade: pelo arquivo do SBCD ou por uma planilha (CSV).</span>
+    <div class="atalhos">
+      <button class="botao pequeno" onclick={() => ir('atualizar-cadastro')}>Arquivo do SBCD</button>
+      <button class="botao secundario pequeno" onclick={() => ir('importar')}>Planilha (CSV)</button>
+    </div>
   </div>
 {/if}
 
@@ -195,10 +203,10 @@
   <section class="cartao dia" aria-labelledby="t-dia">
     <h2 id="t-dia">Hoje na rua</h2>
     <button class="item-link pendencias" onclick={() => ir('dia')}>
-      <span><strong>Roteiro de hoje</strong><br /><span class="suave pequeno">casos urgentes, nível A/B vencido, revisitas, consultas… em ordem de rua</span></span>
+      <span><strong>Roteiro de hoje</strong><br /><span class="suave pequeno">{basica ? 'as casas que faltam visitar no mês, revisitas e consultas, em ordem de rua' : 'casos urgentes, nível A/B vencido, revisitas, consultas… em ordem de rua'}</span></span>
       <span class="num-pend" class:urgente={roteiro.some((c) => c.peso >= 80)}>{Math.min(15, roteiro.length)}</span>
     </button>
-    {#if app.config.agendaTecnica?.moradores.length && app.config.agendaTecnica.data >= hoje && app.config.agendaTecnica.data <= somarDias(hoje, 1)}
+    {#if !basica && app.config.agendaTecnica?.moradores.length && app.config.agendaTecnica.data >= hoje && app.config.agendaTecnica.data <= somarDias(hoje, 1)}
       <button class="item-link" onclick={() => ir('tecnica')}>
         <strong>{app.config.agendaTecnica.data === hoje ? 'Hoje' : 'Amanhã'} a técnica vem:</strong> {app.config.agendaTecnica.moradores.length} {app.config.agendaTecnica.moradores.length === 1 ? 'pessoa' : 'pessoas'} para ver
       </button>
@@ -214,7 +222,7 @@
         {/each}
       </ul>
     {/if}
-    <div class="atalhos">
+    <div class="atalhos" class:escondido={basica}>
       <button class="botao secundario pequeno" onclick={() => ir('agenda')}>Agenda</button>
       <button class="botao secundario pequeno" onclick={() => ir('sumidos')}>Sumidos{nSumidos ? ` (${nSumidos})` : ''}</button>
     </div>
@@ -227,40 +235,42 @@
   <div class="cartao mini"><strong>{painel.totalVisitasMes}</strong><span>VDs no mês</span></div>
 </section>
 
-{#if casosAbertosLista.length > 0}
+{#if !basica && casosAbertosLista.length > 0}
   <button class="item-link pendencias" onclick={() => ir('casos')}>
     <span><strong>Casos</strong><br /><span class="suave pequeno">{urgentes ? `${urgentes} urgente${urgentes === 1 ? '' : 's'} · ` : ''}acompanhar de perto, eMulti, NPV</span></span>
     <span class="num-pend" class:urgente={urgentes > 0}>{casosAbertosLista.length}</span>
   </button>
 {/if}
 
-{#if porNivel.length > 0}
+{#if !basica && porNivel.length > 0}
   <button class="item-link pendencias" onclick={() => ir('atencao')}>
     <span><strong>Revisitar por prioridade</strong><br /><span class="suave pequeno">{porNivel.filter((x) => x.nivel === 'A').length} de nível A (10 dias) · {porNivel.filter((x) => x.nivel === 'B').length} de nível B (30 dias)</span></span>
     <span class="num-pend">{porNivel.length}</span>
   </button>
 {/if}
 
-{#if atencao.length > 0}
+{#if !basica && atencao.length > 0}
   <button class="item-link pendencias" onclick={() => ir('atencao')}>
     <span><strong>Atenção</strong><br /><span class="suave pequeno">gestantes, acamados, P.A., glicemia, idades{aniversarios ? ` · ${aniversarios} aniversário(s) na semana` : ''}</span></span>
     <span class="num-pend">{atencao.length}</span>
   </button>
 {/if}
 
-{#if confirmar > 0}
+{#if !basica && confirmar > 0}
   <button class="item-link pendencias" onclick={() => ir('confirmar')}>
     <span><strong>A confirmar</strong><br /><span class="suave pequeno">óbito, “gestante?”, o que você anotou “a confirmar”</span></span>
     <span class="num-pend">{confirmar}</span>
   </button>
 {/if}
 
+{#if !basica}
 <button class="item-link pendencias" onclick={() => ir('grupos')}>
   <span><strong>Grupos</strong><br /><span class="suave pequeno">pré-natal, crianças, idosos, hipertensos, diabéticos e acamados por faixa etária</span></span>
   {#if alertasGC}<span class="num-pend">{alertasGC}</span>{/if}
 </button>
+{/if}
 
-{#if nMudancas > 0}
+{#if !basica && nMudancas > 0}
   <button class="item-link pendencias" onclick={() => ir('mudancas')}>
     <span><strong>Mudanças para o SBCD</strong><br /><span class="suave pequeno">quem chegou, mudou, faleceu… para atualizar de uma vez</span></span>
     <span class="num-pend">{nMudancas}</span>
@@ -349,6 +359,9 @@
 </button>
 
 <style>
+  .escondido {
+    display: none;
+  }
   .aparelho-parado p {
     margin: 0 0 6px;
   }

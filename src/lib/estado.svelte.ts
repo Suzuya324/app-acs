@@ -760,6 +760,17 @@ export const tirarFamiliasDaArea = (familiaIds: string[], motivo: string) =>
 export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) =>
   comDesfazer('Atualizar cadastro pelo SBCD', async () => {
     const quando = agora();
+    if (app.config.usandoExemplo) {
+      // Estava com os dados de exemplo (inventados): saem todos e entra a área real do SBCD.
+      app.familias = [];
+      app.visitas = [];
+      app.revisitas = [];
+      app.casos = [];
+      app.prioritarios = [];
+      app.historico = [];
+      app.config.usandoExemplo = false;
+      await gravar({ config: app.config, visitas: [], revisitas: [], casos: [], prioritarios: [], historico: [] });
+    }
     const hoje = hojeISO();
     const deOnde = `cadastro do SBCD${cmp.geradoEm ? ` de ${cmp.geradoEm.split('-').reverse().join('/')}` : ''}`;
     const fam = (id: string) => app.familias.find((f) => f.id === id);

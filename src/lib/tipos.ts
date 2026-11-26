@@ -309,4 +309,6 @@ export interface Config {
   diasDescansoGrave?: number;
   /** Dia em que a enfermeira, a médica ou o APA vêm à área e o que vão ver (ids dos itens da lista: morador ou casa). */
   agendaEquipe?: Partial<Record<'enfermeira' | 'medica' | 'apa', { data: string; itens: string[] }>>;
+  /** Versão básica do app (só o essencial: meta, buscar, roteiro de hoje, VD e fila do Fast). */
+  versaoBasica?: boolean;
 }

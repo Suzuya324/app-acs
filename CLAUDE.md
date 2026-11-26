@@ -16,6 +16,11 @@ Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web usado pela
 **Uso pessoal:** o app é de um único ACS, só para uso próprio (celular e computador pessoal).
 Não é distribuído para outros usuários. Não registrar no repositório nada que identifique o usuário,
 a unidade, a micro ou as ruas da área (o repositório pode ser público).
+- **Exceção (decisão do usuário):** uma **versão básica** para até 3 colegas de trabalho testarem, pelo mesmo
+  link (escolhida na configuração inicial ou em Ajustes → Versão do app). Cada colega tem o próprio PIN e os
+  próprios dados, só no próprio aparelho; nada é compartilhado entre eles nem com o usuário (sem sincronização
+  entre colegas). A básica mostra só meta, buscar, roteiro de hoje com as casas que faltam, VD com relato e fila
+  do Fast; o resto fica escondido (não apagado). Toda mudança no app também chega aos colegas.
 
 ## Como trabalhar com o usuário
 - Responder sempre em **português brasileiro**, com linguagem simples.

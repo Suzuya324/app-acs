@@ -73,7 +73,7 @@
   const pendentes = $derived(app.visitas.filter((v) => !v.lancadaNoFast).length);
   /** Casos urgentes abertos (número vermelho na aba Casos). */
   const urgentes = $derived(app.casos.filter((c) => !c.resolvidoEm && c.categoria === 'urgente' && app.familias.some((f) => f.id === c.familiaId)).length);
-  const abas = [
+  const ABAS_COMPLETA = [
     { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
     { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
     { tela: 'prioritarios', caminho: 'prioritarios', rotulo: 'Prioritários', icone: 'estrela' },
@@ -81,8 +81,19 @@
     { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
+  /** Versão básica: só o essencial (meta, buscar, roteiro de hoje, VD e fila do Fast). */
+  const ABAS_BASICA = [
+    { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
+    { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
+    { tela: 'dia', caminho: 'dia', rotulo: 'Roteiro', icone: 'seta' },
+    { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
+    { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
+  ];
+  const abas = $derived(app.config.versaoBasica ? ABAS_BASICA : ABAS_COMPLETA);
   const abaAtiva = $derived(
-    rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
+    app.config.versaoBasica && ['dia', 'ordem-rua'].includes(rota.tela)
+      ? 'dia'
+      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
       ? 'casos'
       : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'

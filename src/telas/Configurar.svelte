@@ -16,6 +16,8 @@
   let ruas = $state<string[]>([]);
   let novaRua = $state('');
   let origem = $state<'exemplo' | 'vazio'>('exemplo');
+  /** Versão básica (só o essencial) ou completa. Quem está começando vai melhor com a básica. */
+  let versao = $state<'basica' | 'completa'>('basica');
 
   // Backup
   let arquivo = $state<File | null>(null);
@@ -77,6 +79,7 @@
         micro: micro.trim(),
         metaMensal: Math.round(meta),
         ruas: $state.snapshot(ruas),
+        ...(versao === 'basica' ? { versaoBasica: true } : {}),
       };
       await criarCofre(pin, config, restaurado ?? origem);
       location.hash = '#/';
@@ -132,13 +135,25 @@
 {:else if passo === 'exemplo'}
   <h1>Como quer começar?</h1>
   <section class="cartao">
+    <h2>Qual versão?</h2>
+    <label class="escolha">
+      <input type="radio" bind:group={versao} value="basica" />
+      <span><strong>Básica (recomendada para começar)</strong><br /><span class="suave pequeno">Só o essencial: meta do mês, buscar a família, roteiro de hoje com as casas que faltam, VD com relato pronto e fila do Fast.</span></span>
+    </label>
+    <label class="escolha">
+      <input type="radio" bind:group={versao} value="completa" />
+      <span><strong>Completa</strong><br /><span class="suave pequeno">Todas as funções (prioritários, casos, técnica, grupos, sincronização entre aparelhos…). Dá para trocar depois em Ajustes.</span></span>
+    </label>
+  </section>
+  <section class="cartao">
+    <h2>Com quais casas?</h2>
     <label class="escolha">
       <input type="radio" bind:group={origem} value="exemplo" />
-      <span><strong>Com dados de exemplo (inventados)</strong><br /><span class="suave pequeno">Para testar o app enquanto o importador da sua área não fica pronto (Etapa 3).</span></span>
+      <span><strong>Com dados de exemplo (inventados)</strong><br /><span class="suave pequeno">Para conhecer o app com casas e pessoas de mentira. Depois você troca pela sua área.</span></span>
     </label>
     <label class="escolha">
       <input type="radio" bind:group={origem} value="vazio" />
-      <span><strong>Vazio</strong><br /><span class="suave pequeno">Sem nenhuma família por enquanto.</span></span>
+      <span><strong>Vazio, para carregar a minha área</strong><br /><span class="suave pequeno">Depois, em Ajustes: “Atualizar cadastro pelo SBCD” ou “Importar minha área (CSV)”.</span></span>
     </label>
   </section>
   <div class="linha-botoes">
