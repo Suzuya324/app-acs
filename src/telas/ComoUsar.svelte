@@ -121,6 +121,7 @@
   <details>
     <summary>9. Celular, tablet e computador (sincronizar) e backup</summary>
     <ul>
+      <li><strong>Trazer VDs já feitas</strong> (Ajustes): cole o texto da lista de visitas do SBCD (ou um .txt). O app acha a data, a casa e o desfecho, mostra o resumo e não repete nada.</li>
       <li><strong>Versão básica</strong> (Ajustes → Versão do app): só meta, buscar, roteiro de hoje, VD e fila do Fast. Trocar não apaga nada. Para colegas, existe o app separado “VDs básico” (…/app-acs/basico/), com os dados guardados à parte.</li>
       <li><strong>O app trancou?</strong> A tela do PIN diz o motivo (tempo parado, saiu do app, cadeado, atualização ou o celular fechou o app). Digitar e ditar contam como uso. O tempo muda em Ajustes → Bloqueio automático.</li>
       <li><strong>Aparelho que você não usa mais</strong> (celular trocado): toque em “Não uso mais” no aviso do Início ou em Ajustes → Sincronizar aparelhos.</li>
