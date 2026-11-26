@@ -23,6 +23,10 @@ a unidade, a micro ou as ruas da área (o repositório pode ser público).
   que faltam, VD com relato e fila do Fast. Cada colega tem o próprio PIN e os próprios dados, só no próprio
   aparelho; nada é compartilhado entre eles nem com o usuário (sem sincronização). Mudança no código comum chega
   aos dois apps na publicação.
+  - **Sempre separado (pedido do usuário):** nunca juntar os dois apps, nunca mudar o banco (`app-acs` /
+    `app-acs-basico`) nem as chaves locais de uma edição e nunca fazer a básica usar o banco do usuário. O teste
+    `src/lib/edicao.test.ts` trava isso antes de cada publicação. Link dos colegas:
+    https://suzuya324.github.io/app-acs/basico/
 
 ## Como trabalhar com o usuário
 - Responder sempre em **português brasileiro**, com linguagem simples.
