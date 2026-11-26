@@ -19,7 +19,12 @@ export interface Painel {
   /** O período já terminou? */
   passado: boolean;
   meta: number;
-  /** Famílias diferentes com VD que conta (realizada ou ausente realizada) no mês. */
+  /**
+   * Visitas que contam para a meta, do mesmo jeito do SBCD: cada casa em cada dia é uma visita, qualquer que seja o
+   * desfecho (realizada, mista, ausência, recusa) e inclusive revisita. Duas linhas da mesma casa no mesmo dia: uma só.
+   */
+  visitasContadas: number;
+  /** Casas diferentes com VD que conta (realizada ou ausente realizada) no período. */
   familiasVisitadas: number;
   faltam: number;
   /** Total de VDs do mês (todas, inclusive as que não contam). */
@@ -28,7 +33,7 @@ export interface Painel {
   visitasHoje: number;
   visitasSemana: number;
   diasUteisRestantes: number;
-  /** Famílias por dia útil que faltam até o fim do mês. */
+  /** Visitas por dia útil que faltam até o fim do mês. */
   porDiaUtil: number;
   /** Famílias ainda sem VD que conta no mês. */
   naoVisitadas: Familia[];
@@ -36,7 +41,7 @@ export interface Painel {
   revisitar: { familia: Familia; data: string }[];
   /** Sugestão do dia: há mais tempo sem visita primeiro. */
   sugestoes: { familia: Familia; ultimaVisita: string | null }[];
-  /** Para o gráfico: famílias que contam e visitas que não contam, dia a dia do período (até hoje). */
+  /** Para o gráfico: visitas que contam (casa + dia) e linhas repetidas da mesma casa no mesmo dia, dia a dia (até hoje). */
   porDia: { data: string; contam: number; naoContam: number; diaDeCampo: boolean }[];
 }
 
@@ -66,13 +71,16 @@ export function calcularPainel(
     recusa: 0,
   };
   const contadas = new Set<string>();
+  const casaEDia = new Set<string>();
   for (const v of doMes) {
     porDesfecho[v.desfecho]++;
     if (contaParaMeta(v.desfecho)) contadas.add(v.familiaId);
+    casaEDia.add(`${v.familiaId}|${v.data}`);
   }
+  const visitasContadas = casaEDia.size;
 
   const ativas = familiasAtivas(familias);
-  const faltam = Math.max(0, meta - contadas.size);
+  const faltam = Math.max(0, meta - visitasContadas);
   const desde = hoje > periodo.inicio ? hoje : periodo.inicio;
   const diasUteisRestantes = passado ? 0 : contarDiasDeCampo(desde, periodo.fim, ehDiaDeCampo);
   const porDiaUtil = diasUteisRestantes > 0 ? Math.ceil(faltam / diasUteisRestantes) : faltam;
@@ -109,18 +117,18 @@ export function calcularPainel(
       return a.ultimaVisita.localeCompare(b.ultimaVisita);
     });
 
-  // Gráfico: cada família conta uma vez, no primeiro dia em que contou no período.
+  // Gráfico: cada casa conta uma vez por dia (como no SBCD); linha repetida da mesma casa no mesmo dia vai em "outras".
   const porDia: Painel['porDia'] = [];
-  const jaContou = new Set<string>();
   const ordenadas = [...doMes].sort((a, b) => a.data.localeCompare(b.data));
   const ultimoDia = periodo.fim < hoje ? periodo.fim : hoje;
   for (let d = periodo.inicio; d <= ultimoDia; d = somarDias(d, 1)) {
     let contam = 0;
     let naoContam = 0;
+    const casasDoDia = new Set<string>();
     for (const v of ordenadas) {
       if (v.data !== d) continue;
-      if (contaParaMeta(v.desfecho) && !jaContou.has(v.familiaId)) {
-        jaContou.add(v.familiaId);
+      if (!casasDoDia.has(v.familiaId)) {
+        casasDoDia.add(v.familiaId);
         contam++;
       } else naoContam++;
     }
@@ -133,6 +141,7 @@ export function calcularPainel(
     passado,
     porDia,
     meta,
+    visitasContadas,
     familiasVisitadas: contadas.size,
     faltam,
     totalVisitasMes: doMes.length,

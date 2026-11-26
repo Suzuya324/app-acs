@@ -16,7 +16,7 @@ const familias = ['1', '2', '3', '4', '5'].map(fam);
 const hoje = '2026-11-18'; // quarta-feira
 
 describe('contagem da meta', () => {
-  it('conta só realizada e ausente realizada, uma vez por família no mês', () => {
+  it('conta como o SBCD: cada casa em cada dia é uma visita (realizada, mista, ausência, recusa e revisita)', () => {
     const visitas = [
       vd('1', '2026-11-03', 'realizada'),
       vd('1', '2026-11-10', 'realizada'), // mesma família: conta uma vez só
@@ -26,9 +26,10 @@ describe('contagem da meta', () => {
       vd('5', '2026-10-30', 'realizada'), // mês passado: não conta
     ];
     const p = calcularPainel(familias, visitas, hoje, 200);
-    expect(p.familiasVisitadas).toBe(2);
+    expect(p.visitasContadas).toBe(5); // 1 (dia 3) + 1 (dia 10, revisita) + 1 + 1 + 1; a de outubro não entra
+    expect(p.familiasVisitadas).toBe(2); // casas diferentes com visita realizada ou mista
     expect(p.totalVisitasMes).toBe(5);
-    expect(p.faltam).toBe(198);
+    expect(p.faltam).toBe(195);
     expect(p.porDesfecho).toEqual({ realizada: 2, ausente_realizada: 1, ausencia_completa: 1, recusa: 1 });
   });
 

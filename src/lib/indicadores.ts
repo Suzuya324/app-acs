@@ -8,7 +8,7 @@ import type { Familia, Grupo, Visita } from './tipos';
 export interface Previsao {
   /** Famílias por dia de campo até agora. */
   ritmo: number;
-  /** Quantas famílias no fim do período, se continuar assim. */
+  /** Quantas visitas no fim do período, se continuar assim. */
   previsto: number;
   /** Dias de campo que já passaram (com hoje, se for dia de campo). */
   diasPassados: number;
@@ -22,8 +22,8 @@ export function previsaoDaMeta(p: Painel, hoje: string, ehDiaDeCampo: (iso: stri
   if (diasPassados <= 0) return null;
   // Hoje conta como passado só se já teve VD hoje; senão os dias que faltam incluem hoje.
   const restantes = p.diasUteisRestantes - (p.visitasHoje > 0 && ehDiaDeCampo(hoje) ? 1 : 0);
-  const ritmo = p.familiasVisitadas / diasPassados;
-  const previsto = Math.round(p.familiasVisitadas + ritmo * Math.max(0, restantes));
+  const ritmo = p.visitasContadas / diasPassados;
+  const previsto = Math.round(p.visitasContadas + ritmo * Math.max(0, restantes));
   return { ritmo, previsto, diasPassados, vaiBater: previsto >= p.meta };
 }
 

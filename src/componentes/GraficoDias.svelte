@@ -52,15 +52,15 @@
 <div class="grafico">
   <p class="leitura" aria-live="polite">
     {#if info}
-      <strong>{formatarDataLonga(info.data, true)}</strong>: {info.contam} família{info.contam === 1 ? ' que conta' : 's que contam'}
-      {#if info.naoContam} · {info.naoContam} outra{info.naoContam === 1 ? '' : 's'} visita{info.naoContam === 1 ? '' : 's'}{/if}
+      <strong>{formatarDataLonga(info.data, true)}</strong>: {info.contam} visita{info.contam === 1 ? '' : 's'}
+      {#if info.naoContam} · {info.naoContam} linha{info.naoContam === 1 ? '' : 's'} repetida{info.naoContam === 1 ? '' : 's'} da mesma casa{/if}
       {#if !info.diaDeCampo} · sem campo{/if}
     {:else}
       <span class="suave">Toque numa coluna para ver o dia{detalhe ? ' e quem você visitou' : ''}.</span>
     {/if}
   </p>
 
-  <svg viewBox="0 0 {W} {H}" role="img" aria-label="Famílias que contaram para a meta, por dia">
+  <svg viewBox="0 0 {W} {H}" role="img" aria-label="Visitas que contaram para a meta, por dia">
     <!-- dias sem campo (fim de semana, feriado, folga): faixa bem clara -->
     {#each dias as d, i (d.data)}
       {#if !d.diaDeCampo}
