@@ -342,6 +342,21 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
   vale em todos os aparelhos; se ele sincronizar de novo, volta sozinho. Aparelho parado há mais de 30 dias não
   gera mais aviso no Início (só aparece na lista).
 
+## 6b2. Trazer VDs já feitas de um texto (ex.: administração do SBCD)
+
+- **Onde:** **Ajustes → "Trazer VDs já feitas (colar o texto do SBCD ou arquivo .txt)"** (também no fim do
+  Minhas VDs).
+- **Como:** na administração do SBCD, abra a lista das suas visitas, selecione tudo, copie e cole no app (ou
+  salve num arquivo .txt e escolha o arquivo) → **Conferir**.
+- **O que o app procura em cada linha:** a **data** (se tiver a data de nascimento junto, vale a mais recente),
+  a **casa** (prontuário, nome completo de alguém da casa, ou rua e número) e, se estiver escrito, o
+  **desfecho** ("realizada", "ausente realizada", "ausência", "recusa") e o **motivo**. Lista agrupada por dia
+  também funciona: uma linha com a data e as casas embaixo.
+- **Antes de salvar** aparece o resumo: VDs novas, as que já estavam no app (mesma casa e mesmo dia: não
+  repete) e as linhas sem casa reconhecida (ex.: número com várias casas; registre essas pela busca).
+- **"Essas VDs já estão no sistema oficial"** (já vem marcado): entram como **lançadas**, fora da fila do Fast.
+  Colar o mesmo texto de novo não duplica nada.
+
 ## 6c. App separado para colegas testarem ("VDs básico")
 
 - **Link dos colegas:** **https://suzuya324.github.io/app-acs/basico/** (o seu continua sendo

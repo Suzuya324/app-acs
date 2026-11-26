@@ -221,6 +221,7 @@
   <button class="botao largo" onclick={() => window.print()}><Icone nome="pasta" tamanho={20} /> Imprimir ou salvar em PDF</button>
   <button class="botao secundario largo" onclick={copiar}><Icone nome="copiar" tamanho={20} /> Copiar o relatório (texto)</button>
   <button class="botao secundario largo" onclick={baixar}>Baixar o relatório (arquivo de texto)</button>
+  <button class="botao secundario largo" onclick={() => ir('importar-vds-texto')}>Trazer VDs já feitas (texto do SBCD ou .txt)</button>
   <button class="botao secundario largo" onclick={() => ir('conferir-fast')}>Conferir com o Fast (achar VDs que sumiram)</button>
   <button class="botao secundario largo" onclick={() => ir('exportar-visitas')}>Planilha (Excel) e arquivo para o Claude</button>
   <p class="suave pequeno">

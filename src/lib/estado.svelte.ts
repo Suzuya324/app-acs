@@ -21,6 +21,7 @@ import {
 import { gerarRelato } from './relato';
 import { lerBloqueios, marcarSessao, registrarBloqueio, sessaoEstavaAberta, type Bloqueio, type MotivoBloqueio } from './bloqueios';
 import { EDICAO_BASICA } from './edicao';
+import type { VdDoTexto } from './importar-vds-texto';
 import { sugerirDesfecho } from './desfecho';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
@@ -280,6 +281,44 @@ export async function trancar(motivo: MotivoBloqueio = 'cadeado', minutos?: numb
   app.ultimoBloqueio = b;
   app.fase = 'trancado';
 }
+
+/**
+ * Traz as VDs lidas de um texto colado (ex.: administração do SBCD). Ficam marcadas como lançadas quando o ACS
+ * confirma que já estão no sistema oficial. As que já estavam no app podem ser marcadas como lançadas.
+ */
+export const trazerVdsDoTexto = (novas: VdDoTexto[], jaLancadas: boolean, marcarLancadas: string[]) =>
+  comDesfazer('Trazer VDs do texto', async () => {
+    const quando = agora();
+    for (const n of novas) {
+      app.visitas.push({
+        id: novoId('v'),
+        familiaId: n.familia.id,
+        data: n.data,
+        presentes: n.presentes,
+        conversouComFamilia: n.desfecho === 'realizada' && !n.presentes.length,
+        desfecho: n.desfecho,
+        motivo: n.motivo,
+        compartilhadaCom: '',
+        sinais: {},
+        orientacoes: '',
+        relato: '',
+        lancadaNoFast: jaLancadas,
+        ...(jaLancadas ? { lancadaEm: quando } : {}),
+        observacao: 'Trazida do SBCD (texto colado).',
+        atualizadoEm: quando,
+        criadaEm: quando,
+      });
+    }
+    for (const v of app.visitas) {
+      if (marcarLancadas.includes(v.id) && !v.lancadaNoFast) {
+        v.lancadaNoFast = true;
+        v.lancadaEm = quando;
+        v.atualizadoEm = quando;
+      }
+    }
+    app.historico.push(...criarAlteracoes('', [`VDs trazidas de texto colado: ${novas.length} novas${marcarLancadas.length ? `, ${marcarLancadas.length} marcadas como lançadas` : ''}`]));
+    await gravar({ visitas: app.visitas, historico: app.historico });
+  });
 
 /** Tira um aparelho da lista dos que sincronizam ("não uso mais"): some o aviso dele em todos os aparelhos. */
 export async function tirarAparelho(nome: string) {
