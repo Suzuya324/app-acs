@@ -17,7 +17,7 @@
   let referencia = $state(hoje);
   const opcoes = $derived(opcoesPainel(referencia));
   const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoes));
-  const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
+  const pct = $derived(Math.min(100, Math.round((painel.visitasContadas / painel.meta) * 100)));
   const diasDeCampo = $derived(contarDiasDeCampo(painel.periodo.inicio, painel.periodo.fim, opcoes.ehDiaDeCampo!));
   const ritmo = $derived(diasDeCampo > 0 ? Math.ceil(painel.meta / diasDeCampo) : 0);
   const previsao = $derived(previsaoDaMeta(painel, hoje, opcoes.ehDiaDeCampo!));
@@ -61,25 +61,25 @@
 </div>
 
 <section class="cartao">
-  <p class="numero-meta"><strong>{painel.familiasVisitadas}</strong> <span class="suave">de {painel.meta} famílias</span></p>
-  <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax={painel.meta} aria-valuenow={painel.familiasVisitadas} aria-label="Famílias visitadas no período">
+  <p class="numero-meta"><strong>{painel.visitasContadas}</strong> <span class="suave">de {painel.meta} visitas</span></p>
+  <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax={painel.meta} aria-valuenow={painel.visitasContadas} aria-label="Visitas feitas no período">
     <div class="preenchido" style="width: {pct}%"></div>
   </div>
   {#if painel.faltam === 0}
     <p class="resultado ok">Meta batida! 🎉</p>
   {:else if painel.passado}
-    <p class="resultado">Faltaram <strong>{painel.faltam}</strong> famílias para a meta.</p>
+    <p class="resultado">Faltaram <strong>{painel.faltam}</strong> visitas para a meta.</p>
   {:else}
     <p class="resultado">
       Faltam <strong>{painel.faltam}</strong>: cerca de <strong>{painel.porDiaUtil} por dia de campo</strong>
       <span class="suave">({painel.diasUteisRestantes} dias de campo até o fim)</span>
     </p>
   {/if}
-  <p class="suave pequeno">{painel.totalVisitasMes} visitas no período · {diasDeCampo} dias de campo (sem fins de semana, feriados e dias marcados em Ajustes)</p>
+  <p class="suave pequeno">{painel.familiasVisitadas} casas diferentes · {diasDeCampo} dias de campo (sem fins de semana, feriados e dias marcados em Ajustes)</p>
   {#if previsao}
     <p class="previsao" class:bom={previsao.vaiBater}>
       {previsao.vaiBater ? '📈' : '⚠️'} No ritmo de agora ({previsao.ritmo.toFixed(1).replace('.', ',')} por dia de campo), você fecha o mês com
-      <strong>~{previsao.previsto}</strong> famílias{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
+      <strong>~{previsao.previsto}</strong> visitas{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
     </p>
   {/if}
 </section>
@@ -88,12 +88,9 @@
   <section class="cartao plano">
     <h2>Plano para fechar a meta</h2>
     <p class="suave pequeno">
-      As {plano.reduce((n, d) => n + d.total, 0)} famílias há mais tempo sem VD, divididas pelos {plano.length} dias de campo que faltam, juntando as da mesma rua.
+      As {plano.reduce((n, d) => n + d.total, 0)} casas há mais tempo sem VD (a conta da meta também aceita revisita), divididas pelos {plano.length} dias de campo que faltam, juntando as da mesma rua.
       É só uma sugestão: o roteiro de hoje continua valendo para os casos urgentes.
     </p>
-    {#if painel.naoVisitadas.length < painel.faltam}
-      <p class="alerta pequeno">Mesmo visitando todas as casas que faltam, ficariam faltando {painel.faltam - painel.naoVisitadas.length} para a meta.</p>
-    {/if}
     {#each plano as d, i (d.data)}
       <details open={i === 0}>
         <summary><strong>{diaCurto(d.data)}</strong> · {d.total} {d.total === 1 ? 'casa' : 'casas'} <span class="suave pequeno">({d.ruas.map((r) => r.rua).join(', ')})</span></summary>
@@ -149,8 +146,8 @@
 {/snippet}
 
 <section class="cartao">
-  <h2>Famílias visitadas por dia</h2>
-  <p class="suave pequeno">Cada família conta uma vez, no dia da primeira visita que conta para a meta.</p>
+  <h2>Visitas por dia</h2>
+  <p class="suave pequeno">Cada casa visitada em um dia conta como uma visita, igual ao SBCD (inclusive revisita e ausência).</p>
   <GraficoDias dias={painel.porDia} {ritmo} detalhe={doDia} />
 </section>
 
@@ -161,7 +158,7 @@
       <li><Desfecho valor={d} /> <strong>{painel.porDesfecho[d]}</strong></li>
     {/each}
   </ul>
-  <p class="suave pequeno">Contam para a meta: {app.config.nomesDesfecho.realizada} e {app.config.nomesDesfecho.ausente_realizada} (cada família uma vez no período).</p>
+  <p class="suave pequeno">Contam para a meta: {app.config.nomesDesfecho.realizada} e {app.config.nomesDesfecho.ausente_realizada} (e também ausência e recusa: no SBCD toda visita registrada conta; a mesma casa em dias diferentes conta de novo).</p>
 </section>
 
 <button class="botao largo relatorio" onclick={() => ir('minhas-vds')}>Minhas VDs com nomes (dia a dia, imprimir/PDF)</button>

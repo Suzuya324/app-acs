@@ -17,8 +17,8 @@
   const calendario = $derived({ feriadosIgnorados: app.config.feriadosIgnorados, diasSemCampo: app.config.diasSemCampo });
   const diasDeCampo = $derived(contarDiasDeCampo(painel.periodo.inicio, painel.periodo.fim, opcoes.ehDiaDeCampo!));
   const diasComVisita = $derived(painel.porDia.filter((d) => d.contam + d.naoContam > 0).length);
-  const media = $derived(diasComVisita ? (painel.familiasVisitadas / diasComVisita).toFixed(1).replace('.', ',') : '0');
-  const pct = $derived(Math.round((painel.familiasVisitadas / painel.meta) * 100));
+  const media = $derived(diasComVisita ? (painel.visitasContadas / diasComVisita).toFixed(1).replace('.', ',') : '0');
+  const pct = $derived(Math.round((painel.visitasContadas / painel.meta) * 100));
   const previsao = $derived(previsaoDaMeta(painel, hoje, opcoes.ehDiaDeCampo!));
   const inds = $derived(indicadores(app.familias, app.visitas, painel.periodo.inicio, painel.periodo.fim));
   /** Casos (só números): abertos no período, resolvidos no período, abertos hoje, por eMulti. */
@@ -66,12 +66,12 @@
   </header>
 
   <section class="numeros">
-    <div><span class="grande">{painel.familiasVisitadas}</span><span>famílias visitadas (contam para a meta)</span></div>
+    <div><span class="grande">{painel.visitasContadas}</span><span>visitas (contam para a meta, como no SBCD)</span></div>
     <div><span class="grande">{painel.meta}</span><span>meta do período</span></div>
     <div><span class="grande">{pct}%</span><span>da meta</span></div>
-    <div><span class="grande">{painel.totalVisitasMes}</span><span>visitas registradas</span></div>
+    <div><span class="grande">{painel.familiasVisitadas}</span><span>casas diferentes com visita realizada</span></div>
     <div><span class="grande">{diasComVisita}</span><span>dias com visita (de {diasDeCampo} dias de campo)</span></div>
-    <div><span class="grande">{media}</span><span>famílias por dia trabalhado</span></div>
+    <div><span class="grande">{media}</span><span>visitas por dia trabalhado</span></div>
   </section>
 
   <section>
@@ -129,7 +129,7 @@
   <section>
     <h2>Dia a dia</h2>
     <table>
-      <thead><tr><th>Dia</th><th class="n">Famílias que contam</th><th class="n">Outras visitas</th><th>Observação</th></tr></thead>
+      <thead><tr><th>Dia</th><th class="n">Visitas</th><th class="n">Linhas repetidas</th><th>Observação</th></tr></thead>
       <tbody>
         {#each painel.porDia as d (d.data)}
           {@const motivo = motivoSemCampo(d.data, calendario)}

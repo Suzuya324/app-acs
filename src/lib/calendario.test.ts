@@ -119,7 +119,7 @@ describe('painel com feriados e períodos', () => {
     expect(p.familiasVisitadas).toBe(2);
   });
 
-  it('gráfico: cada família conta uma vez, no primeiro dia', () => {
+  it('gráfico: cada casa conta uma vez por dia', () => {
     const visitas = [
       vd('1', '2026-11-03', 'realizada'),
       vd('1', '2026-11-04', 'realizada'),
@@ -129,7 +129,7 @@ describe('painel com feriados e períodos', () => {
     const p = calcularPainel(familias, visitas, '2026-11-05', 200, { ehDiaDeCampo: campo });
     const dias = Object.fromEntries(p.porDia.map((d) => [d.data, [d.contam, d.naoContam]]));
     expect(dias['2026-11-03']).toEqual([1, 0]);
-    expect(dias['2026-11-04']).toEqual([0, 2]);
+    expect(dias['2026-11-04']).toEqual([2, 0]); // duas casas no mesmo dia: duas visitas
     expect(dias['2026-11-05']).toEqual([1, 0]);
     expect(p.porDia.find((d) => d.data === '2026-11-02')!.diaDeCampo).toBe(false); // Finados
   });

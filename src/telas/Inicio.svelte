@@ -16,7 +16,7 @@
   const hoje = hojeISO();
   const painel = $derived(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoesPainel()));
   const previsao = $derived(previsaoDaMeta(painel, hoje, opcoesPainel().ehDiaDeCampo!));
-  const pct = $derived(Math.min(100, Math.round((painel.familiasVisitadas / painel.meta) * 100)));
+  const pct = $derived(Math.min(100, Math.round((painel.visitasContadas / painel.meta) * 100)));
   const diasSemBackup = $derived(app.config.ultimoBackup ? diferencaDias(app.config.ultimoBackup, hoje) : null);
   /** Com a sincronização funcionando, o backup em arquivo vira só uma garantia extra (1 vez por mês). */
   const sincronizado = $derived(app.sinc.estado === 'ok' || (app.sinc.ultima !== '' && app.sinc.estado !== 'erro'));
@@ -169,14 +169,14 @@
 <section class="cartao" aria-labelledby="t-meta">
   <h2 id="t-meta">Meta de {painel.periodo.rotulo}</h2>
   <p class="numero-meta">
-    <strong>{painel.familiasVisitadas}</strong> <span class="suave">de {painel.meta} famílias</span>
+    <strong>{painel.visitasContadas}</strong> <span class="suave">de {painel.meta} visitas</span>
   </p>
-  <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax={painel.meta} aria-valuenow={painel.familiasVisitadas} aria-label="Famílias visitadas no mês">
+  <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax={painel.meta} aria-valuenow={painel.visitasContadas} aria-label="Visitas feitas no mês">
     <div class="preenchido" style="width: {pct}%"></div>
   </div>
   {#if painel.faltam > 0}
     <p class="falta">
-      Faltam <strong>{painel.faltam}</strong> famílias: cerca de
+      Faltam <strong>{painel.faltam}</strong> visitas: cerca de
       <strong>{painel.porDiaUtil} por dia de campo</strong>
       <span class="suave">({painel.diasUteisRestantes} dias de campo até o fim, sem feriados)</span>
     </p>
@@ -186,7 +186,7 @@
   {#if previsao}
     <p class="previsao" class:bom={previsao.vaiBater}>
       {previsao.vaiBater ? '📈' : '⚠️'} No ritmo de agora ({previsao.ritmo.toFixed(1).replace('.', ',')} por dia de campo), você fecha o mês com
-      <strong>~{previsao.previsto}</strong> famílias{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
+      <strong>~{previsao.previsto}</strong> visitas{previsao.vaiBater ? ': vai bater a meta.' : `: faltariam ${painel.meta - previsao.previsto}.`}
     </p>
   {/if}
   <button class="link-simples ver-mais" onclick={() => ir('painel')}>{painel.faltam > 0 && painel.atual ? 'Ver o plano para fechar a meta e o gráfico ›' : 'Ver gráfico e meses anteriores ›'}</button>
