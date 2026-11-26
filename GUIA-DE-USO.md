@@ -342,20 +342,23 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
   vale em todos os aparelhos; se ele sincronizar de novo, volta sozinho. Aparelho parado há mais de 30 dias não
   gera mais aviso no Início (só aparece na lista).
 
-## 6c. Versão básica para colegas testarem
+## 6c. App separado para colegas testarem ("VDs básico")
 
-- **O que é:** o mesmo app, pelo mesmo link, mostrando só o essencial: **meta do mês**, **buscar a família**,
-  **roteiro de hoje com as casas que faltam**, **VD com relato pronto** e **fila do Fast**. As outras funções
-  ficam escondidas (não apagadas). Abas: Início, Buscar, Roteiro, Fila e Ajustes.
-- **Como o colega começa:** abre o link no Chrome do celular dele → **Começar** → nome e meta → em "Qual
-  versão?" deixa **Básica** → escolhe "Com dados de exemplo" (para conhecer) ou "Vazio" → cria o **PIN dele**.
-  Depois carrega a área dele: Início → **Arquivo do SBCD** (o mesmo tipo de arquivo que você usou) ou
-  **Planilha (CSV)**. Se estava com o exemplo, as casas inventadas saem e entra a área real.
+- **Link dos colegas:** **https://suzuya324.github.io/app-acs/basico/** (o seu continua sendo
+  **https://suzuya324.github.io/app-acs/**). É outro app: outro nome ("VDs básico"), outro ícone na tela e
+  **outro lugar para guardar os dados**. Os dois nunca se misturam, nem se forem abertos no mesmo celular.
+- **O que tem:** só o essencial: **meta do mês**, **buscar a família**, **roteiro de hoje com as casas que
+  faltam**, **VD com relato pronto** e **fila do Fast**. Abas: Início, Buscar, Roteiro, Fila e Ajustes.
+- **Como o colega começa:** abre o link no **Chrome** do celular → 3 pontinhos → **Instalar app** → abre pelo
+  ícone "VDs básico" → **Começar** → nome e meta → "Com dados de exemplo" (para conhecer) ou "Vazio" → cria o
+  **PIN dele**. Depois carrega a área dele: Início → **Arquivo do SBCD** (o mesmo tipo de arquivo que você usou)
+  ou **Planilha (CSV)**. Se estava com o exemplo, as casas inventadas saem e entra a área real.
 - **Os dados de cada um ficam só no celular de cada um**, com o PIN dele. Você não vê os dados deles e eles
-  não veem os seus. Não tem sincronização entre colegas.
+  não veem os seus. Não tem sincronização.
 - **Avise os colegas:** sem backup, se o celular quebrar ou se esquecerem o PIN, perdem os dados do app
   (Ajustes → Backup, toda semana). O app não substitui o Fast: o lançamento oficial continua lá.
-- **Trocar de versão:** Ajustes → **Versão do app** → Básica ou Completa. Não apaga nada.
+- **Atualizações:** quando você publica uma melhoria, os dois apps são montados de novo. O que mudar nas partes
+  que os dois usam (busca, VD, relato, roteiro, meta) chega também aos colegas.
 
 ## 7. Rotina de segurança
 

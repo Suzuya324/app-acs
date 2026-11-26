@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { NOME_APP } from './lib/edicao';
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
   import { salvarConfig, app, desfazerUltima, familiaPorId, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
@@ -122,7 +123,7 @@
 
 <header class="topo">
   <div>
-    <strong>Facilitador de VDs</strong>
+    <strong>{NOME_APP}</strong>
     {#if app.fase === 'aberto' && app.config.micro}<span class="suave pequeno">{app.config.micro}</span>{/if}
   </div>
   <div class="acoes-topo">

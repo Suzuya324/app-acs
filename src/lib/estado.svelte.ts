@@ -19,7 +19,8 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
-import { marcarSessao, registrarBloqueio, sessaoEstavaAberta, type Bloqueio, type MotivoBloqueio } from './bloqueios';
+import { lerBloqueios, marcarSessao, registrarBloqueio, sessaoEstavaAberta, type Bloqueio, type MotivoBloqueio } from './bloqueios';
+import { EDICAO_BASICA } from './edicao';
 import { sugerirDesfecho } from './desfecho';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
@@ -134,6 +135,8 @@ function normalizarFamilia(f: Familia): Familia {
 
 function carregar(d: Dados) {
   app.config = { ...structuredClone(CONFIG_PADRAO), ...d.config };
+  // Na edição básica (a dos colegas), é sempre a versão básica.
+  if (EDICAO_BASICA) app.config.versaoBasica = true;
   app.familias = (d.familias ?? []).map(normalizarFamilia);
   app.visitas = d.visitas ?? [];
   app.historico = d.historico ?? [];
@@ -294,11 +297,7 @@ export function antesDeAtualizar() {
 }
 
 function lerUltimoBloqueio(): Bloqueio | null {
-  try {
-    return (JSON.parse(localStorage.getItem('facilitador.bloqueios') ?? '[]') as Bloqueio[])[0] ?? null;
-  } catch {
-    return null;
-  }
+  return lerBloqueios()[0] ?? null;
 }
 
 export async function apagarTudo() {

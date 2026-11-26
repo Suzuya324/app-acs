@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { EDICAO_BASICA, NOME_APP } from '../lib/edicao';
   import TecladoPin from '../componentes/TecladoPin.svelte';
   import { ArquivoInvalido, lerBackup, SenhaBackupErrada } from '../lib/backup';
   import type { Dados } from '../lib/cofre';
@@ -17,7 +18,7 @@
   let novaRua = $state('');
   let origem = $state<'exemplo' | 'vazio'>('exemplo');
   /** Versão básica (só o essencial) ou completa. Quem está começando vai melhor com a básica. */
-  let versao = $state<'basica' | 'completa'>('basica');
+  let versao = $state<'basica' | 'completa'>(EDICAO_BASICA ? 'basica' : 'completa');
 
   // Backup
   let arquivo = $state<File | null>(null);
@@ -94,7 +95,7 @@
 
 {#if passo === 'inicio'}
   <section class="cartao">
-    <h1>Bem-vindo ao Facilitador de VDs</h1>
+    <h1>Bem-vindo ao {NOME_APP}</h1>
     <p>Antes de começar, três coisas importantes:</p>
     <ol class="itens">
       <li><strong>Seus dados ficam só neste celular.</strong> Nada vai para a internet, nem para o Fast.</li>
@@ -134,17 +135,19 @@
   </div>
 {:else if passo === 'exemplo'}
   <h1>Como quer começar?</h1>
+  {#if !EDICAO_BASICA}
   <section class="cartao">
     <h2>Qual versão?</h2>
     <label class="escolha">
       <input type="radio" bind:group={versao} value="basica" />
-      <span><strong>Básica (recomendada para começar)</strong><br /><span class="suave pequeno">Só o essencial: meta do mês, buscar a família, roteiro de hoje com as casas que faltam, VD com relato pronto e fila do Fast.</span></span>
+      <span><strong>Básica</strong><br /><span class="suave pequeno">Só o essencial: meta do mês, buscar a família, roteiro de hoje com as casas que faltam, VD com relato pronto e fila do Fast.</span></span>
     </label>
     <label class="escolha">
       <input type="radio" bind:group={versao} value="completa" />
       <span><strong>Completa</strong><br /><span class="suave pequeno">Todas as funções (prioritários, casos, técnica, grupos, sincronização entre aparelhos…). Dá para trocar depois em Ajustes.</span></span>
     </label>
   </section>
+  {/if}
   <section class="cartao">
     <h2>Com quais casas?</h2>
     <label class="escolha">

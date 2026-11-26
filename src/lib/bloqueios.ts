@@ -2,6 +2,8 @@
 // tela do PIN explicar e para o ACS saber se foi o tempo parado, a saída do app ou o celular fechando o app.
 // Fica no armazenamento simples do navegador; se não der para gravar, o app funciona igual.
 
+import { PREFIXO_LOCAL } from './edicao';
+
 export type MotivoBloqueio = 'parado' | 'fora' | 'cadeado' | 'atualizacao' | 'fechado';
 
 export interface Bloqueio {
@@ -12,8 +14,8 @@ export interface Bloqueio {
   minutos?: number;
 }
 
-const CHAVE_LOG = 'facilitador.bloqueios';
-const CHAVE_SESSAO = 'facilitador.sessao';
+const CHAVE_LOG = `${PREFIXO_LOCAL}.bloqueios`;
+const CHAVE_SESSAO = `${PREFIXO_LOCAL}.sessao`;
 const MAXIMO = 15;
 
 function ler<T>(chave: string, padrao: T): T {

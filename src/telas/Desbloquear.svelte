@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { NOME_APP } from '../lib/edicao';
   import { onDestroy, onMount } from 'svelte';
   import TecladoPin from '../componentes/TecladoPin.svelte';
   import { textoDoBloqueio } from '../lib/bloqueios';
@@ -49,7 +50,7 @@
 
 <section class="tela-pin">
   <div class="cadeado" aria-hidden="true">🔒</div>
-  <h1>Facilitador de VDs</h1>
+  <h1>{NOME_APP}</h1>
   {#if !esqueci}
     {#if app.ultimoBloqueio}
       <p class="motivo pequeno" role="status">

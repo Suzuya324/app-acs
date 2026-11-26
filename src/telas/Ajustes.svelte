@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { EDICAO_BASICA } from '../lib/edicao';
   import { lerBloqueios, quandoFoi, textoDoBloqueio } from '../lib/bloqueios';
   import { entregarArquivo } from '../lib/arquivo';
   import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
@@ -206,6 +207,7 @@
 
 <button class="botao secundario largo como-usar" onclick={() => ir('como-usar')}>Como usar o app (passo a passo)</button>
 
+{#if !EDICAO_BASICA}
 <section class="cartao versao">
   <h2>Versão do app</h2>
   <label class="opcao-versao">
@@ -218,6 +220,7 @@
   </label>
   <p class="suave pequeno">Trocar não apaga nada: só mostra ou esconde funções.</p>
 </section>
+{/if}
 
 <section class="cartao">
   <h2>Minha área</h2>
