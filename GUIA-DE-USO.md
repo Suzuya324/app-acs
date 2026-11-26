@@ -324,6 +324,42 @@ pacientes, deixe o ditado **offline**, para o áudio não ir para servidores:
 
 ---
 
+## 6b. O app trancou ou "saiu sozinho"? Aparelho que você não usa mais?
+
+- **Por que trancou:** a tela do PIN agora diz o motivo: "5 min sem tocar na tela", "ficou fora do app
+  (ou com a tela apagada)", "trancado pelo cadeado", "app atualizado" ou "o app foi fechado (pelo celular ou
+  por você) e abriu de novo". Em **Ajustes → Bloqueio automático → "Por que o app trancou"** estão as últimas
+  vezes.
+- **Digitar e ditar por voz contam como uso:** o app não tranca mais no meio do relato ditado.
+- **Tempo do bloqueio:** em **Ajustes → Bloqueio automático** dá para escolher até 30 min parado e até 15 min
+  fora do app. Mais tempo é mais prático na rua, mas deixa o app aberto por mais tempo se o celular ficar largado.
+- **"O app foi fechado" toda hora:** é o Android fechando o app para economizar bateria. No celular, abra
+  **Configurações → Apps → Chrome → Bateria → Sem restrições** (os nomes mudam um pouco em cada celular).
+- **Aviso de aparelho que você não usa:** cada aparelho conectado à sincronização entra numa lista com o nome
+  que você deu. Se o celular foi trocado ou conectado de novo com outro nome, o nome antigo ficava lá e o Início
+  avisava "não sincroniza". Agora o aviso tem o botão **"Não uso mais esse aparelho"**, e em **Ajustes →
+  Sincronizar aparelhos** aparece a lista com a última vez de cada um e o botão **"Não uso mais"**. Tirar da lista
+  vale em todos os aparelhos; se ele sincronizar de novo, volta sozinho. Aparelho parado há mais de 30 dias não
+  gera mais aviso no Início (só aparece na lista).
+
+## 6c. App separado para colegas testarem ("VDs básico")
+
+- **Link dos colegas:** **https://suzuya324.github.io/app-acs/basico/** (o seu continua sendo
+  **https://suzuya324.github.io/app-acs/**). É outro app: outro nome ("VDs básico"), outro ícone na tela e
+  **outro lugar para guardar os dados**. Os dois nunca se misturam, nem se forem abertos no mesmo celular.
+- **O que tem:** só o essencial: **meta do mês**, **buscar a família**, **roteiro de hoje com as casas que
+  faltam**, **VD com relato pronto** e **fila do Fast**. Abas: Início, Buscar, Roteiro, Fila e Ajustes.
+- **Como o colega começa:** abre o link no **Chrome** do celular → 3 pontinhos → **Instalar app** → abre pelo
+  ícone "VDs básico" → **Começar** → nome e meta → "Com dados de exemplo" (para conhecer) ou "Vazio" → cria o
+  **PIN dele**. Depois carrega a área dele: Início → **Arquivo do SBCD** (o mesmo tipo de arquivo que você usou)
+  ou **Planilha (CSV)**. Se estava com o exemplo, as casas inventadas saem e entra a área real.
+- **Os dados de cada um ficam só no celular de cada um**, com o PIN dele. Você não vê os dados deles e eles
+  não veem os seus. Não tem sincronização.
+- **Avise os colegas:** sem backup, se o celular quebrar ou se esquecerem o PIN, perdem os dados do app
+  (Ajustes → Backup, toda semana). O app não substitui o Fast: o lançamento oficial continua lá.
+- **Atualizações:** quando você publica uma melhoria, os dois apps são montados de novo. O que mudar nas partes
+  que os dois usam (busca, VD, relato, roteiro, meta) chega também aos colegas.
+
 ## 7. Rotina de segurança
 
 - **Backup:** com a sincronização ligada, um backup por mês basta (garantia extra). Sem ela, toda

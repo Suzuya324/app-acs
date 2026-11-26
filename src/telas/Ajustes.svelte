@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { EDICAO_BASICA } from '../lib/edicao';
+  import { lerBloqueios, quandoFoi, textoDoBloqueio } from '../lib/bloqueios';
   import { entregarArquivo } from '../lib/arquivo';
   import { ArquivoInvalido, criarBackup, nomeArquivoBackup, SenhaBackupErrada } from '../lib/backup';
   import { FERIADOS_LOCAIS_SUGERIDOS, feriadosNacionais } from '../lib/calendario';
@@ -193,11 +195,32 @@
     }
     await apagarTudo();
   }
+  const bloqueios = lerBloqueios();
+  async function mudarVersao(basica: boolean) {
+    app.config.versaoBasica = basica || undefined;
+    await salvarConfig();
+    mostrarAviso(basica ? 'Versão básica ✓ Só o essencial na tela.' : 'Versão completa ✓ Todas as funções à mostra.');
+  }
 </script>
 
 <h1>Ajustes</h1>
 
 <button class="botao secundario largo como-usar" onclick={() => ir('como-usar')}>Como usar o app (passo a passo)</button>
+
+{#if !EDICAO_BASICA}
+<section class="cartao versao">
+  <h2>Versão do app</h2>
+  <label class="opcao-versao">
+    <input type="radio" name="versao" checked={!!app.config.versaoBasica} onchange={() => mudarVersao(true)} />
+    <span><strong>Básica</strong><br /><span class="suave pequeno">Só o essencial: meta, buscar, roteiro de hoje com as casas que faltam, VD com relato e fila do Fast.</span></span>
+  </label>
+  <label class="opcao-versao">
+    <input type="radio" name="versao" checked={!app.config.versaoBasica} onchange={() => mudarVersao(false)} />
+    <span><strong>Completa</strong><br /><span class="suave pequeno">Tudo: prioritários, casos, técnica, grupos, sincronização entre aparelhos, conferência com o Fast…</span></span>
+  </label>
+  <p class="suave pequeno">Trocar não apaga nada: só mostra ou esconde funções.</p>
+</section>
+{/if}
 
 <section class="cartao">
   <h2>Minha área</h2>
@@ -206,9 +229,11 @@
   </p>
   <button class="botao secundario largo" onclick={() => ir('atualizar-cadastro')}>Atualizar cadastro pelo SBCD (sem apagar nada)</button>
   <button class="botao secundario largo" onclick={() => ir('importar')}>Importar minha área (CSV)</button>
-  <button class="botao secundario largo" onclick={() => ir('importar-sv')}>Trazer do Sistema de Visitas (VDs, relatos, casos…)</button>
-  <button class="botao secundario largo" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista (hipertensos, diabéticos, acamados…)</button>
-  <button class="botao secundario largo" onclick={() => ir('revisar-fichas')}>Atualizar fichas pelas VDs já feitas</button>
+  {#if !app.config.versaoBasica}
+    <button class="botao secundario largo" onclick={() => ir('importar-sv')}>Trazer do Sistema de Visitas (VDs, relatos, casos…)</button>
+    <button class="botao secundario largo" onclick={() => ir('importar-grupos')}>Marcar grupos colando uma lista (hipertensos, diabéticos, acamados…)</button>
+    <button class="botao secundario largo" onclick={() => ir('revisar-fichas')}>Atualizar fichas pelas VDs já feitas</button>
+  {/if}
   <button class="botao secundario largo" onclick={() => ir('minhas-vds')}>Minhas VDs: relatório com nomes (dia a dia)</button>
   <button class="botao secundario largo" onclick={() => ir('exportar-visitas')}>Exportar minhas visitas (planilha)</button>
   <button class="botao secundario largo espaco-b" onclick={() => ir('lixeira')}>
@@ -232,7 +257,7 @@
 </section>
 
 <!-- BACKUP -->
-<Sincronizacao />
+{#if !app.config.versaoBasica || app.sinc.estado !== 'desligada'}<Sincronizacao />{/if}
 
 <section class="cartao" id="backup">
   <h2>Backup</h2>
@@ -392,16 +417,35 @@
   <label class="campo">
     <span>Trancar depois de ficar parado no app por</span>
     <select bind:value={app.config.minutosParado} onchange={salvarConfig}>
-      {#each [1, 2, 3, 5, 10] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+      {#each [1, 2, 3, 5, 10, 15, 20, 30] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
     </select>
   </label>
   <label class="campo">
     <span>Trancar ao sair do app (outro app ou tela apagada) por mais de</span>
     <select bind:value={app.config.minutosFora} onchange={salvarConfig}>
       <option value={0}>na hora (mais seguro)</option>
-      {#each [1, 2, 5] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
+      {#each [1, 2, 3, 5, 10, 15] as m (m)}<option value={m}>{m} minuto{m > 1 ? 's' : ''}</option>{/each}
     </select>
   </label>
+  <p class="suave pequeno">
+    Digitar e ditar por voz contam como uso (o app não tranca no meio do relato). Tempo maior é mais prático na rua,
+    mas deixa o app aberto por mais tempo se o celular ficar largado.
+  </p>
+  <details class="bloqueios">
+    <summary>Por que o app trancou (últimas vezes)</summary>
+    {#if bloqueios.length}
+      <ul class="pequeno">
+        {#each bloqueios as b, i (i)}<li><strong>{quandoFoi(b.em)}</strong> · {textoDoBloqueio(b, app.config)}</li>{/each}
+      </ul>
+    {:else}
+      <p class="suave pequeno">Nenhum bloqueio guardado ainda.</p>
+    {/if}
+    <p class="suave pequeno">
+      Se aparecer muito “o app foi fechado”, é o Android fechando o app para economizar bateria. Para evitar: no
+      celular, abra <strong>Configurações → Apps → Chrome → Bateria</strong> e escolha <strong>Sem restrições</strong>
+      (os nomes podem mudar um pouco conforme o celular).
+    </p>
+  </details>
 </section>
 
 <section class="cartao">
@@ -481,6 +525,21 @@
 <p class="suave pequeno centro versao">Versão do app: {__VERSAO__}</p>
 
 <style>
+  .versao {
+    border-left: 6px solid var(--primaria);
+  }
+  .opcao-versao {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 8px 0;
+  }
+  .opcao-versao input {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
   .como-usar {
     margin-bottom: 14px;
   }

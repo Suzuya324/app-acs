@@ -19,6 +19,8 @@ import {
   type ItemLixeira,
 } from './lixeira';
 import { gerarRelato } from './relato';
+import { lerBloqueios, marcarSessao, registrarBloqueio, sessaoEstavaAberta, type Bloqueio, type MotivoBloqueio } from './bloqueios';
+import { EDICAO_BASICA } from './edicao';
 import { sugerirDesfecho } from './desfecho';
 import type { Previa } from './importar-sv';
 import type { SugestaoDasVDs } from './anotacoes';
@@ -62,6 +64,8 @@ export const app = $state({
   armazenamentoPersistente: false,
   /** Há uma versão nova do app esperando para ser aplicada. */
   novaVersao: false,
+  /** Por que o app trancou da última vez (a tela do PIN explica). */
+  ultimoBloqueio: null as Bloqueio | null,
   erro: '',
   /** Sincronização entre os aparelhos. */
   sinc: {
@@ -97,6 +101,19 @@ export async function iniciar() {
       throw new Error('Este navegador não tem os recursos de segurança necessários. Atualize o navegador.');
     }
     app.fase = (await cofre.existe()) ? 'trancado' : 'configurar';
+    if (app.fase === 'trancado') {
+      if (sessaoEstavaAberta()) {
+        // Estava destrancado e o app fechou (o celular fecha apps em segundo plano, ou a pessoa fechou).
+        const b: Bloqueio = { em: new Date().toISOString(), motivo: 'fechado' };
+        registrarBloqueio(b);
+        app.ultimoBloqueio = b;
+        marcarSessao(false);
+      } else {
+        // Trancou há pouco (ex.: atualização): mostra o motivo ao abrir de novo.
+        const u = lerUltimoBloqueio();
+        if (u && Date.now() - new Date(u.em).getTime() < 30 * 60_000) app.ultimoBloqueio = u;
+      }
+    }
     app.armazenamentoPersistente = (await navigator.storage?.persisted?.()) ?? false;
   } catch (e) {
     app.erro = e instanceof Error ? e.message : String(e);
@@ -118,6 +135,8 @@ function normalizarFamilia(f: Familia): Familia {
 
 function carregar(d: Dados) {
   app.config = { ...structuredClone(CONFIG_PADRAO), ...d.config };
+  // Na edição básica (a dos colegas), é sempre a versão básica.
+  if (EDICAO_BASICA) app.config.versaoBasica = true;
   app.familias = (d.familias ?? []).map(normalizarFamilia);
   app.visitas = d.visitas ?? [];
   app.historico = d.historico ?? [];
@@ -190,6 +209,7 @@ export async function criarCofre(pin: string, config: Config, origem: 'exemplo' 
   await cofre.criar(pin, dados);
   carregar(dados);
   app.fase = 'aberto';
+  marcarSessao(true);
   await pedirPersistencia();
   void carregarSinc();
 }
@@ -209,6 +229,8 @@ export async function desbloquear(pin: string): Promise<ResultadoDesbloqueio> {
   try {
     carregar(await cofre.abrir(pin));
     app.fase = 'aberto';
+    app.ultimoBloqueio = null;
+    marcarSessao(true);
     marcarUso();
     void carregarSinc();
     return { ok: true };
@@ -227,9 +249,10 @@ export function registrarGravacaoRascunho(f: (() => Promise<void>) | null) {
   gravarRascunhoAgora = f;
 }
 
-/** Tranca: grava a VD pela metade, esquece a chave e tira os dados da memória. */
-export async function trancar() {
+/** Tranca: grava a VD pela metade, esquece a chave e tira os dados da memória. Guarda o motivo (para explicar). */
+export async function trancar(motivo: MotivoBloqueio = 'cadeado', minutos?: number) {
   if (app.fase !== 'aberto') return;
+  const b: Bloqueio = { em: new Date().toISOString(), motivo, ...(minutos ? { minutos } : {}) };
   try {
     await gravarRascunhoAgora?.();
   } catch {
@@ -252,10 +275,33 @@ export async function trancar() {
   ultimaAcao = null;
   app.desfazer = null;
   app.busca = '';
+  registrarBloqueio(b);
+  marcarSessao(false);
+  app.ultimoBloqueio = b;
   app.fase = 'trancado';
 }
 
+/** Tira um aparelho da lista dos que sincronizam ("não uso mais"): some o aviso dele em todos os aparelhos. */
+export async function tirarAparelho(nome: string) {
+  const resto = { ...(app.config.aparelhos ?? {}) };
+  delete resto[nome];
+  app.config.aparelhos = resto;
+  app.config.aparelhosRemovidos = { ...(app.config.aparelhosRemovidos ?? {}), [nome]: new Date().toISOString() };
+  await salvarConfig();
+}
+
+/** Antes de aplicar a versão nova (o app recarrega e pede o PIN): guarda o motivo. */
+export function antesDeAtualizar() {
+  registrarBloqueio({ em: new Date().toISOString(), motivo: 'atualizacao' });
+  marcarSessao(false);
+}
+
+function lerUltimoBloqueio(): Bloqueio | null {
+  return lerBloqueios()[0] ?? null;
+}
+
 export async function apagarTudo() {
+  marcarSessao(false);
   esquecerSinc();
   app.sinc.estado = 'desligada';
   await cofre.apagarTudo();
@@ -713,6 +759,17 @@ export const tirarFamiliasDaArea = (familiaIds: string[], motivo: string) =>
 export const atualizarCadastroSbcd = (cmp: Comparacao, escolhidas: Set<string>) =>
   comDesfazer('Atualizar cadastro pelo SBCD', async () => {
     const quando = agora();
+    if (app.config.usandoExemplo) {
+      // Estava com os dados de exemplo (inventados): saem todos e entra a área real do SBCD.
+      app.familias = [];
+      app.visitas = [];
+      app.revisitas = [];
+      app.casos = [];
+      app.prioritarios = [];
+      app.historico = [];
+      app.config.usandoExemplo = false;
+      await gravar({ config: app.config, visitas: [], revisitas: [], casos: [], prioritarios: [], historico: [] });
+    }
     const hoje = hojeISO();
     const deOnde = `cadastro do SBCD${cmp.geradoEm ? ` de ${cmp.geradoEm.split('-').reverse().join('/')}` : ''}`;
     const fam = (id: string) => app.familias.find((f) => f.id === id);
@@ -1280,11 +1337,12 @@ export function marcarUso() {
 }
 
 export function instalarBloqueioAutomatico() {
-  for (const ev of ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const) {
+  // Conta como uso: tocar, rolar, teclar e também digitar ou ditar por voz (o ditado não "toca" na tela).
+  for (const ev of ['pointerdown', 'keydown', 'scroll', 'touchstart', 'input', 'compositionupdate', 'focusin', 'change', 'wheel', 'mousemove'] as const) {
     window.addEventListener(ev, marcarUso, { passive: true, capture: true });
   }
   setInterval(() => {
-    if (app.fase === 'aberto' && Date.now() - ultimoUso > app.config.minutosParado * 60_000) trancar();
+    if (app.fase === 'aberto' && Date.now() - ultimoUso > app.config.minutosParado * 60_000) void trancar('parado', app.config.minutosParado);
   }, 10_000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -1293,7 +1351,7 @@ export function instalarBloqueioAutomatico() {
     } else if (saiuEm !== null) {
       const fora = Date.now() - saiuEm;
       saiuEm = null;
-      if (fora > app.config.minutosFora * 60_000) trancar();
+      if (fora > app.config.minutosFora * 60_000) void trancar('fora', Math.max(1, Math.round(fora / 60_000)));
       else marcarUso();
     }
   });
@@ -1508,8 +1566,12 @@ async function rodarSinc(): Promise<void> {
         if (!vivo()) return;
         sincSal = aberto.sal;
         const aqui = dadosAtuais();
-        // Aparelho novo (dados de exemplo ou vazio): fica com os dados da nuvem, sem misturar.
-        const novo = app.config.usandoExemplo || app.familias.length === 0 ? aberto.dados : juntarDados(aqui, aberto.dados).dados;
+        // Aparelho novo (dados de exemplo ou vazio): fica com os dados da nuvem, sem misturar (mas já entra na lista
+        // dos aparelhos, para os outros saberem dele na hora).
+        const novo =
+          app.config.usandoExemplo || app.familias.length === 0
+            ? { ...aberto.dados, config: { ...aberto.dados.config, aparelhos: { ...(aberto.dados.config.aparelhos ?? {}), [cfg.aparelho]: new Date().toISOString() } } }
+            : juntarDados(aqui, aberto.dados).dados;
         if (!mesmoConteudo(novo, aqui)) {
           await aplicarDaNuvem(novo);
           mostrarAviso(`Dados atualizados com o ${aberto.aparelho || 'outro aparelho'} ✓`);

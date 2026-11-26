@@ -8,7 +8,8 @@
   import { ir, voltar } from '../lib/rotas.svelte';
 
   const hoje = hojeISO();
-  let comMeta = $state(false);
+  // Na versão básica, o roteiro já vem com as casas que faltam visitar no mês.
+  let comMeta = $state(!!app.config.versaoBasica);
   const faltam = $derived(new Set(calcularPainel(app.familias, app.visitas, hoje, app.config.metaMensal, opcoesPainel()).naoVisitadas.map((f) => f.id)));
   const todas = $derived(
     roteiroDoDia(app.familias, app.revisitas, { ...contextoAcompanhamento(), casos: app.casos }, comMeta ? faltam : new Set()),

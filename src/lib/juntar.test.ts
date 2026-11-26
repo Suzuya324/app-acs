@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Dados } from './cofre';
-import { juntarDados, textoResumoJuncao } from './juntar';
+import { juntarAparelhos, juntarDados, textoResumoJuncao } from './juntar';
 import { CONFIG_PADRAO } from './rotulos';
 import type { Familia, Revisita, Visita } from './tipos';
 
@@ -102,5 +102,36 @@ describe('juntar casos', () => {
       dados({ casos: [caso('c1', 'novo', '2026-11-03T00:00:00Z'), caso('c2', 'outro', '2026-11-02T00:00:00Z')] }),
     );
     expect(d.casos!.map((c) => `${c.id}:${c.texto}`).sort()).toEqual(['c1:novo', 'c2:outro']);
+  });
+});
+
+describe('aparelhos que sincronizam', () => {
+  it('vale a última sincronização de cada um', () => {
+    const r = juntarAparelhos({ aparelhos: { Celular: '2026-11-20T10:00:00Z', PC: '2026-11-01T10:00:00Z' } }, { aparelhos: { PC: '2026-11-22T10:00:00Z', Tablet: '2026-11-21T10:00:00Z' } });
+    expect(r.aparelhos).toEqual({ Celular: '2026-11-20T10:00:00Z', PC: '2026-11-22T10:00:00Z', Tablet: '2026-11-21T10:00:00Z' });
+    expect(r.aparelhosRemovidos).toBeUndefined();
+  });
+
+  it('"não uso mais" tira o aparelho nos dois lados; se ele sincronizar depois, volta', () => {
+    // No PC, o "Celular antigo" foi tirado da lista; o tablet ainda tem ele.
+    const pc = { aparelhos: { PC: '2026-11-23T10:00:00Z' }, aparelhosRemovidos: { 'Celular antigo': '2026-11-23T09:00:00Z' } };
+    const tablet = { aparelhos: { Tablet: '2026-11-23T08:00:00Z', 'Celular antigo': '2026-10-30T10:00:00Z' } };
+    const r = juntarAparelhos(tablet, pc);
+    expect(Object.keys(r.aparelhos!).sort()).toEqual(['PC', 'Tablet']);
+    expect(r.aparelhosRemovidos).toEqual({ 'Celular antigo': '2026-11-23T09:00:00Z' });
+    // O celular antigo foi ligado de novo e sincronizou depois: volta para a lista.
+    const voltou = juntarAparelhos({ ...r, aparelhos: r.aparelhos }, { aparelhos: { 'Celular antigo': '2026-11-24T10:00:00Z' } });
+    expect(voltou.aparelhos!['Celular antigo']).toBe('2026-11-24T10:00:00Z');
+  });
+
+  it('junção completa dos dados não traz de volta o aparelho tirado', () => {
+    const base = { familias: [], visitas: [], historico: [] };
+    const aqui = { ...base, config: { ...CONFIG_PADRAO, alteradaEm: '2026-11-23T09:00:00Z', aparelhos: { PC: '2026-11-23T10:00:00Z' }, aparelhosRemovidos: { Velho: '2026-11-23T09:00:00Z' } } };
+    const la = { ...base, config: { ...CONFIG_PADRAO, alteradaEm: '2026-11-20T09:00:00Z', aparelhos: { Velho: '2026-10-01T10:00:00Z', Tablet: '2026-11-22T10:00:00Z' } } };
+    const { dados } = juntarDados(aqui, la);
+    expect(Object.keys(dados.config.aparelhos ?? {}).sort()).toEqual(['PC', 'Tablet']);
+    // E do outro lado também (o tablet tem os ajustes mais novos).
+    const { dados: d2 } = juntarDados({ ...la, config: { ...la.config, alteradaEm: '2026-11-24T09:00:00Z' } }, aqui);
+    expect(Object.keys(d2.config.aparelhos ?? {}).sort()).toEqual(['PC', 'Tablet']);
   });
 });

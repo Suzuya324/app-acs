@@ -291,6 +291,8 @@ export interface Config {
   agendaTecnica?: { data: string; moradores: string[] };
   /** Última sincronização de cada aparelho (nome → ISO), para avisar quando um ficou para trás. */
   aparelhos?: Record<string, string>;
+  /** Aparelhos tirados da lista ("não uso mais"): nome → quando (ISO). Se sincronizar depois, volta. */
+  aparelhosRemovidos?: Record<string, string>;
   /** Até quando (ISO) as mudanças do cadastro já foram passadas para o SBCD. */
   sbcdAtualizadoAte?: string;
   /** Nomes de remédios que o ACS ensinou ao app (separados por vírgula). Só nomes de remédio. */
@@ -307,4 +309,6 @@ export interface Config {
   diasDescansoGrave?: number;
   /** Dia em que a enfermeira, a médica ou o APA vêm à área e o que vão ver (ids dos itens da lista: morador ou casa). */
   agendaEquipe?: Partial<Record<'enfermeira' | 'medica' | 'apa', { data: string; itens: string[] }>>;
+  /** Versão básica do app (só o essencial: meta, buscar, roteiro de hoje, VD e fila do Fast). */
+  versaoBasica?: boolean;
 }

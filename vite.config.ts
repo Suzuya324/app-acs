@@ -33,7 +33,10 @@ function cspPlugin(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Edição básica (para colegas): outro nome no ícone; os dados ficam num banco separado (src/lib/edicao.ts).
+  const basica = mode === 'basica';
+  return {
   // Versão do app (data e hora da montagem), para conferir em Ajustes se o celular já atualizou.
   define: { __VERSAO__: JSON.stringify(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })) },
   // Caminhos relativos: funciona em qualquer endereço (ex.: usuario.github.io/app-acs/)
@@ -48,9 +51,9 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icone.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Facilitador de VDs',
-        short_name: 'Facilitador',
-        description: 'Visitas domiciliares, relatos e meta do mês. Dados só no celular.',
+        name: basica ? 'VDs básico' : 'Facilitador de VDs',
+        short_name: basica ? 'VDs básico' : 'Facilitador',
+        description: basica ? 'Versão básica: meta, buscar, roteiro de hoje, VD e fila do Fast. Dados só no celular.' : 'Visitas domiciliares, relatos e meta do mês. Dados só no celular.',
         lang: 'pt-BR',
         start_url: './',
         scope: './',
@@ -67,6 +70,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: 'index.html',
+        // A edição básica fica em …/basico/ e tem o seu próprio service worker: o da completa não mexe nela.
+        navigateFallbackDenylist: basica ? [] : [/\/basico\//],
         cleanupOutdatedCaches: true,
       },
     }),
@@ -74,4 +79,5 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
   },
+};
 });

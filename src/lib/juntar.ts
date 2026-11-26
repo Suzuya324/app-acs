@@ -91,15 +91,37 @@ function juntarHistorico(daqui: Alteracao[], dela: Alteracao[]): Alteracao[] {
   return [...daqui, ...dela.filter((h) => !ids.has(h.id))].sort((a, b) => a.quando.localeCompare(b.quando));
 }
 
+/**
+ * Aparelhos que sincronizam: vale a sincronização mais recente de cada um, venha de qual lado vier. Quem foi tirado
+ * da lista ("não uso mais") e não sincronizou depois disso sai; se voltar a sincronizar, volta para a lista.
+ */
+export function juntarAparelhos(daqui: Pick<Config, 'aparelhos' | 'aparelhosRemovidos'>, dela: Pick<Config, 'aparelhos' | 'aparelhosRemovidos'>) {
+  const maisNovo = (a: Record<string, string> = {}, b: Record<string, string> = {}) => {
+    const r = { ...a };
+    for (const [nome, quando] of Object.entries(b)) if (!r[nome] || quando > r[nome]) r[nome] = quando;
+    return r;
+  };
+  const aparelhos = maisNovo(daqui.aparelhos, dela.aparelhos);
+  const removidos = maisNovo(daqui.aparelhosRemovidos, dela.aparelhosRemovidos);
+  for (const [nome, quando] of Object.entries(removidos)) if (aparelhos[nome] && aparelhos[nome] <= quando) delete aparelhos[nome];
+  return {
+    aparelhos: Object.keys(aparelhos).length ? aparelhos : undefined,
+    aparelhosRemovidos: Object.keys(removidos).length ? removidos : undefined,
+  };
+}
+
 /** Ajustes: vale o mais recente; a data do último backup fica a mais nova dos dois. */
 function juntarConfig(daqui: Config, dela: Config | undefined): Config {
   if (!dela) return daqui;
   const maisNova = (dela.alteradaEm ?? '') > (daqui.alteradaEm ?? '') ? dela : daqui;
   const ultimoBackup = [daqui.ultimoBackup ?? '', dela.ultimoBackup ?? ''].sort().at(-1) ?? '';
-  // Última sincronização de cada aparelho: vale a mais recente de cada um, venha de qual lado vier.
-  const aparelhos: Record<string, string> = { ...(daqui.aparelhos ?? {}) };
-  for (const [nome, quando] of Object.entries(dela.aparelhos ?? {})) if (!aparelhos[nome] || quando > aparelhos[nome]) aparelhos[nome] = quando;
-  return { ...maisNova, ultimoBackup, ...(Object.keys(aparelhos).length ? { aparelhos } : {}) };
+  const { aparelhos, aparelhosRemovidos } = juntarAparelhos(daqui, dela);
+  const r: Config = { ...maisNova, ultimoBackup };
+  if (aparelhos) r.aparelhos = aparelhos;
+  else delete r.aparelhos;
+  if (aparelhosRemovidos) r.aparelhosRemovidos = aparelhosRemovidos;
+  else delete r.aparelhosRemovidos;
+  return r;
 }
 
 export function juntarDados(daqui: Dados, dela: Dados): { dados: Dados; resumo: ResumoJuncao } {

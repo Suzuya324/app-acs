@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { NOME_APP } from './lib/edicao';
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
   import { salvarConfig, app, desfazerUltima, familiaPorId, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
@@ -73,7 +74,7 @@
   const pendentes = $derived(app.visitas.filter((v) => !v.lancadaNoFast).length);
   /** Casos urgentes abertos (número vermelho na aba Casos). */
   const urgentes = $derived(app.casos.filter((c) => !c.resolvidoEm && c.categoria === 'urgente' && app.familias.some((f) => f.id === c.familiaId)).length);
-  const abas = [
+  const ABAS_COMPLETA = [
     { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
     { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
     { tela: 'prioritarios', caminho: 'prioritarios', rotulo: 'Prioritários', icone: 'estrela' },
@@ -81,8 +82,19 @@
     { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
   ];
+  /** Versão básica: só o essencial (meta, buscar, roteiro de hoje, VD e fila do Fast). */
+  const ABAS_BASICA = [
+    { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
+    { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
+    { tela: 'dia', caminho: 'dia', rotulo: 'Roteiro', icone: 'seta' },
+    { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
+    { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
+  ];
+  const abas = $derived(app.config.versaoBasica ? ABAS_BASICA : ABAS_COMPLETA);
   const abaAtiva = $derived(
-    rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
+    app.config.versaoBasica && ['dia', 'ordem-rua'].includes(rota.tela)
+      ? 'dia'
+      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
       ? 'casos'
       : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'
@@ -111,7 +123,7 @@
 
 <header class="topo">
   <div>
-    <strong>Facilitador de VDs</strong>
+    <strong>{NOME_APP}</strong>
     {#if app.fase === 'aberto' && app.config.micro}<span class="suave pequeno">{app.config.micro}</span>{/if}
   </div>
   <div class="acoes-topo">
@@ -122,7 +134,7 @@
       <Icone nome={escuro ? 'sol' : 'lua'} />
     </button>
     {#if app.fase === 'aberto'}
-      <button class="botao-topo" onclick={trancar} aria-label="Trancar o app agora">
+      <button class="botao-topo" onclick={() => trancar('cadeado')} aria-label="Trancar o app agora">
         <Icone nome="cadeado" />
       </button>
     {/if}

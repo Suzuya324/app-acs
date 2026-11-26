@@ -1,6 +1,8 @@
 // Onde os dados ficam guardados no celular (IndexedDB, banco do próprio navegador).
 // Aqui só passam dados JÁ criptografados, e as informações do cofre (que não são segredo).
 
+import { NOME_BANCO } from './edicao';
+
 export interface Armazenamento {
   ler<T>(chave: string): Promise<T | undefined>;
   /** Grava várias chaves de uma vez: ou grava todas, ou nenhuma. */
@@ -8,7 +10,6 @@ export interface Armazenamento {
   apagarTudo(): Promise<void>;
 }
 
-const NOME_BANCO = 'app-acs';
 const TABELA = 'itens';
 
 function pedido<T>(r: IDBRequest<T>): Promise<T> {
