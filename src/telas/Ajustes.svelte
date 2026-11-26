@@ -96,6 +96,10 @@
     app.config.metaMensal = Math.round(app.config.metaMensal);
     const meses = Number(app.config.mesesReceita);
     app.config.mesesReceita = meses >= 1 && meses <= 24 ? Math.round(meses) : undefined;
+    const descanso = app.config.diasDescanso == null ? NaN : Number(app.config.diasDescanso);
+    app.config.diasDescanso = descanso >= 0 && descanso <= 30 ? Math.round(descanso) : undefined;
+    const grave = app.config.diasDescansoGrave == null ? NaN : Number(app.config.diasDescansoGrave);
+    app.config.diasDescansoGrave = grave >= 0 && grave <= 30 ? Math.round(grave) : undefined;
     await salvarConfig();
     mostrarAviso('Salvo ✓');
   }
@@ -286,6 +290,14 @@
   <label class="campo"><span>Micro / equipe</span><input type="text" bind:value={app.config.micro} /></label>
   <label class="campo"><span>Meta de famílias por mês</span><input type="number" inputmode="numeric" min="1" bind:value={app.config.metaMensal} /></label>
   <label class="campo"><span>A receita de uso contínuo vale quantos meses</span><input type="number" inputmode="numeric" min="1" max="24" placeholder="6" bind:value={app.config.mesesReceita} /></label>
+  <label class="campo">
+    <span>Dias de descanso da casa (depois de uma VD ou tentativa, ela só volta ao roteiro depois disso)</span>
+    <input type="number" inputmode="numeric" min="0" max="30" placeholder="5" bind:value={app.config.diasDescanso} />
+  </label>
+  <label class="campo">
+    <span>Descanso dos casos graves (caso urgente, alta do hospital, acamado, oxigênio): voltam mais cedo</span>
+    <input type="number" inputmode="numeric" min="0" max="30" placeholder="2" bind:value={app.config.diasDescansoGrave} />
+  </label>
   <h3>Ruas da área</h3>
   <ul class="lista">
     {#each app.config.ruas as r, i (r)}

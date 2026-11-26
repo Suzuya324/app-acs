@@ -5,6 +5,7 @@ import { codigo } from './acompanhamento';
 import { dataCurta, frases, NEGACAO, semAcento, textosDaPessoa, trechosDaPessoa, type TextoDaFamilia } from './anotacoes';
 import type { Prioritario } from './prioritarios';
 import { diferencaDias, idade } from './datas';
+import { normalizar } from './busca';
 import type { Caso, CategoriaCaso, Familia, Morador, Visita } from './tipos';
 
 /**
@@ -306,4 +307,40 @@ export function textoDoCaso(c: Caso, endereco: (familiaId: string) => string, ho
   if (ultima) linhas.push(`Última resposta (${dataCurta(ultima.data)}): ${ultima.texto}`);
   if (parado >= DIAS_PARADO) linhas.push(`Sem resposta ${textoParado(parado)}.`);
   return linhas.join('\n');
+}
+
+// ---------------------------------------------------------------- organização da aba Casos
+
+export type SecaoCaso = 'urgentes' | 'parados' | 'acompanhando';
+export const NOMES_SECAO: Record<SecaoCaso, string> = {
+  urgentes: 'Urgentes',
+  parados: `Parados há ${DIAS_PARADO} dias ou mais`,
+  acompanhando: 'Acompanhando',
+};
+
+/** Em qual seção da lista o caso aberto fica: urgente primeiro, depois parado, depois o resto. */
+export function secaoDoCaso(c: Caso, hoje: string): SecaoCaso {
+  if (c.categoria === 'urgente') return 'urgentes';
+  return diasParado(c, hoje) >= DIAS_PARADO ? 'parados' : 'acompanhando';
+}
+
+/** Separa os casos (já ordenados) nas seções, na ordem urgentes, parados, acompanhando. Seção vazia some. */
+export function agruparCasos(casos: Caso[], hoje: string): { secao: SecaoCaso; nome: string; casos: Caso[] }[] {
+  const ordem: SecaoCaso[] = ['urgentes', 'parados', 'acompanhando'];
+  return ordem
+    .map((secao) => ({ secao, nome: NOMES_SECAO[secao], casos: casos.filter((c) => secaoDoCaso(c, hoje) === secao) }))
+    .filter((g) => g.casos.length > 0);
+}
+
+/**
+ * Busca por nome, rua, número, prontuário ou qualquer palavra do caso. Todas as palavras digitadas precisam
+ * aparecer (sem diferenciar acento nem maiúscula). `extra` devolve o endereço e o prontuário da família do caso.
+ */
+export function buscarCasos(casos: Caso[], termo: string, extra: (c: Caso) => string = () => ''): Caso[] {
+  const palavras = normalizar(termo).split(/\s+/).filter(Boolean);
+  if (!palavras.length) return casos;
+  return casos.filter((c) => {
+    const alvo = normalizar([c.titulo, c.texto, c.npv ?? '', c.emulti ?? '', extra(c)].join(' '));
+    return palavras.every((p) => alvo.includes(p));
+  });
 }

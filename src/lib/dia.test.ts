@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Contexto } from './acompanhamento';
-import { agenda, emOrdemDeRua, lembretes, proximaCasa, quandoE, roteiroDoDia, sumidos, type CasaDoDia } from './dia';
+import { agenda, casasDescansando, emOrdemDeRua, lembretes, proximaCasa, quandoE, roteiroDoDia, sumidos, type CasaDoDia } from './dia';
 import type { Caso, Familia, Morador, Revisita, Visita } from './tipos';
 
 // Tudo inventado.
@@ -87,7 +87,7 @@ describe('próxima casa do roteiro', () => {
     fam('f3', 'Rua dos Ipês', '7', [mor('c', 'Caio Teste')]),
     fam('f4', 'Rua das Acácias', '20', [mor('d', 'Duda Teste')]),
   ];
-  const casa = (f: Familia): CasaDoDia => ({ familia: f, motivos: [{ texto: 'x', peso: 50 }], peso: 50 });
+  const casa = (f: Familia): CasaDoDia => ({ familia: f, motivos: [{ texto: 'x', peso: 50 }], peso: 50, puladas: 0 });
   const ruas = ['Rua das Acácias', 'Rua dos Ipês'];
 
   it('segue a rua e o número, mesmo quando a casa atual já saiu do roteiro; no fim volta ao começo', () => {
@@ -110,5 +110,39 @@ describe('receita no roteiro', () => {
     const f = fam('fr', 'Rua das Acácias', '5', [mor('r', 'Rosa Teste', { grupos: ['hipertenso'], receitaEm: '2026-05-20' })]);
     const casas = roteiroDoDia([f], [], ctx([vd('fr', '2026-11-01')]));
     expect(casas[0]?.motivos.map((m) => m.texto)).toContain('Rosa: receita vence 20/11 – lembrar de renovar');
+  });
+});
+
+describe('descanso depois da VD', () => {
+  // Revisita vencida: sem o descanso, a casa entraria no roteiro todo dia.
+  const f = fam('fv', 'Rua das Acácias', '9', [mor('v', 'Vera Teste')]);
+  const rev: Revisita = { id: 'rv', familiaId: 'fv', motivo: 'Levar o pedido de exame', ate: '2026-11-01', criadaEm: '' };
+  const roteiro = (visitas: Visita[], extra: Partial<Contexto> = {}) => roteiroDoDia([f], [rev], { ...ctx(visitas), ...extra }).length;
+
+  it('visitada ontem não volta hoje; volta quando passam 5 dias', () => {
+    expect(roteiro([vd('fv', '2026-10-01')])).toBe(1);
+    expect(roteiro([vd('fv', '2026-11-10')])).toBe(0);
+    expect(roteiro([vd('fv', '2026-11-07')])).toBe(0);
+    expect(roteiro([vd('fv', '2026-11-06')])).toBe(1);
+  });
+
+  it('ninguém em casa também faz a casa descansar', () => {
+    expect(roteiro([vd('fv', '2026-11-09', { desfecho: 'ausencia_completa' })])).toBe(0);
+  });
+
+  it('VD feita fora do app (última VD fora) também vale', () => {
+    const fora = { ...f, ultimaVdFora: '2026-11-10' };
+    expect(roteiroDoDia([fora], [rev], ctx([])).length).toBe(0);
+  });
+
+  it('o número de dias pode ser mudado (4 dias)', () => {
+    expect(roteiro([vd('fv', '2026-11-07')], { diasDescanso: 4 })).toBe(1);
+    expect(roteiro([vd('fv', '2026-11-08')], { diasDescanso: 4 })).toBe(0);
+  });
+
+  it('lista quem está descansando e quando volta', () => {
+    const l = casasDescansando([f], [vd('fv', '2026-11-09')], HOJE);
+    expect(l.map((d) => [d.familia.id, d.ultima, d.voltaEm])).toEqual([['fv', '2026-11-09', '2026-11-14']]);
+    expect(casasDescansando([f], [vd('fv', '2026-11-01')], HOJE)).toEqual([]);
   });
 });

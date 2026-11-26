@@ -31,6 +31,16 @@ export type SituacaoCasa =
   | 'demolida'
   | 'construcao';
 
+/** O que o ACS marcou do pré-natal de uma gestante. */
+export interface PreNatal {
+  /** Quantas consultas de pré-natal já fez (o mínimo é 6). */
+  consultas: number;
+  exames?: boolean;
+  testeRapido?: boolean;
+  dtpa?: boolean;
+  odonto?: boolean;
+}
+
 export interface Morador {
   id: string;
   nome: string;
@@ -46,6 +56,8 @@ export interface Morador {
   codSbcd?: string;
   /** Gestante: data provável do parto (aaaa-mm-dd). */
   dpp?: string;
+  /** Gestante: o que já foi feito no pré-natal. */
+  prenatal?: PreNatal;
   /** Criança: última vez que o ACS conferiu a caderneta de vacinas (aaaa-mm-dd). */
   cadernetaEm?: string;
   /** Última receita dos remédios de uso contínuo (aaaa-mm-dd), para lembrar de renovar. */
@@ -84,6 +96,10 @@ export interface Familia {
   melhorHorario?: string;
   /** Ponto de referência para achar a casa (ex.: "portão azul, depois da ponte"). */
   referencia?: string;
+  /** Dias (aaaa-mm-dd) em que o ACS tocou em "Pular hoje": a casa some do roteiro naquele dia e volta no seguinte. */
+  puladas?: string[];
+  /** Posição da casa na rua, na ordem em que o ACS anda (1, 2, 3…). Vazio = ordem pelo número da casa. */
+  ordemNaRua?: number;
 }
 
 export type CategoriaCaso = 'urgente' | 'importante' | 'social' | 'npv';
@@ -287,4 +303,10 @@ export interface Config {
   mesesReceita?: number;
   /** Última conferência com o Fast guardada (aaaa-mm-dd). */
   ultimaConferenciaFast?: string;
+  /** Depois de uma VD (ou tentativa), a casa só volta ao roteiro do dia depois de quantos dias (padrão 5). */
+  diasDescanso?: number;
+  /** Descanso menor para casos graves (caso urgente, alta do hospital, acamado ou oxigênio): padrão 2 dias. */
+  diasDescansoGrave?: number;
+  /** Dia em que a enfermeira, a médica ou o APA vêm à área e o que vão ver (ids dos itens da lista: morador ou casa). */
+  agendaEquipe?: Partial<Record<'enfermeira' | 'medica' | 'apa', { data: string; itens: string[] }>>;
 }
