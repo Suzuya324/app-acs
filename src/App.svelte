@@ -81,6 +81,7 @@
     { tela: 'inicio', caminho: '', rotulo: 'Início', icone: 'casa' },
     { tela: 'busca', caminho: 'busca', rotulo: 'Buscar', icone: 'busca' },
     { tela: 'prioritarios', caminho: 'prioritarios', rotulo: 'Prioritários', icone: 'estrela' },
+    { tela: 'equipe-numeros', caminho: 'equipe-numeros', rotulo: 'Equipe', icone: 'grafico' },
     { tela: 'casos', caminho: 'casos', rotulo: 'Casos', icone: 'pasta' },
     { tela: 'fila', caminho: 'fila', rotulo: 'Fila', icone: 'fila' },
     { tela: 'ajustes', caminho: 'ajustes', rotulo: 'Ajustes', icone: 'engrenagem' },
@@ -97,7 +98,7 @@
   const abaAtiva = $derived(
     app.config.versaoBasica && ['dia', 'ordem-rua'].includes(rota.tela)
       ? 'dia'
-      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe' || rota.tela === 'equipe-numeros'
+      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
       ? 'casos'
       : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'
@@ -262,7 +263,7 @@
 {/if}
 
 {#if app.fase === 'aberto'}
-  <nav class="abas" aria-label="Navegação principal">
+  <nav class="abas" class:sete={abas.length > 6} aria-label="Navegação principal">
     {#each abas as aba (aba.tela)}
       <button class="aba" class:ativa={abaAtiva === aba.tela} onclick={() => ir(aba.caminho)}>
         <span class="icone-aba">
@@ -346,7 +347,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 8px 2px 10px;
+    padding: 8px 1px 10px;
     min-height: 64px;
     border: 0;
     background: transparent;
@@ -355,7 +356,13 @@
     font-weight: 700;
     cursor: pointer;
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+  /* Com 7 abas (versão completa) cada uma fica mais estreita: letra um pouco menor para "Prioritários" caber inteira. */
+  .abas.sete .aba {
+    font-size: 0.62rem;
+    letter-spacing: -0.01em;
   }
   .aba.ativa {
     color: var(--primaria);

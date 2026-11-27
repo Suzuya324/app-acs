@@ -44,5 +44,7 @@
     <rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1" /><path d="M9 10h6" /><path d="M9 14h6" /><path d="M9 18h3" />
   {:else if nome === 'estrela'}
     <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+  {:else if nome === 'grafico'}
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
   {/if}
 </svg>
