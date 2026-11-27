@@ -139,6 +139,7 @@
         </ul>
         <div class="acoes-rapidas">
           <button class="botao pequeno" onclick={() => ir(`vd/${c.familia.id}`)}><Icone nome="mais" tamanho={18} /> Registrar VD</button>
+          <button class="botao secundario pequeno" onclick={() => ir(`vd-rapida/${c.familia.id}`)}>⚡ Sem novidade</button>
           <AusenciaRapida familia={c.familia} />
           <button class="botao secundario pequeno" onclick={() => pular(c.familia.id)}>⏭ Pular hoje</button>
         </div>
