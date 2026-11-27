@@ -358,7 +358,33 @@
   <span class="num-pend">{painel.naoVisitadas.length}</span>
 </button>
 
+<aside class="privacidade" aria-label="Aviso de privacidade">
+  <p class="titulo-priv">🔒 Privacidade dos pacientes</p>
+  <p>
+    Tudo o que está neste aplicativo é <strong>sigiloso</strong> e usado com <strong>discrição</strong>: nada aqui invade a
+    privacidade de ninguém. Os dados ficam <strong>só nos seus aparelhos</strong>, trancados com o seu PIN e embaralhados
+    (criptografados). Nada é vendido, mostrado ou compartilhado com terceiros, nem enviado para o Fast.
+  </p>
+</aside>
+
 <style>
+  .privacidade {
+    margin-top: 16px;
+    padding: 12px 14px;
+    text-align: left;
+    border-left: 4px solid var(--primaria);
+    background: var(--primaria-clara);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  .privacidade p {
+    margin: 0;
+  }
+  .privacidade .titulo-priv {
+    margin-bottom: 4px;
+    font-weight: 800;
+  }
   .escondido {
     display: none;
   }
