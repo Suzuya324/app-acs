@@ -1,6 +1,7 @@
 <script lang="ts">
   import Desfecho from '../componentes/Desfecho.svelte';
   import Icone from '../componentes/Icone.svelte';
+  import { AUTOR } from '../lib/edicao';
   import { diferencaDias, formatarData, formatarDataLonga, hojeISO, somarDias } from '../lib/datas';
   import { app, contextoAcompanhamento, descartarRascunho, mostrarAviso, salvarConfig, sincronizar, enderecoCurto, familiaPorId, opcoesPainel, responsavel, revisitasAbertas, tirarAparelho } from '../lib/estado.svelte';
   import { calcularAtencao } from '../lib/atencao';
@@ -367,7 +368,26 @@
   </p>
 </aside>
 
+<p class="assinatura" aria-label="Autor do app">{AUTOR}</p>
+
 <style>
+  /* Assinatura do autor: só na tela Início, canto esquerdo de baixo, fixa, discreta e sem atrapalhar o toque. */
+  .assinatura {
+    position: fixed;
+    left: 8px;
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    z-index: 11;
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave);
+    background: var(--fundo);
+    padding: 1px 6px;
+    border-radius: 6px;
+    pointer-events: none;
+    user-select: none;
+  }
   .privacidade {
     margin-top: 16px;
     padding: 12px 14px;

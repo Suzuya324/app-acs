@@ -17,7 +17,8 @@ Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web usado pela
 Não é distribuído para outros usuários. Não registrar no repositório nada que identifique o usuário,
 a unidade, a micro ou as ruas da área (o repositório pode ser público).
   - **Exceção (decisão do usuário, 27/11/2026):** a assinatura do autor, "KAWAN A. S. DEL GRECCO" (`AUTOR` em
-    `src/lib/edicao.ts`), aparece no canto esquerdo de baixo do app, nas duas edições, para proteger a autoria da ideia.
+    `src/lib/edicao.ts`), aparece no canto esquerdo de baixo, **só na tela Início**, nas duas edições, para proteger a autoria da ideia
+    (junto do aviso de privacidade dos pacientes, que também fica só no Início).
     Isso vale só para o nome do autor: unidade, micro e ruas continuam fora do repositório.
 - **Exceção (decisão do usuário):** um **app separado, "VDs básico"**, para até 3 colegas de trabalho testarem,
   em outro endereço (`…/app-acs/basico/`), com outro nome e **outro banco de dados no aparelho** (`app-acs-basico`,
