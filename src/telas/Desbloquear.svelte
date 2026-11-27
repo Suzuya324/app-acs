@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NOME_APP } from '../lib/edicao';
+  import { AUTOR, NOME_APP } from '../lib/edicao';
   import { onDestroy, onMount } from 'svelte';
   import TecladoPin from '../componentes/TecladoPin.svelte';
   import { textoDoBloqueio } from '../lib/bloqueios';
@@ -86,9 +86,54 @@
       </div>
     </div>
   {/if}
+
+  <aside class="privacidade" aria-label="Aviso de privacidade">
+    <p class="titulo-priv">🔒 Privacidade dos pacientes</p>
+    <p>
+      Tudo o que está neste aplicativo é <strong>sigiloso</strong> e usado com <strong>discrição</strong>: nada aqui invade a
+      privacidade de ninguém. Os dados ficam <strong>só nos seus aparelhos</strong>, trancados com o seu PIN e embaralhados
+      (criptografados). Nada é vendido, mostrado ou compartilhado com terceiros, nem enviado para o Fast.
+    </p>
+  </aside>
+  
+  <p class="assinatura" aria-label="Autor do app">{AUTOR}</p>
 </section>
 
 <style>
+  /* Assinatura do autor: só na tela de bloqueio, canto esquerdo de baixo, fixa, discreta e sem atrapalhar o toque. */
+  .assinatura {
+    position: fixed;
+    left: 8px;
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    z-index: 11;
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave);
+    background: var(--fundo);
+    padding: 1px 6px;
+    border-radius: 6px;
+    pointer-events: none;
+    user-select: none;
+  }
+  .privacidade {
+    margin-top: 16px;
+    padding: 12px 14px;
+    text-align: left;
+    border-left: 4px solid var(--primaria);
+    background: var(--primaria-clara);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  .privacidade p {
+    margin: 0;
+  }
+  .privacidade .titulo-priv {
+    margin-bottom: 4px;
+    font-weight: 800;
+  }
   .motivo {
     background: var(--aviso-fundo);
     color: var(--aviso-texto);
