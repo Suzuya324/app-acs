@@ -92,7 +92,7 @@
     <p>
       Tudo o que está neste aplicativo é <strong>sigiloso</strong> e usado com <strong>discrição</strong>: nada aqui invade a
       privacidade de ninguém. Os dados ficam <strong>só nos seus aparelhos</strong>, trancados com o seu PIN e embaralhados
-      (criptografados). Nada é vendido, mostrado ou compartilhado com terceiros, nem enviado para o Fast.
+      (criptografados). Nada é vendido, mostrado ou compartilhado com terceiros.
     </p>
   </aside>
   
