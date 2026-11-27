@@ -16,6 +16,9 @@ Ele resolve o que o sistema oficial da unidade (o "Fast", sistema web usado pela
 **Uso pessoal:** o app é de um único ACS, só para uso próprio (celular e computador pessoal).
 Não é distribuído para outros usuários. Não registrar no repositório nada que identifique o usuário,
 a unidade, a micro ou as ruas da área (o repositório pode ser público).
+  - **Exceção (decisão do usuário, 27/11/2026):** a assinatura do autor, "KAWAN A. S. DEL GRECCO" (`AUTOR` em
+    `src/lib/edicao.ts`), aparece no canto esquerdo de baixo do app, nas duas edições, para proteger a autoria da ideia.
+    Isso vale só para o nome do autor: unidade, micro e ruas continuam fora do repositório.
 - **Exceção (decisão do usuário):** um **app separado, "VDs básico"**, para até 3 colegas de trabalho testarem,
   em outro endereço (`…/app-acs/basico/`), com outro nome e **outro banco de dados no aparelho** (`app-acs-basico`,
   ver `src/lib/edicao.ts`): os dois apps nunca se misturam, nem no mesmo celular. Montado do mesmo código com

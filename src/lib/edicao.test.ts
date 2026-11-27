@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { edicaoDoModo } from './edicao';
+import { AUTOR, edicaoDoModo } from './edicao';
 
 // Trava: o app dos colegas ("VDs básico") é sempre separado do app do ACS.
 describe('o app dos colegas é sempre separado', () => {
@@ -23,5 +23,9 @@ describe('o app dos colegas é sempre separado', () => {
     expect(basica.basica).toBe(true);
     expect(completa.basica).toBe(false);
     expect(edicaoDoModo('test').basica).toBe(false);
+  });
+
+  it('a assinatura do autor fica igual (aparece no canto do app, nas duas edições)', () => {
+    expect(AUTOR).toBe('KAWAN A. S. DEL GRECCO');
   });
 });

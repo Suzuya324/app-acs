@@ -23,6 +23,9 @@ export function edicaoDoModo(modo: string): Edicao {
 
 const EDICAO = edicaoDoModo(import.meta.env.MODE);
 
+/** Assinatura do autor, mostrada no canto de baixo do app (nas duas edições). */
+export const AUTOR = 'KAWAN A. S. DEL GRECCO';
+
 export const EDICAO_BASICA = EDICAO.basica;
 export const NOME_APP = EDICAO.nome;
 export const NOME_BANCO = EDICAO.banco;
