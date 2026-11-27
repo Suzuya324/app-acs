@@ -348,6 +348,11 @@
   </ul>
 </section>
 
+<button class="item-link planejar" onclick={() => ir('equipe-numeros')}>
+  <span><strong>Equipe em números</strong><br /><span class="suave pequeno">VDs junto com a técnica, enfermeira, Dra. e APA, e quem foi</span></span>
+  <Icone nome="estrela" />
+</button>
+
 <button class="item-link planejar" onclick={() => ir('mapa')}>
   <span><strong>Mapa da área</strong><br /><span class="suave pequeno">todas as casas, coloridas pela situação no mês</span></span>
   <Icone nome="casa" />

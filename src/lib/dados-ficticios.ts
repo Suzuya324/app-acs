@@ -160,6 +160,11 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
       ? r.um(['consultas e saúde', 'consultas e dengue', 'vacinas', 'medicações', 'consultas, dengue e vacinas', ''])
       : '';
     const presentesIds = presentes.map((m) => m.id);
+    // Algumas VDs de exemplo foram junto com a equipe (sem sorteio, para não mudar o resto dos dados de exemplo).
+    const comEquipe = desfecho === 'realizada' && visitas.length % 7 === 3 ? ['Técnica de enfermagem', 'Enfermeira', 'Médica'][visitas.length % 3] : '';
+    if (desfecho === 'realizada' && visitas.length % 19 === 5) {
+      f.relatosAnteriores = [...(f.relatosAnteriores ?? []), { id: `ex${visitas.length}`, titulo: 'Enfermeira', texto: 'Visita da enfermeira feita (exemplo).', data, origem: 'Enfermeira' }];
+    }
     const relato = gerarRelato({
       desfecho,
       presentes,
@@ -167,7 +172,7 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
       conversouComFamilia: false,
       sinais,
       orientacoes,
-      compartilhadaCom: '',
+      compartilhadaCom: comEquipe,
       contador: contador++,
     });
     visitas.push({
@@ -178,7 +183,7 @@ export function gerarDadosFicticios(hoje: string, semente = 2026): DadosFicticio
       conversouComFamilia: false,
       desfecho,
       motivo: 'Outros',
-      compartilhadaCom: '',
+      compartilhadaCom: comEquipe,
       sinais,
       orientacoes,
       relato,

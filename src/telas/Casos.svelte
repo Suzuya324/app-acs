@@ -147,6 +147,7 @@
 <details class="equipe">
   <summary class="botao secundario largo">👥 Listas para a equipe</summary>
   <div class="menu-equipe">
+    <button class="botao largo" onclick={() => ir('equipe-numeros')}>📊 Equipe em números (VDs junto e quem foi)</button>
     <button class="botao secundario" onclick={() => ir('tecnica')}>Técnica de enfermagem (P.A., glicemia, curativo)</button>
     <button class="botao secundario" onclick={() => ir('equipe/enfermeira')}>Enfermeira</button>
     <button class="botao secundario" onclick={() => ir('equipe/medica')}>Dra.</button>

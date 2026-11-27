@@ -245,6 +245,8 @@ export interface Config {
   nomeAcs: string;
   micro: string;
   metaMensal: number;
+  /** Meta própria das VDs feitas junto com a equipe (técnica, enfermeira, médica, APA) por mês. Sem valor: 20. */
+  metaJunto?: number;
   /** Nomes dos desfechos como aparecem no Fast da unidade (configurável). */
   nomesDesfecho: Record<Desfecho, string>;
   /** Lista de motivos como aparecem no Fast da unidade (configurável). */

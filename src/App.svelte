@@ -14,6 +14,7 @@
   import RevisarFichas from './telas/RevisarFichas.svelte';
   import AtualizarCadastro from './telas/AtualizarCadastro.svelte';
   import Equipe from './telas/Equipe.svelte';
+  import EquipeNumeros from './telas/EquipeNumeros.svelte';
   import OrdemRua from './telas/OrdemRua.svelte';
   import Tecnica from './telas/Tecnica.svelte';
   import RoteiroDia from './telas/RoteiroDia.svelte';
@@ -96,7 +97,7 @@
   const abaAtiva = $derived(
     app.config.versaoBasica && ['dia', 'ordem-rua'].includes(rota.tela)
       ? 'dia'
-      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe'
+      : rota.tela === 'caso' || rota.tela === 'tecnica' || rota.tela === 'equipe' || rota.tela === 'equipe-numeros'
       ? 'casos'
       : ['familia', 'vd', 'editar-familia', 'nova-familia', 'morador', 'pessoa'].includes(rota.tela)
       ? 'busca'
@@ -228,6 +229,8 @@
     <Tecnica />
   {:else if rota.tela === 'equipe'}
     <Equipe />
+  {:else if rota.tela === 'equipe-numeros'}
+    <EquipeNumeros />
   {:else if rota.tela === 'ordem-rua'}
     <OrdemRua />
   {:else if rota.tela === 'atualizar-cadastro'}
