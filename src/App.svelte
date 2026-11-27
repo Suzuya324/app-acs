@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AUTOR, NOME_APP } from './lib/edicao';
+  import { NOME_APP } from './lib/edicao';
   import { onMount } from 'svelte';
   import Icone from './componentes/Icone.svelte';
   import { salvarConfig, app, desfazerUltima, familiaPorId, iniciar, instalarBloqueioAutomatico, instalarSincronizacao, trancar } from './lib/estado.svelte';
@@ -258,8 +258,6 @@
   </div>
 {/if}
 
-<p class="assinatura" class:sem-abas={app.fase !== 'aberto'} aria-label="Autor do app">{AUTOR}</p>
-
 {#if app.fase === 'aberto'}
   <nav class="abas" aria-label="Navegação principal">
     {#each abas as aba (aba.tela)}
@@ -327,26 +325,6 @@
   }
   .sem-abas {
     padding-bottom: 32px;
-  }
-  /* Assinatura do autor: canto esquerdo de baixo, fixa, discreta e sem atrapalhar o toque. */
-  .assinatura {
-    position: fixed;
-    left: 8px;
-    bottom: calc(66px + env(safe-area-inset-bottom));
-    z-index: 11;
-    margin: 0;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--texto-suave);
-    background: var(--fundo);
-    padding: 1px 6px;
-    border-radius: 6px;
-    pointer-events: none;
-    user-select: none;
-  }
-  .assinatura.sem-abas {
-    bottom: calc(6px + env(safe-area-inset-bottom));
   }
   .abas {
     position: fixed;
